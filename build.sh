@@ -33,6 +33,10 @@ cp "$BIN/Toolbox" "$APP/Contents/MacOS/Toolbox"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp "$BIN/pdftool" build/pdftool
+echo "→ Tests des calculs (calculatrice, notes, planning, casque)…"
+if ! "$APP/Contents/MacOS/Toolbox" --selftest; then
+  echo "⚠︎ Des tests ont échoué (détail ci-dessus) : l'appli est quand même installée, mais dis-le à Claude."
+fi
 # Signature ad hoc : suffisant pour lancer l'appli sur ton propre Mac.
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
 

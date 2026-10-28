@@ -1125,7 +1125,6 @@ struct PlanningSettings: View {
                 Text("Heures du contrat par semaine")
                 TextField("ex. 24", text: $p.contractHours).frame(width: 60)
             }
-            PhoneWidgetSettings(p: p)
             Text("Les heures affichées sont les heures de présence moins la pause : compare-les avec ta fiche de paie.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
@@ -1423,55 +1422,3 @@ struct NextShiftWidget: View {
 }
 
 
-// MARK: - Réglages du widget iPhone
-
-final class PhoneWidgetState: ObservableObject {
-    @Published var enabled = PhoneWidget.enabled { didSet { PhoneWidget.enabled = enabled } }
-    @Published var message = ""
-}
-
-struct PhoneWidgetSettings: View {
-    @ObservedObject var p: PlanningStore
-    @StateObject private var st = PhoneWidgetState()
-
-    var body: some View {
-        Section("Widget iPhone") {
-            Toggle("Envoyer les prochains shifts vers l'iPhone (iCloud)", isOn: $st.enabled)
-                .onChange(of: st.enabled) { on in if on { PhoneWidget.export(p) } }
-            if st.enabled {
-                Text("Sur l'iPhone, une seule fois :\n1. Installe Scriptable (gratuite), iCloud activé.\n2. Scriptable → Réglages → Signets de fichiers → + → choisis le dossier iCloud Drive/Toolbox et nomme-le « Toolbox ».\n3. Ajoute les scripts : copier-coller (presse-papiers partagé, Handoff activé), ou sur l'iPhone ouvre Fichiers → iCloud Drive → Toolbox → « Script Mon Mac.txt », sélectionne tout, copie, puis + dans Scriptable et colle.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                HStack {
-                    if PhoneWidget.hasScriptable {
-                        Button("Installer les scripts dans Scriptable") {
-                            do {
-                                try PhoneWidget.installScript()
-                                st.message = "Scripts déposés dans Scriptable (la synchro de ce dossier peut être lente : sinon, copie-colle)."
-                            } catch {
-                                st.message = error.localizedDescription
-                            }
-                        }
-                    }
-                    Button("Copier « Prochain shift »") {
-                        PhoneWidget.copyScript()
-                        PhoneWidget.export(p, force: true)
-                        st.message = "Copié : dans Scriptable sur l'iPhone, + → Coller → nomme-le « Prochain shift »."
-                    }
-                    Button("Copier « Mon Mac »") {
-                        PhoneWidget.copyScript(mac: true)
-                        PhoneWidget.exportMac(MacStatusStore.shared, force: true)
-                        st.message = "Copié : dans Scriptable sur l'iPhone, + → Coller → nomme-le « Mon Mac »."
-                    }
-                }
-                Text("Ensuite, sur l'iPhone : appui long sur l'écran d'accueil → + → Scriptable → choisis le script « Prochain shift ». Marche aussi sur l'écran verrouillé.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                if let d = PhoneWidget.lastExport {
-                    Text("Dernier envoi : \(PlanningToolView.time.string(from: d))").font(.caption).foregroundStyle(.secondary)
-                }
-                if !st.message.isEmpty {
-                    Text(st.message).font(.caption).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-    }
-}

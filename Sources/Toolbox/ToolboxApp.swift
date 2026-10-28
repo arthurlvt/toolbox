@@ -34,6 +34,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         AppShortcutsStore.shared.start()
         DiscordPresence.shared.start()
         MacStatusStore.shared.start()
+        HeadphoneStore.shared.start()
+        HeadphoneAuto.shared.start()
+        MorningCheck.shared.start()
+        PhoneStatusStore.shared.start()
         // Notifications de début de cours (boutons « Ouvrir le dernier TD/TP », « Nouveau TP »…)
         UNUserNotificationCenter.current().delegate = self
         CourseAlerts.setup()
@@ -136,6 +140,11 @@ final class ServiceProvider: NSObject {
 struct ToolboxApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    init() {
+        // « Toolbox --selftest » : vérifie les calculs puis quitte (lancé par build.sh)
+        if CommandLine.arguments.contains("--selftest") { exit(SelfTest.run()) }
+    }
+
     var body: some Scene {
         Window("Toolbox", id: "main") {
             ContentView()
@@ -182,7 +191,7 @@ enum ToolSection: String, CaseIterable, Identifiable {
 
 enum Tool: String, CaseIterable, Identifiable {
     case home, courses, revisions, grades, calc
-    case planning
+    case planning, headphone
     case organize, merge, split, layout
     case compress, ocr
     case stamp, security, compare, sign
@@ -197,7 +206,7 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return .home
         case .courses, .revisions, .grades, .calc: return .study
-        case .planning: return .life
+        case .planning, .headphone: return .life
         case .organize, .merge, .split, .layout: return .pages
         case .compress, .ocr: return .optimize
         case .stamp, .security, .compare, .sign: return .edit
@@ -216,6 +225,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .grades: return "Notes & ECTS"
         case .calc: return "Calculatrice"
         case .planning: return "Planning"
+        case .headphone: return "Casque"
         case .compare: return "Comparer"
         case .sign: return "Signer"
         case .organize: return "Organiser"
@@ -240,6 +250,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .revisions: return "Tes CC du calendrier, avec une checklist reliée aux cours, TD et annales"
         case .grades: return "Moyennes, crédits ECTS, compensation et note qu'il te faut au prochain CC"
         case .calc: return "Calculs, courbes, limites, dérivées et conversion en LaTeX"
+        case .headphone: return "Batterie, réduction de bruit, égaliseur et mode automatique de ton casque Nothing"
         case .planning: return "Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC"
         case .compare: return "Voir ce qui a changé entre deux versions d'un PDF"
         case .sign: return "Dessiner ou importer ta signature et la poser sur un PDF"
@@ -266,6 +277,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .grades: return "chart.bar.doc.horizontal"
         case .calc: return "x.squareroot"
         case .planning: return "fork.knife"
+        case .headphone: return "headphones"
         case .compare: return "plus.forwardslash.minus"
         case .sign: return "signature"
         case .organize: return "square.grid.2x2"
@@ -291,6 +303,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .grades: return .green
         case .calc: return .blue
         case .planning: return .yellow
+        case .headphone: return .cyan
         case .compare: return .orange
         case .sign: return .blue
         case .organize: return .blue
@@ -404,6 +417,7 @@ struct ContentView: View {
         case .grades: GradesToolView(g: GradesStore.shared)
         case .calc: CalcToolView(s: CalcStore.shared)
         case .planning: PlanningToolView(p: PlanningStore.shared)
+        case .headphone: HeadphoneToolView()
         case .sign: SignToolView(s: sign)
         case .organize: OrganizeToolView(model: organize)
         case .merge: MergeToolView(s: merge)
@@ -470,6 +484,19 @@ struct ContentView: View {
                                            icon: "checklist", color: .mint, keywords: "revision cc examen partiel") {
                     RevisionsStore.shared.selectedID = p.id; nav.selection = .revisions
                 })
+            }
+            let hp = HeadphoneStore.shared
+            if hp.connected {
+                for (code, name) in [(UInt8(0x04), "réduction de bruit"), (HeadphoneStore.ancTransparency, "transparence"), (HeadphoneStore.ancOff, "désactiver la réduction de bruit")] {
+                    list.append(PaletteCommand(title: "Casque : \(name)", subtitle: hp.last?.name ?? "Casque", icon: "headphones",
+                                               color: .cyan, keywords: "casque anc bruit nothing transparence") { hp.setANC(code) })
+                }
+                for (code, name) in HeadphoneStore.eqPresets {
+                    list.append(PaletteCommand(title: "Casque : égaliseur \(name.lowercased())", subtitle: hp.last?.name ?? "Casque", icon: "slider.vertical.3",
+                                               color: .cyan, keywords: "casque eq egaliseur nothing") { hp.setEQ(code) })
+                }
+                list.append(PaletteCommand(title: hp.ringing ? "Casque : arrêter la sonnerie" : "Casque : faire sonner", subtitle: "Pour le retrouver",
+                                           icon: "speaker.wave.3.fill", color: .cyan, keywords: "casque sonner retrouver ring") { hp.ring(!hp.ringing) })
             }
             list.append(PaletteCommand(title: "Ajouter une note", subtitle: "Notes & ECTS", icon: "chart.bar.doc.horizontal",
                                        color: .green, keywords: "moyenne ects cc partiel credits") { nav.selection = .grades })

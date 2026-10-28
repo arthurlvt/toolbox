@@ -257,6 +257,7 @@ final class DiscordPresence: ObservableObject {
         case .grades: return ("Calcule sa moyenne", "Compte sur la compensation 🙏")
         case .calc: return ("Trace des courbes", "f(x) = tout va bien 📈")
         case .planning: return ("Regarde son planning", "Calcule ses heures 🍟")
+        case .headphone: return ("Règle son casque", "Réduction de bruit au max 🎧")
         case .compare: return ("Joue au jeu des 7 différences", "Entre deux PDF 🔍")
         case .sign: return ("Signe des documents", "Sans avoir lu les conditions ✍️")
         case .compress: return ("Compresse des PDF", "Chaque octet compte")
@@ -292,43 +293,7 @@ final class DiscordPresence: ObservableObject {
     }
 }
 
-// MARK: - Fenêtre Réglages (⌘,)
-
-final class GeneralSettings: ObservableObject {
-    static let shared = GeneralSettings()
-
-    @Published var searchHotKey = UserDefaults.standard.object(forKey: "courses.hotkey") as? Bool ?? true {
-        didSet {
-            UserDefaults.standard.set(searchHotKey, forKey: "courses.hotkey")
-            if searchHotKey {
-                GlobalHotKey.shared.register { QuickSearchPanel.shared.toggle() }
-            } else {
-                GlobalHotKey.shared.unregister(id: 1)
-            }
-        }
-    }
-    @Published var firstName = UserProfile.firstName {
-        didSet { if UserProfile.firstName != firstName { UserProfile.firstName = firstName } }
-    }
-    @Published var courseNotify = UserDefaults.standard.object(forKey: "courses.notify") as? Bool ?? true {
-        didSet { UserDefaults.standard.set(courseNotify, forKey: "courses.notify") }
-    }
-}
-
-struct SettingsView: View {
-    var body: some View {
-        TabView {
-            GeneralTab()
-                .tabItem { Label("Général", systemImage: "person.crop.circle") }
-            DiscordSettings()
-                .tabItem { Label("Discord", systemImage: "gamecontroller.fill") }
-            ShortcutSettings()
-                .tabItem { Label("Raccourcis", systemImage: "keyboard") }
-        }
-        .frame(width: 560)
-        .padding(20)
-    }
-}
+// MARK: - Réglages Discord (onglet de la fenêtre Réglages, voir Settings.swift)
 
 struct DiscordSettings: View {
     @ObservedObject var d = DiscordPresence.shared
@@ -373,87 +338,5 @@ struct DiscordSettings: View {
         }
         .formStyle(.grouped)
         .onAppear { d.refresh() }
-    }
-}
-
-struct ShortcutSettings: View {
-    @ObservedObject var g = GeneralSettings.shared
-    @ObservedObject var apps = AppShortcutsStore.shared
-
-    var body: some View {
-        Form {
-            Toggle("⌥Espace : chercher dans mes cours depuis n'importe quelle app", isOn: $g.searchHotKey)
-            Toggle("⌃⌥1 … ⌃⌥9 : lancer les apps du widget « Mes apps »", isOn: $apps.hotKeysOn)
-            Toggle("Notification au début d'un cours (d'après le calendrier)", isOn: $g.courseNotify)
-            Text("Dans l'app : ⌘K palette de commandes · ⇧⌘T capture → texte · ⌘B compiler (LaTeX) · ⇧⌘N nouveau document LaTeX")
-                .font(.caption).foregroundStyle(.secondary)
-        }
-        .formStyle(.grouped)
-    }
-}
-
-struct GeneralTab: View {
-    @ObservedObject var g = GeneralSettings.shared
-    @ObservedObject var courses = CoursesStore.shared
-
-    var body: some View {
-        Form {
-            TextField("Ton prénom", text: $g.firstName)
-            LabeledContent("Dossier de cours") {
-                HStack {
-                    Text(courses.root?.path.replacingOccurrences(of: NSHomeDirectory(), with: "~") ?? "Aucun")
-                        .lineLimit(1).truncationMode(.head).foregroundStyle(.secondary)
-                    Button("Choisir…") {
-                        if let u = Panels.folder(directory: courses.root, prompt: "Mes cours sont ici") { courses.root = u }
-                    }
-                }
-            }
-            Button("Relancer la configuration de bienvenue") { OnboardingState.shared.restart() }
-            MacAlertSettings()
-        }
-        .formStyle(.grouped)
-    }
-}
-
-final class MacAlertState: ObservableObject {
-    @Published var enabled = BatteryReminder.enabled { didSet { BatteryReminder.enabled = enabled } }
-    @Published var threshold = BatteryReminder.threshold { didSet { BatteryReminder.threshold = threshold } }
-    @Published var message = ""
-}
-
-struct MacAlertSettings: View {
-    @StateObject private var st = MacAlertState()
-
-    var body: some View {
-        Section("Mon Mac") {
-            Toggle("Alerte sur l'iPhone quand la batterie du Mac est basse", isOn: $st.enabled)
-            if st.enabled {
-                Picker("Seuil", selection: $st.threshold) {
-                    ForEach([30, 25, 20, 15, 10], id: \.self) { Text("\($0) %").tag($0) }
-                }
-                Text("Toolbox crée un rappel « 🔋 Recharge ton Mac » dans l'app Rappels : il sonne sur l'iPhone (iCloud) et se coche tout seul quand tu branches le Mac.")
-                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                HStack {
-                    Button("Tester l'alerte") {
-                        let m = MacStatusStore.shared
-                        let send: () -> Void = {
-                            if let err = BatteryReminder.post(m.battery?.percent ?? 18, minutesLeft: m.battery?.minutesLeft, retry: false) {
-                                st.message = "Échec : \(err)"
-                            } else {
-                                st.message = "Rappel « 🔋 Recharge ton Mac » créé : il sonne sur l'iPhone dans 2 minutes."
-                            }
-                        }
-                        if BatteryReminder.hasAccess {
-                            send()
-                        } else {
-                            BatteryReminder.requestAccess { ok in
-                                if ok { send() } else { st.message = "Autorise Toolbox dans Réglages Système → Confidentialité et sécurité → Rappels." }
-                            }
-                        }
-                    }
-                    if !st.message.isEmpty { Text(st.message).font(.caption) }
-                }
-            }
-        }
     }
 }

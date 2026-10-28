@@ -72,6 +72,7 @@ enum PhoneWidget {
         let dir = targetDir
         queue.async {
             cleanOldCopies()
+            publishScriptsAsText()
             do {
                 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
                 try data.write(to: dir.appendingPathComponent(fileName), options: .atomic)
@@ -86,6 +87,8 @@ enum PhoneWidget {
     static func installScript() throws {
         try script.data(using: .utf8)?.write(to: scriptableDir.appendingPathComponent(scriptName), options: .atomic)
         try installMacScript()
+        try dayScript.data(using: .utf8)?.write(to: scriptableDir.appendingPathComponent(dayScriptName), options: .atomic)
+        DayExport.export(force: true)
         exportMac(MacStatusStore.shared, force: true)
         export(PlanningStore.shared, force: true)
     }
@@ -95,7 +98,7 @@ enum PhoneWidget {
         let dir = iCloudDriveDir
         queue.async {
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            for (name, text) in [("Script Prochain shift.txt", script), ("Script Mon Mac.txt", macScript)] {
+            for (name, text) in [("Script Prochain shift.txt", script), ("Script Mon Mac.txt", macScript), ("Script Ma journée.txt", dayScript)] {
                 let u = dir.appendingPathComponent(name)
                 if (try? String(contentsOf: u, encoding: .utf8)) != text {
                     try? text.write(to: u, atomically: true, encoding: .utf8)
@@ -104,9 +107,9 @@ enum PhoneWidget {
         }
     }
 
-    static func copyScript(mac: Bool = false) {
+    static func copyScript(mac: Bool = false, day: Bool = false) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(mac ? macScript : script, forType: .string)
+        NSPasteboard.general.setString(day ? dayScript : (mac ? macScript : script), forType: .string)
     }
 
     // MARK: Script Scriptable
@@ -127,19 +130,15 @@ const GREEN = new Color("#32D74B")
 const GRAY = new Color("#9A9AA0")
 
 async function load() {
-  // 1) le signet « Toolbox » (dossier iCloud Drive/Toolbox, synchronisé en priorité) ; 2) le dossier de Scriptable
+  // uniquement le signet « Toolbox » (dossier iCloud Drive/Toolbox) : pas de vieille copie ailleurs
   const fm = FileManager.iCloud()
-  const paths = []
-  try { paths.push(fm.joinPath(fm.bookmarkedPath("Toolbox"), FILE)) } catch (e) {}
-  paths.push(fm.joinPath(fm.documentsDirectory(), FILE))
-  for (const path of paths) {
-    if (!fm.fileExists(path)) continue
-    try {
-      await fm.downloadFileFromiCloud(path)
-      return JSON.parse(fm.readString(path))
-    } catch (e) {}
-  }
-  return null
+  let path
+  try { path = fm.joinPath(fm.bookmarkedPath("Toolbox"), FILE) } catch (e) { return null }
+  try {
+    if (!fm.fileExists(path)) return null
+    await fm.downloadFileFromiCloud(path)
+    return JSON.parse(fm.readString(path))
+  } catch (e) { return null }
 }
 
 const DAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."]
@@ -156,6 +155,32 @@ function dayLabel(d, now) {
   if (diff === 1) return "Demain"
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`
 }
+
+// Batterie de l'iPhone → Toolbox sur le Mac (fichier ToolboxPhone.json dans le dossier « Toolbox »)
+async function reportPhone() {
+  let msg
+  try {
+    const fm = FileManager.iCloud()
+    const dir = fm.bookmarkedPath("Toolbox")
+    const info = {
+      updated: new Date().toISOString(), name: Device.name(), model: Device.model(),
+      battery: Math.round(Device.batteryLevel() * 100), charging: Device.isCharging(), full: Device.isFullyCharged(),
+    }
+    fm.writeString(fm.joinPath(dir, "ToolboxPhone.json"), JSON.stringify(info))
+    msg = `Batterie envoyée au Mac : ${info.battery} %`
+  } catch (e) {
+    msg = "Envoi impossible : " + e + "\n(vérifie le signet « Toolbox » dans Settings → File Bookmarks)"
+  }
+  // lancé à la main dans Scriptable : on affiche le résultat
+  if (config.runsInApp) {
+    const a = new Alert()
+    a.title = "Toolbox"
+    a.message = msg
+    a.addAction("OK")
+    await a.present()
+  }
+}
+await reportPhone()
 
 const data = await load()
 const now = new Date()
@@ -246,7 +271,7 @@ if (family === "accessoryInline") {
   w.addSpacer(small ? 6 : 8)
 
   if (!data) {
-    text(w, "Pas de données : dans Scriptable, Réglages → Signets de fichiers → + → dossier iCloud Drive/Toolbox, nommé « Toolbox ».", Font.systemFont(12), GRAY, 4)
+    text(w, "Signet « Toolbox » introuvable : Scriptable → Settings → File Bookmarks → + → Pick Folder → iCloud Drive → Toolbox, nommé « Toolbox ».", Font.systemFont(12), GRAY, 4)
   } else if (!next) {
     text(w, "Aucun shift prévu 🎉", Font.semiboldSystemFont(15), Color.white(), 2)
   } else {
@@ -277,7 +302,7 @@ if (family === "accessoryInline") {
 }
 
 Script.setWidget(w)
-if (!config.runsInWidget) await w.presentMedium()
+if (config.runsInApp) await w.presentMedium()   // lancé par un raccourci : juste l'envoi de la batterie
 Script.complete()
 """##
 }

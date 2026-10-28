@@ -17,7 +17,8 @@ extension PhoneWidget {
         guard enabled else { return }
         let now = Date()
         let b = m.battery
-        let key = "\(b?.percent ?? -1)|\(b?.plugged ?? true)|\(b?.charging ?? false)|\(m.thermal == .serious || m.thermal == .critical)"
+        let hp = HeadphoneStore.shared.last
+        let key = "\(b?.percent ?? -1)|\(b?.plugged ?? true)|\(b?.charging ?? false)|\(m.thermal == .serious || m.thermal == .critical)|\(hp?.percent ?? -1)|\(hp?.charging ?? false)"
         guard force || key != lastMacKey || now.timeIntervalSince(lastMacExport) >= 600 else { return }
         lastMacExport = now
         lastMacKey = key
@@ -44,11 +45,20 @@ extension PhoneWidget {
         if let t = m.health.temperature { health["temperature"] = (t * 10).rounded() / 10 }
         if !health.isEmpty { root["health"] = health }
         if let boot = m.bootDate { root["boot"] = iso.string(from: boot) }
+        if let h = hp {
+            var d: [String: Any] = ["name": h.name, "percent": h.percent, "charging": h.charging, "date": iso.string(from: h.date),
+                                    "connected": HeadphoneStore.shared.connected]
+            if let l = h.left { d["left"] = l }
+            if let r = h.right { d["right"] = r }
+            if let c = h.box { d["box"] = c }
+            root["headphone"] = d
+        }
         guard let data = try? JSONSerialization.data(withJSONObject: root, options: [.sortedKeys]) else { return }
         let dir = targetDir
         DispatchQueue.global(qos: .utility).async {
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try? data.write(to: dir.appendingPathComponent(macFileName), options: .atomic)
+            publishScriptsAsText()
         }
     }
 
@@ -69,24 +79,46 @@ const GREEN = new Color("#32D74B"), ORANGE = new Color("#FF9F0A"), RED = new Col
 const CYAN = new Color("#64D2FF"), GRAY = new Color("#9A9AA0"), DIM = new Color("#6E6E73")
 
 async function load() {
-  // 1) le signet « Toolbox » (dossier iCloud Drive/Toolbox, synchronisé en priorité) ; 2) le dossier de Scriptable
+  // uniquement le signet « Toolbox » (dossier iCloud Drive/Toolbox) : pas de vieille copie ailleurs
   const fm = FileManager.iCloud()
-  const paths = []
-  try { paths.push(fm.joinPath(fm.bookmarkedPath("Toolbox"), FILE)) } catch (e) {}
-  paths.push(fm.joinPath(fm.documentsDirectory(), FILE))
-  for (const path of paths) {
-    if (!fm.fileExists(path)) continue
-    try {
-      await fm.downloadFileFromiCloud(path)
-      return JSON.parse(fm.readString(path))
-    } catch (e) {}
-  }
-  return null
+  let path
+  try { path = fm.joinPath(fm.bookmarkedPath("Toolbox"), FILE) } catch (e) { return null }
+  try {
+    if (!fm.fileExists(path)) return null
+    await fm.downloadFileFromiCloud(path)
+    return JSON.parse(fm.readString(path))
+  } catch (e) { return null }
 }
 
 const pad = n => String(n).padStart(2, "0")
 const dur = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${pad(m % 60)}`
 const go = b => { const g = b / 1e9; return g >= 100 ? `${Math.round(g)} Go` : `${(Math.round(g * 10) / 10).toString().replace(".", ",")} Go` }
+
+// Batterie de l'iPhone → Toolbox sur le Mac (fichier ToolboxPhone.json dans le dossier « Toolbox »)
+async function reportPhone() {
+  let msg
+  try {
+    const fm = FileManager.iCloud()
+    const dir = fm.bookmarkedPath("Toolbox")
+    const info = {
+      updated: new Date().toISOString(), name: Device.name(), model: Device.model(),
+      battery: Math.round(Device.batteryLevel() * 100), charging: Device.isCharging(), full: Device.isFullyCharged(),
+    }
+    fm.writeString(fm.joinPath(dir, "ToolboxPhone.json"), JSON.stringify(info))
+    msg = `Batterie envoyée au Mac : ${info.battery} %`
+  } catch (e) {
+    msg = "Envoi impossible : " + e + "\n(vérifie le signet « Toolbox » dans Settings → File Bookmarks)"
+  }
+  // lancé à la main dans Scriptable : on affiche le résultat
+  if (config.runsInApp) {
+    const a = new Alert()
+    a.title = "Toolbox"
+    a.message = msg
+    a.addAction("OK")
+    await a.present()
+  }
+}
+await reportPhone()
 
 const data = await load()
 const now = new Date()
@@ -144,7 +176,8 @@ const w = new ListWidget()
 w.refreshAfterDate = new Date(now.getTime() + 5 * 60000)
 
 if (family === "accessoryInline") {
-  w.addText(b ? `💻 ${b.percent} %${b.charging ? " ⚡" : (b.minutesLeft ? " · " + dur(b.minutesLeft) : "")}` : "💻 Mac branché")
+  w.addText((b ? `💻 ${b.percent} %${b.charging ? " ⚡" : (b.minutesLeft ? " · " + dur(b.minutesLeft) : "")}` : "💻 Mac branché")
+            + (data && data.headphone ? `  🎧 ${data.headphone.percent} %` : ""))
 } else if (family === "accessoryCircular") {
   const s = w.addStack(); s.layoutVertically(); s.centerAlignContent()
   if (b) {
@@ -176,7 +209,7 @@ if (family === "accessoryInline") {
   w.addSpacer(small ? 8 : 10)
 
   if (!data) {
-    text(w, "Pas de données : dans Scriptable, Réglages → Signets de fichiers → + → dossier iCloud Drive/Toolbox, nommé « Toolbox ».", Font.systemFont(12), GRAY, 4)
+    text(w, "Signet « Toolbox » introuvable : Scriptable → Settings → File Bookmarks → + → Pick Folder → iCloud Drive → Toolbox, nommé « Toolbox ».", Font.systemFont(12), GRAY, 4)
   } else {
     const row = w.addStack(); row.centerAlignContent()
     const left = row.addStack(); left.layoutVertically()
@@ -190,6 +223,7 @@ if (family === "accessoryInline") {
     }
     text(left, stateLine(), Font.systemFont(11), GRAY, 2)
     if (small) {
+      if (data.headphone) text(left, `🎧 ${data.headphone.percent} %${data.headphone.charging ? " ⚡" : ""}`, Font.mediumSystemFont(11), Color.white())
       if (stale) text(left, ageLine(), Font.systemFont(10), ORANGE, 2)
     } else {
       row.addSpacer()
@@ -208,13 +242,19 @@ if (family === "accessoryInline") {
         line("heart.fill", `Santé ${data.health.percent} %${data.health.cycles ? " · " + data.health.cycles + " cycles" : ""}`)
       }
       if (data.hot) line("thermometer.sun.fill", "Le Mac chauffe", RED)
+      if (data.headphone) {
+        const hp = data.headphone
+        const mins = Math.round((now - new Date(hp.date)) / 60000)
+        const ago = mins < 10 && hp.connected ? "" : (mins < 60 ? ` · ${Math.max(1, mins)} min` : ` · ${Math.round(mins / 60)} h`)
+        line("headphones", `Casque ${hp.percent} %${hp.charging ? " ⚡" : ""}${ago}`, hp.percent <= 20 && !hp.charging ? ORANGE : Color.white())
+      }
     }
   }
   w.addSpacer()
 }
 
 Script.setWidget(w)
-if (!config.runsInWidget) await w.presentMedium()
+if (config.runsInApp) await w.presentMedium()   // lancé par un raccourci : juste l'envoi de la batterie
 Script.complete()
 """##
 }
@@ -296,5 +336,68 @@ enum BatteryReminder {
         guard hasAccess, let r = store.calendarItem(withIdentifier: id) as? EKReminder, !r.isCompleted else { return }
         r.isCompleted = true
         try? store.save(r, commit: true)
+    }
+}
+
+// MARK: - Rappel du soir : « Recharger le MacBook et le casque » (récurrent, géré par l'app Rappels)
+
+enum NightlyReminder {
+    static var store: EKEventStore { BatteryReminder.store }
+
+    static var enabled: Bool {
+        get { UserDefaults.standard.bool(forKey: "nightly.on") }
+        set { UserDefaults.standard.set(newValue, forKey: "nightly.on") }
+    }
+    static var hour: Int {
+        get { UserDefaults.standard.object(forKey: "nightly.hour") as? Int ?? 22 }
+        set { UserDefaults.standard.set(newValue, forKey: "nightly.hour") }
+    }
+    static var minute: Int {
+        get { UserDefaults.standard.object(forKey: "nightly.minute") as? Int ?? 0 }
+        set { UserDefaults.standard.set(newValue, forKey: "nightly.minute") }
+    }
+    static var text: String {
+        get { UserDefaults.standard.string(forKey: "nightly.text") ?? "Recharger le MacBook et le casque" }
+        set { UserDefaults.standard.set(newValue, forKey: "nightly.text") }
+    }
+    private static var id: String? {
+        get { UserDefaults.standard.string(forKey: "nightly.id") }
+        set { UserDefaults.standard.set(newValue, forKey: "nightly.id") }
+    }
+
+    /// Crée ou met à jour le rappel quotidien (ou le supprime si désactivé). Renvoie une erreur éventuelle.
+    @discardableResult
+    static func apply() -> String? {
+        guard BatteryReminder.hasAccess else { return "pas d'accès aux Rappels (Réglages Système → Confidentialité et sécurité → Rappels)" }
+        store.refreshSourcesIfNecessary()
+        let existing = id.flatMap { store.calendarItem(withIdentifier: $0) as? EKReminder }
+        guard enabled else {
+            if let r = existing { try? store.remove(r, commit: true) }
+            id = nil
+            return nil
+        }
+        guard let list = existing?.calendar ?? store.defaultCalendarForNewReminders()
+                ?? store.calendars(for: .reminder).first(where: { $0.allowsContentModifications }) else {
+            return "aucune liste de rappels trouvée (ouvre l'app Rappels une fois)"
+        }
+        let r = existing ?? EKReminder(eventStore: store)
+        r.title = "🔌 " + text
+        r.notes = "Rappel quotidien créé par Toolbox."
+        r.calendar = list
+        // première échéance : ce soir à l'heure choisie (demain si l'heure est passée)
+        let cal = Calendar.current
+        var first = cal.date(bySettingHour: hour, minute: minute, second: 0, of: Date()) ?? Date()
+        if first < Date() { first = cal.date(byAdding: .day, value: 1, to: first) ?? first }
+        r.dueDateComponents = cal.dateComponents([.year, .month, .day, .hour, .minute], from: first)
+        r.recurrenceRules = [EKRecurrenceRule(recurrenceWith: .daily, interval: 1, end: nil)]
+        r.alarms = [EKAlarm(relativeOffset: 0)]
+        r.isCompleted = false
+        do {
+            try store.save(r, commit: true)
+            id = r.calendarItemIdentifier
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
     }
 }

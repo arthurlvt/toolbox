@@ -82,6 +82,22 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
 
 ---
 
+## Ma journée
+
+- **Check du matin** (Réglages → Général) : chaque matin à l'heure choisie (7 h 30 par défaut), une notification
+  résume la journée : cours du jour (calendrier), shift, prochain CC et avancement, et ce qu'il faut recharger
+  (Mac si la journée est longue, casque, iPhone). Mac en veille à l'heure dite : il arrive au réveil. Option : aussi sur
+  l'iPhone via un rappel.
+- **Widget iPhone « Ma journée »** (Scriptable, grand ou moyen) : cours (le soir, ceux de demain), shift avec pauses,
+  prochain CC avec barre d'avancement, et la batterie du Mac, du casque et de l'iPhone. Données : `ToolboxDay.json`.
+
+## Casque (page « Casque »)
+
+- Batterie (gauche / droite / boîtier pour des écouteurs), réduction de bruit, égaliseur, renfort des basses, faible
+  latence, faire sonner, firmware, et un bouton « Rechercher le casque ».
+- **Mode automatique** : transparence pendant un cours (repéré dans le calendrier comme dans Mes cours), mode habituel
+  le reste du temps, faible latence quand un jeu est au premier plan.
+
 ## Révisions
 
 - **Tes CC viennent du calendrier** : le calendrier « CCs/Soutenance » (ou tout calendrier nommé CC, Examens,
@@ -145,6 +161,15 @@ toujours le justifier.
   Réglages du Planning → *Installer les widgets dans Scriptable* dépose les scripts tout seuls.
 - **Widget iPhone « Mon Mac »** : batterie, temps restant, processeur, mémoire, disque, santé de la batterie,
   envoyés chaque minute (`ToolboxMac.json`). « Mac en veille ? » si rien n'est arrivé depuis 10 min.
+- **Casque Nothing / CMF** : batterie lue directement sur le casque (canal Bluetooth privé de Nothing X, protocole
+  documenté par le projet libre BudsLink) toutes les 5 minutes et à chaque connexion au Mac. Affichée dans « Mon Mac »
+  (Mac et iPhone), avec la dernière valeur connue quand il est déconnecté, et un rappel quand il passe sous le seuil.
+  **Panneau de contrôle** (clic sur la ligne du casque) : réduction de bruit (faible, moyenne, forte, adaptative),
+  transparence, égaliseur, renfort des basses (5 niveaux), faible latence, faire sonner le casque, firmware.
+  Aussi dans ⌘K (« Casque : transparence »…) et dans la barre des menus.
+- **Batterie de l'iPhone sur le Mac** : les widgets Scriptable envoient la batterie du téléphone (`ToolboxPhone.json`) ;
+  elle s'affiche dans « Mes appareils », avec une notification sur le Mac sous le seuil. Réglages et scripts :
+  Accueil → Personnaliser → *Widgets sur l'iPhone*.
 - **Alerte batterie sur l'iPhone** : sous 20 % (réglable dans Réglages → Général), Toolbox crée un rappel
   « 🔋 Recharge ton Mac » dans l'app Rappels, qui sonne sur l'iPhone et se coche tout seul quand le Mac est branché.
 
@@ -350,6 +375,9 @@ Resources/    Info.plist (types de fichiers, Services, autorisations) + icône
 build.sh      compile hors du dossier (Nextcloud), assemble le .app, l'enregistre auprès de macOS
 ```
 
+- **Tests** : `build.sh` lance `Toolbox --selftest` après chaque compilation (calculatrice, limites, notes et ECTS,
+  lecture du planning et pauses, CRC du casque). Code dans `SelfTest.swift` ; à relancer à la main :
+  `~/Applications/Toolbox.app/Contents/MacOS/Toolbox --selftest`.
 - Les vues n'utilisent pas `@State`, une macro absente des Command Line Tools sur les SDK récents :
   chaque outil a un petit `ObservableObject`.
 - Ajouter un outil : une fonction dans `PDFCore`, un cas dans l'enum `Tool`, une vue dans `Toolbox`,

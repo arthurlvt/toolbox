@@ -219,7 +219,7 @@ struct MacStatusWidget: View {
     @ObservedObject var m = MacStatusStore.shared
 
     var body: some View {
-        Card(title: "Mon Mac", icon: "laptopcomputer", tint: .cyan,
+        Card(title: "Mes appareils", icon: "laptopcomputer", tint: .cyan,
              accessory: AnyView(Menu {
                  Button("Réglages de la batterie") {
                      if let u = URL(string: "x-apple.systempreferences:com.apple.Battery-Settings.extension") { NSWorkspace.shared.open(u) }
@@ -246,6 +246,8 @@ struct MacStatusWidget: View {
                 }
                 Spacer()
             }
+            HeadphoneRow()
+            PhoneRow()
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                 stat("cpu", "Processeur", "\(Int((m.cpu * 100).rounded())) %", m.cpu)
                 stat("memorychip", "Mémoire", "\(MacStatusStore.bytes(m.memoryUsed)) / \(MacStatusStore.bytes(m.memoryTotal))",

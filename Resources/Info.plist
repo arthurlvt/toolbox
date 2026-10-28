@@ -34,6 +34,8 @@
     <string>Toolbox crée tes pense-bêtes dans Notes et affiche ta note épinglée sur sa page d'accueil.</string>
 
     <!-- Page d'accueil : événements du jour -->
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Toolbox lit la batterie de ton casque Nothing pour l'afficher sur l'accueil et sur l'iPhone.</string>
     <key>NSRemindersUsageDescription</key>
     <string>Toolbox crée un rappel « Recharge ton Mac » qui sonne sur ton iPhone quand la batterie est basse.</string>
     <key>NSRemindersFullAccessUsageDescription</key>

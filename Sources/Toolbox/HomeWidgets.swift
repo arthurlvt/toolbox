@@ -30,7 +30,7 @@ enum HomeWidget: String, CaseIterable, Identifiable, Codable {
         case .planning: return "Planning"
         case .nextShift: return "Prochain shift"
         case .nextExam: return "Prochain CC"
-        case .mac: return "Mon Mac"
+        case .mac: return "Mes appareils"
         }
     }
 
@@ -653,6 +653,10 @@ struct WidgetTray: View {
                     }
                 }
                 .padding(.top, 6)
+            }
+            .font(.callout)
+            DisclosureGroup("Widgets sur l'iPhone (Scriptable)") {
+                PhoneWidgetSettings().padding(.top, 6)
             }
             .font(.callout)
             if hidden.isEmpty {

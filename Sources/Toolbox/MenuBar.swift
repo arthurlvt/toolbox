@@ -85,6 +85,7 @@ struct MenuBarPanel: View {
             Divider()
 
             AppStrip()
+            MenuHeadphoneStrip()
 
             HStack(spacing: 8) {
                 Button { ScreenText.capture() } label: {
