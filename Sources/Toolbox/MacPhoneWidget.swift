@@ -13,7 +13,10 @@ extension PhoneWidget {
 
     /// Appelé à chaque relevé. iCloud n'aime pas un fichier réécrit sans arrêt (il freine toute la synchro) :
     /// on n'écrit que si la batterie change (%, branché, en charge), sinon au plus toutes les 10 minutes.
-    static func exportMac(_ m: MacStatusStore, force: Bool = false) {
+    /// Mac sur le point de dormir : indiqué dans le fichier, pour que l'iPhone l'affiche.
+    static var sleepingSince: Date?
+
+    static func exportMac(_ m: MacStatusStore, force: Bool = false, sync: Bool = false) {
         guard enabled else { return }
         let now = Date()
         let b = m.battery
@@ -26,6 +29,7 @@ extension PhoneWidget {
         var root: [String: Any] = [
             "updated": iso.string(from: now),
             "name": macName,
+            "sleeping": sleepingSince != nil,
             "cpu": (m.cpu * 100).rounded(),
             "memoryUsed": m.memoryUsed,
             "memoryTotal": m.memoryTotal,
@@ -55,11 +59,12 @@ extension PhoneWidget {
         }
         guard let data = try? JSONSerialization.data(withJSONObject: root, options: [.sortedKeys]) else { return }
         let dir = targetDir
-        DispatchQueue.global(qos: .utility).async {
+        let write: () -> Void = {
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try? data.write(to: dir.appendingPathComponent(macFileName), options: .atomic)
-            publishScriptsAsText()
         }
+        // avant la veille : écrit tout de suite (le Mac s'endort juste après)
+        if sync { write() } else { DispatchQueue.global(qos: .utility).async { write(); publishScriptsAsText() } }
     }
 
     static func installMacScript() throws {
@@ -124,7 +129,7 @@ const data = await load()
 const now = new Date()
 const b = data && data.battery
 const age = data ? Math.max(0, Math.round((now - new Date(data.updated)) / 60000)) : null
-const stale = age !== null && age > 10
+const stale = age !== null && (age > 10 || (data && data.sleeping))
 const family = config.widgetFamily || "medium"
 
 function color(p, plugged) { return plugged ? GREEN : (p <= 10 ? RED : (p <= 20 ? ORANGE : GREEN)) }
@@ -140,6 +145,7 @@ function stateLine() {
 
 function ageLine() {
   if (age === null) return ""
+  if (data.sleeping) return `💤 en veille depuis ${pad(new Date(data.updated).getHours())}:${pad(new Date(data.updated).getMinutes())}`
   if (stale) return `Mac en veille ? · vu il y a ${age >= 60 ? dur(age) : age + " min"}`
   return age <= 1 ? "à l'instant" : `il y a ${age} min`
 }

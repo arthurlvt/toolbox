@@ -175,8 +175,85 @@ enum MorningReminder {
     }
 }
 
+// MARK: - Réveil programmé du Mac (pmset), pour que le check arrive à l'heure
+
+enum WakeSchedule {
+    /// Réveils répétés actuellement programmés (lu sans mot de passe).
+    static func current() -> String? {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+        p.arguments = ["-g", "sched"]
+        let out = Pipe()
+        p.standardOutput = out
+        p.standardError = Pipe()
+        guard (try? p.run()) != nil else { return nil }
+        p.waitUntilExit()
+        let text = String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        // « Repeating power events: wakepoweron at 7:25AM weekdays only »
+        let lines = text.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespaces) }
+        guard let i = lines.firstIndex(where: { $0.lowercased().hasPrefix("repeating power events") }) else { return nil }
+        let events = lines[(i + 1)...].prefix { !$0.isEmpty && !$0.lowercased().hasPrefix("scheduled power events") }
+            .filter { $0.lowercased().contains("wake") }
+        return events.isEmpty ? nil : events.joined(separator: " · ")
+    }
+
+    /// Programme (ou annule) le réveil : macOS demande le mot de passe administrateur.
+    static func apply(time: Date?, weekdaysOnly: Bool, completion: @escaping (String?) -> Void) {
+        var command = "pmset repeat cancel"
+        if let t = time {
+            let f = DateFormatter()
+            f.dateFormat = "HH:mm:ss"
+            command = "pmset repeat wakeorpoweron \(weekdaysOnly ? "MTWRF" : "MTWRFSU") \(f.string(from: t))"
+        }
+        let script = "do shell script \"\(command)\" with administrator privileges with prompt \"Toolbox veut programmer le réveil du Mac pour le check du matin.\""
+        DispatchQueue.global(qos: .userInitiated).async {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+            p.arguments = ["-e", script]
+            let err = Pipe()
+            p.standardError = err
+            p.standardOutput = Pipe()
+            var message: String?
+            do {
+                try p.run()
+                p.waitUntilExit()
+                if p.terminationStatus != 0 {
+                    let e = String(decoding: err.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+                    message = e.contains("-128") ? "Annulé" : e.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            } catch {
+                message = error.localizedDescription
+            }
+            DispatchQueue.main.async { completion(message) }
+        }
+    }
+}
+
+final class WakeState: ObservableObject {
+    @Published var weekdaysOnly = UserDefaults.standard.object(forKey: "morning.wake.weekdays") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(weekdaysOnly, forKey: "morning.wake.weekdays") }
+    }
+    @Published var status: String? = WakeSchedule.current()
+    @Published var message = ""
+    @Published var busy = false
+
+    func set(_ on: Bool, morning: Date) {
+        busy = true
+        let wakeAt = on ? morning.addingTimeInterval(-5 * 60) : nil
+        WakeSchedule.apply(time: wakeAt, weekdaysOnly: weekdaysOnly) { [weak self] err in
+            guard let self = self else { return }
+            self.busy = false
+            self.status = WakeSchedule.current()
+            if let e = err { self.message = e } else {
+                self.message = on ? "Réveil programmé 5 min avant le check ✓" : "Réveil programmé annulé."
+            }
+        }
+    }
+}
+
 struct MorningSettings: View {
     @ObservedObject var m = MorningCheck.shared
+    @StateObject private var wake = WakeState()
 
     var body: some View {
         Section("Check du matin") {
@@ -186,6 +263,27 @@ struct MorningSettings: View {
                 Toggle("Aussi sur l'iPhone (rappel dans l'app Rappels)", isOn: $m.alsoPhone)
                 Text("Cours du jour (calendrier), shift, prochain CC et ce qu'il faut recharger. Si le Mac dort à l'heure dite, le résumé arrive à son réveil (jusqu'à 4 h après).")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Réveil du Mac").font(.callout.weight(.semibold))
+                    Text(wake.status.map { "Programmé : \($0)" } ?? "Aucun réveil programmé : capot fermé, le résumé attend que tu ouvres le Mac.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    HStack {
+                        Picker("", selection: $wake.weekdaysOnly) {
+                            Text("Du lundi au vendredi").tag(true)
+                            Text("Tous les jours").tag(false)
+                        }
+                        .labelsHidden().frame(width: 190)
+                        Button(wake.status == nil ? "Réveiller le Mac à cette heure" : "Mettre à jour le réveil") { wake.set(true, morning: m.time) }
+                        if wake.status != nil {
+                            Button("Annuler le réveil") { wake.set(false, morning: m.time) }
+                        }
+                        if wake.busy { ProgressView().controlSize(.small) }
+                    }
+                    .disabled(wake.busy)
+                    Text("Le Mac se réveille 5 min avant l'heure du check (réglage d'énergie de macOS, mot de passe demandé). Sur batterie et capot fermé, le réveil peut n'être que partiel. Si l'heure du check change, clique « Mettre à jour le réveil ». « Annuler » supprime tous les réveils répétés de macOS.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    if !wake.message.isEmpty { Text(wake.message).font(.caption) }
+                }
                 HStack {
                     Button("Voir le résumé maintenant") { m.send() }
                     Spacer()

@@ -88,6 +88,10 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
   résume la journée : cours du jour (calendrier), shift, prochain CC et avancement, et ce qu'il faut recharger
   (Mac si la journée est longue, casque, iPhone). Mac en veille à l'heure dite : il arrive au réveil. Option : aussi sur
   l'iPhone via un rappel.
+  **Réveil programmé** (même réglage) : le Mac se réveille 5 min avant le check (`pmset repeat`, mot de passe demandé),
+  du lundi au vendredi ou tous les jours.
+- **Veille** : juste avant de dormir, le Mac envoie un dernier état (« 💤 en veille depuis 23:12 » sur l'iPhone) ;
+  au réveil, tout est relu et renvoyé (batterie, casque).
 - **Widget iPhone « Ma journée »** (Scriptable, grand ou moyen) : cours (le soir, ceux de demain), shift avec pauses,
   prochain CC avec barre d'avancement, et la batterie du Mac, du casque et de l'iPhone. Données : `ToolboxDay.json`.
 

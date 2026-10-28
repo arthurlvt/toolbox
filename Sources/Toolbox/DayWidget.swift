@@ -114,7 +114,7 @@ function devices(stack) {
     text(r, `${pct} %${charging ? "⚡" : ""}`, Font.semiboldRoundedSystemFont(12), pct <= 20 && !charging ? RED : WHITE)
     r.addSpacer(10)
   }
-  if (mac && mac.battery) item("laptopcomputer", mac.battery.percent, mac.battery.charging)
+  if (mac && mac.battery) item(mac.sleeping ? "moon.zzz.fill" : "laptopcomputer", mac.battery.percent, mac.battery.charging)
   if (mac && mac.headphone) item("headphones", mac.headphone.percent, mac.headphone.charging)
   item("iphone", Math.round(Device.batteryLevel() * 100), Device.isCharging())
 }

@@ -42,6 +42,24 @@ final class MacStatusStore: ObservableObject {
         guard !started else { return }
         started = true
         refreshAll()
+        // veille : dernier envoi avant de dormir, nouvel envoi au réveil
+        let ws = NSWorkspace.shared.notificationCenter
+        ws.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            guard let self = self else { return }
+            self.refreshBattery()
+            PhoneWidget.sleepingSince = Date()
+            PhoneWidget.exportMac(self, force: true, sync: true)
+            DayExport.export(force: true)
+        }
+        ws.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            PhoneWidget.sleepingSince = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                guard let self = self else { return }
+                self.refreshAll()
+                PhoneWidget.exportMac(self, force: true)
+                HeadphoneStore.shared.refresh()
+            }
+        }
         // la batterie prévient elle-même quand elle change
         if let src = IOPSNotificationCreateRunLoopSource({ _ in
             DispatchQueue.main.async { MacStatusStore.shared.refreshBattery() }
