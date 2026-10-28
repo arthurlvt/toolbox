@@ -826,6 +826,7 @@ final class PlanningStore: ObservableObject {
             if let c = conflict(start: s.start, end: s.end, ignoring: s.eventID) { map[s.id] = c }
         }
         conflicts = map
+        PhoneWidget.export(self)
     }
 
     // MARK: Heures
@@ -1124,6 +1125,7 @@ struct PlanningSettings: View {
                 Text("Heures du contrat par semaine")
                 TextField("ex. 24", text: $p.contractHours).frame(width: 60)
             }
+            PhoneWidgetSettings(p: p)
             Text("Les heures affichées sont les heures de présence moins la pause : compare-les avec ta fiche de paie.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
@@ -1414,6 +1416,56 @@ struct NextShiftWidget: View {
                 } else {
                     Text("Aucun shift prévu 🎉 Importe ton planning pour le voir ici.")
                         .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+}
+
+
+// MARK: - Réglages du widget iPhone
+
+final class PhoneWidgetState: ObservableObject {
+    @Published var enabled = PhoneWidget.enabled { didSet { PhoneWidget.enabled = enabled } }
+    @Published var message = ""
+}
+
+struct PhoneWidgetSettings: View {
+    @ObservedObject var p: PlanningStore
+    @StateObject private var st = PhoneWidgetState()
+
+    var body: some View {
+        Section("Widget iPhone") {
+            Toggle("Envoyer les prochains shifts vers l'iPhone (iCloud)", isOn: $st.enabled)
+                .onChange(of: st.enabled) { on in if on { PhoneWidget.export(p) } }
+            if st.enabled {
+                if PhoneWidget.hasScriptable {
+                    Text("Scriptable trouvé dans iCloud ✓").foregroundStyle(Color.green)
+                    Button("Installer le widget dans Scriptable") {
+                        do {
+                            try PhoneWidget.installScript()
+                            PhoneWidget.export(p)
+                            st.message = "Script « Prochain shift » ajouté : il apparaît dans Scriptable sur l'iPhone d'ici quelques secondes."
+                        } catch {
+                            st.message = error.localizedDescription
+                        }
+                    }
+                } else {
+                    Text("1. Installe l'app gratuite Scriptable sur l'iPhone et ouvre-la une fois (iCloud activé).\n2. Reviens ici : le bouton « Installer le widget » apparaîtra.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    Button("Copier le script (installation à la main)") {
+                        PhoneWidget.copyScript()
+                        PhoneWidget.export(p)
+                        st.message = "Script copié. Dans Scriptable : + → colle → nomme-le « Prochain shift ». Le fichier est dans iCloud Drive/Toolbox : relie ce dossier dans Scriptable (Réglages → Signets de fichiers) sous le nom « Toolbox »."
+                    }
+                }
+                Text("Ensuite, sur l'iPhone : appui long sur l'écran d'accueil → + → Scriptable → choisis le script « Prochain shift ». Marche aussi sur l'écran verrouillé.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                if let d = PhoneWidget.lastExport {
+                    Text("Dernier envoi : \(PlanningToolView.time.string(from: d))").font(.caption).foregroundStyle(.secondary)
+                }
+                if !st.message.isEmpty {
+                    Text(st.message).font(.caption).fixedSize(horizontal: false, vertical: true)
                 }
             }
         }

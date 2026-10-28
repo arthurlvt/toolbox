@@ -125,6 +125,9 @@ toujours le justifier.
 - **Heures** : présence moins la pause non payée (règle réglable), total de la semaine et du mois, comparaison avec
   les heures du contrat, récap du mois à copier pour vérifier la fiche de paie.
 - **Alertes** : un shift qui chevauche un cours, ou qui tombe le jour d'un CC ou d'un partiel, est signalé.
+- **Widget iPhone** (app gratuite Scriptable) : prochain shift, compte à rebours, pauses, heures de la semaine,
+  sur l'écran d'accueil ou l'écran verrouillé. Toolbox écrit `Toolbox.json` dans iCloud à chaque changement du planning ;
+  Réglages du Planning → *Installer le widget dans Scriptable* dépose le script tout seul.
 
 ---
 
