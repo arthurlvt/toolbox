@@ -1,0 +1,407 @@
+import SwiftUI
+import AppKit
+import Combine
+import UniformTypeIdentifiers
+import PDFCore
+
+// Note : aucune vue n'utilise @State. Sur les SDK récents, @State est une macro
+// fournie uniquement avec Xcode complet ; on passe par ObservableObject.
+
+// MARK: - Routage des fichiers ouverts depuis le Finder
+
+final class AppRouter: ObservableObject {
+    static let shared = AppRouter()
+    @Published var incoming: [URL] = []
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    let services = ServiceProvider()
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.servicesProvider = services
+        NSUpdateDynamicServices()
+        NSApp.activate(ignoringOtherApps: true)
+        ClipboardStore.shared.start()
+        WatchFolderStore.shared.start()
+    }
+
+    /// Glisser sur l'icône du Dock, « Ouvrir avec → Toolbox ».
+    func application(_ application: NSApplication, open urls: [URL]) {
+        AppRouter.shared.incoming += urls
+    }
+
+    /// Fenêtre fermée : Toolbox reste disponible dans la barre des menus.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+}
+
+// MARK: - Services du Finder (clic droit → Services)
+
+final class ServiceProvider: NSObject {
+
+    private func files(_ pboard: NSPasteboard, pdfOnly: Bool = true) -> [URL] {
+        let objects = pboard.readObjects(forClasses: [NSURL.self],
+                                         options: [.urlReadingFileURLsOnly: true]) ?? []
+        let urls = objects.compactMap { $0 as? URL }
+        return pdfOnly ? urls.filter { $0.pathExtension.lowercased() == "pdf" } : urls
+    }
+
+    private func perform(_ name: String, _ urls: [URL], _ work: @escaping ([URL]) throws -> [URL]) {
+        guard !urls.isEmpty else { return }
+        runInBackground({ try work(urls) }) { result in
+            switch result {
+            case .success(let outputs):
+                NSWorkspace.shared.activateFileViewerSelecting(outputs)
+            case .failure(let error):
+                let alert = NSAlert()
+                alert.messageText = "Toolbox — \(name) : échec"
+                alert.informativeText = error.localizedDescription
+                alert.runModal()
+            }
+        }
+    }
+
+    @objc func compressPDF(_ pboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        perform("Compresser", files(pboard)) { (urls: [URL]) -> [URL] in
+            try urls.map { (url: URL) -> URL in
+                let out = FileUtils.sibling(of: url, suffix: "_compressé")
+                _ = try Compressor.compress(url, level: .balanced, to: out)
+                return out
+            }
+        }
+    }
+
+    @objc func mergePDF(_ pboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        let urls = files(pboard).sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        perform("Fusionner", urls) { (urls: [URL]) -> [URL] in
+            let out = FileUtils.unique(urls[0].deletingLastPathComponent().appendingPathComponent("fusion.pdf"))
+            try PDFOps.merge(urls, into: out)
+            return [out]
+        }
+    }
+
+    @objc func ocrPDF(_ pboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        perform("Rendre cherchable (OCR)", files(pboard)) { (urls: [URL]) -> [URL] in
+            try urls.map { (url: URL) -> URL in
+                let out = FileUtils.sibling(of: url, suffix: "_ocr")
+                _ = try OCR.makeSearchable(url, to: out)
+                return out
+            }
+        }
+    }
+
+    @objc func openInToolbox(_ pboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        let urls = files(pboard, pdfOnly: false)
+        DispatchQueue.main.async {
+            AppRouter.shared.incoming += urls
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+}
+
+// MARK: - Application
+
+@main
+struct ToolboxApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    var body: some Scene {
+        Window("Toolbox", id: "main") {
+            ContentView()
+                .frame(minWidth: 980, minHeight: 640)
+        }
+        .defaultSize(width: 1200, height: 780)
+        .commands {
+            CommandGroup(after: .newItem) {
+                Button("Palette de commandes…") { PaletteState.shared.toggle() }
+                    .keyboardShortcut("k")
+                Button("Capture d'écran → texte") { ScreenText.capture() }
+                    .keyboardShortcut("t", modifiers: [.command, .shift])
+            }
+        }
+
+        MenuBarExtra {
+            MenuBarPanel()
+        } label: {
+            Image(systemName: "wrench.and.screwdriver.fill")
+        }
+        .menuBarExtraStyle(.window)
+    }
+}
+
+enum ToolSection: String, CaseIterable, Identifiable {
+    case home = "Toolbox"
+    case pages = "Pages"
+    case optimize = "Optimiser"
+    case edit = "Modifier"
+    case convert = "Convertir"
+    case automate = "Automatiser"
+    case annales = "Annales"
+    case latex = "LaTeX"
+
+    var id: String { rawValue }
+    var tools: [Tool] { Tool.allCases.filter { $0.section == self } }
+}
+
+enum Tool: String, CaseIterable, Identifiable {
+    case home
+    case organize, merge, split, layout
+    case compress, ocr
+    case stamp, security, compare, sign
+    case convert
+    case batch
+    case annales
+    case latex
+
+    var id: String { rawValue }
+
+    var section: ToolSection {
+        switch self {
+        case .home: return .home
+        case .organize, .merge, .split, .layout: return .pages
+        case .compress, .ocr: return .optimize
+        case .stamp, .security, .compare, .sign: return .edit
+        case .convert: return .convert
+        case .batch: return .automate
+        case .annales: return .annales
+        case .latex: return .latex
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .home: return "Accueil"
+        case .compare: return "Comparer"
+        case .sign: return "Signer"
+        case .organize: return "Organiser"
+        case .merge: return "Fusionner"
+        case .split: return "Diviser"
+        case .layout: return "Mise en page"
+        case .compress: return "Compresser"
+        case .ocr: return "OCR"
+        case .stamp: return "Numéroter & filigrane"
+        case .security: return "Sécurité & infos"
+        case .convert: return "Convertir"
+        case .batch: return "Traitement par lots"
+        case .annales: return "Annalyse"
+        case .latex: return "LaTeX"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .home: return "Raccourcis, projets, agenda du jour"
+        case .compare: return "Voir ce qui a changé entre deux versions d'un PDF"
+        case .sign: return "Dessiner ou importer ta signature et la poser sur un PDF"
+        case .organize: return "Réordonner, pivoter, supprimer et extraire des pages"
+        case .merge: return "Assembler plusieurs PDF en un seul"
+        case .split: return "Découper un PDF en plusieurs fichiers"
+        case .layout: return "Rogner les marges, 2 ou 4 pages par feuille, livret"
+        case .compress: return "Réduire le poids de tes PDF"
+        case .ocr: return "Rendre les scans cherchables et copiables (hors ligne)"
+        case .stamp: return "Numéros de page, en-tête, pied de page, filigrane"
+        case .security: return "Mot de passe, titre, auteur, mots-clés"
+        case .convert: return "Images ↔ PDF, PDF → texte, export pour RAG"
+        case .batch: return "Appliquer plusieurs opérations à tout un lot de PDF"
+        case .annales: return "N'importe quel dépôt → sujet LaTeX propre, vérifié, tagué et rangé (IA locale)"
+        case .latex: return "Compiler, prévisualiser, naviguer et démarrer des projets .tex"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .home: return "house.fill"
+        case .compare: return "plus.forwardslash.minus"
+        case .sign: return "signature"
+        case .organize: return "square.grid.2x2"
+        case .merge: return "doc.on.doc"
+        case .split: return "scissors"
+        case .layout: return "rectangle.split.2x1"
+        case .compress: return "arrow.down.right.and.arrow.up.left"
+        case .ocr: return "text.viewfinder"
+        case .stamp: return "number"
+        case .security: return "lock.doc"
+        case .convert: return "arrow.triangle.2.circlepath"
+        case .batch: return "square.stack.3d.down.right"
+        case .annales: return "graduationcap"
+        case .latex: return "function"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .home: return .accentColor
+        case .compare: return .orange
+        case .sign: return .blue
+        case .organize: return .blue
+        case .merge: return .purple
+        case .split: return .orange
+        case .layout: return .brown
+        case .compress: return .green
+        case .ocr: return .mint
+        case .stamp: return .pink
+        case .security: return .gray
+        case .convert: return .teal
+        case .batch: return .cyan
+        case .annales: return .red
+        case .latex: return .indigo
+        }
+    }
+}
+
+final class NavigationState: ObservableObject {
+    @Published var selection: Tool? = .home
+}
+
+struct ContentView: View {
+    @StateObject private var nav = NavigationState()
+    // Modèles qui survivent au changement d'outil (et reçoivent les fichiers du Finder).
+    @StateObject private var organize = OrganizeModel()
+    @StateObject private var latex = LatexModel()
+    @StateObject private var merge = MergeStore()
+    @StateObject private var convert = ConvertStore()
+    @StateObject private var annales = AnnalesStore()
+    @StateObject private var home = HomeStore()
+    @StateObject private var compare = CompareStore()
+    @StateObject private var sign = SignStore()
+
+    var body: some View {
+        NavigationSplitView {
+            List(selection: $nav.selection) {
+                ForEach(ToolSection.allCases) { section in
+                    Section(section.rawValue) {
+                        ForEach(section.tools) { tool in
+                            NavigationLink(value: tool) {
+                                Label {
+                                    Text(tool.title)
+                                } icon: {
+                                    Image(systemName: tool.icon).foregroundStyle(tool.color)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationSplitViewColumnWidth(min: 190, ideal: 215, max: 280)
+            .safeAreaInset(edge: .bottom) {
+                Text("100 % local · rien ne quitte ton Mac")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(10)
+            }
+        } detail: {
+            detail(nav.selection ?? .home)
+        }
+        .overlay(alignment: .bottomTrailing) { ToastView() }
+        .overlay { PaletteView() }
+        .onAppear(perform: installPalette)
+        .onReceive(AppRouter.shared.$incoming) { urls in
+            guard !urls.isEmpty else { return }
+            DispatchQueue.main.async {
+                AppRouter.shared.incoming = []
+                route(urls)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func detail(_ tool: Tool) -> some View {
+        switch tool {
+        case .home:
+            HomeView(home: home,
+                     openTool: { nav.selection = $0 },
+                     openFile: { route([$0]) },
+                     newLatex: { latex.newDocument(); nav.selection = .latex })
+        case .compare: CompareToolView(s: compare)
+        case .sign: SignToolView(s: sign)
+        case .organize: OrganizeToolView(model: organize)
+        case .merge: MergeToolView(s: merge)
+        case .split: SplitToolView()
+        case .layout: LayoutToolView()
+        case .compress: CompressToolView()
+        case .ocr: OCRToolView()
+        case .stamp: StampToolView()
+        case .security: SecurityToolView()
+        case .convert: ConvertToolView(s: convert)
+        case .batch: BatchToolView()
+        case .annales: AnnalesToolView(s: annales)
+        case .latex: LatexToolView(model: latex)
+        }
+    }
+
+    /// Ce que propose la palette ⌘K.
+    private func installPalette() {
+        let nav = self.nav, latex = self.latex, home = self.home
+        PaletteState.shared.provider = {
+            var list: [PaletteCommand] = []
+            list.append(PaletteCommand(title: "Nouveau document LaTeX", subtitle: "Éditeur intégré", icon: "square.and.pencil",
+                                       color: .indigo, keywords: "tex creer nouveau") {
+                latex.newDocument(); nav.selection = .latex
+            })
+            if latex.texURL != nil {
+                list.append(PaletteCommand(title: "Compiler le LaTeX", subtitle: latex.texURL?.lastPathComponent ?? "",
+                                           icon: "play.fill", color: .indigo, keywords: "compile pdf") {
+                    nav.selection = .latex; latex.compile()
+                })
+            }
+            list.append(PaletteCommand(title: "Capture d'écran → texte", subtitle: "Sélectionne une zone, le texte est copié",
+                                       icon: "text.viewfinder", color: .teal, keywords: "ocr copier screenshot") {
+                ScreenText.capture()
+            })
+            list.append(PaletteCommand(title: "Personnaliser l'accueil", icon: "slider.horizontal.3", color: .pink,
+                                       keywords: "widgets accueil") {
+                nav.selection = .home
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { home.layout.editing = true }
+            })
+            for tool in Tool.allCases {
+                list.append(PaletteCommand(title: tool.title, subtitle: tool.subtitle, icon: tool.icon, color: tool.color,
+                                           keywords: "outil " + tool.rawValue) { nav.selection = tool })
+            }
+            for f in home.codeFolders {
+                list.append(PaletteCommand(title: f.url.lastPathComponent, subtitle: "Ouvrir dans VS Code Insiders",
+                                           icon: "chevron.left.forwardslash.chevron.right", color: .blue,
+                                           keywords: "code projet vscode " + f.url.path) { VSCode.open(f.url) })
+            }
+            for u in RecentFiles.list {
+                list.append(PaletteCommand(title: u.lastPathComponent, subtitle: u.deletingLastPathComponent().path,
+                                           icon: u.pathExtension == "tex" ? "function" : "doc.richtext", color: .gray,
+                                           keywords: "recent fichier") { AppRouter.shared.incoming = [u] })
+            }
+            return list
+        }
+        PaletteState.shared.dynamicProvider = { query in
+            guard query.count >= 3 else { return [] }
+            return [PaletteCommand(title: "Créer la note « \(query) »", subtitle: "Dans l'app Notes", icon: "note.text",
+                                   color: .orange) {
+                runInBackground({ try AppleNotes.create(query) }) { r in
+                    switch r {
+                    case .success: ToastCenter.shared.show("Note créée dans Notes ✓")
+                    case .failure(let e): ToastCenter.shared.show(e.localizedDescription)
+                    }
+                }
+            }]
+        }
+    }
+
+    /// Envoie les fichiers reçus vers l'outil le plus logique.
+    private func route(_ urls: [URL]) {
+        let pdfs = urls.filter { $0.pathExtension.lowercased() == "pdf" }
+        let texs = urls.filter { $0.pathExtension.lowercased() == "tex" }
+        let images = urls.filter { FileDrop.accepts($0, [.image]) }
+        pdfs.forEach(RecentFiles.add)
+        if let tex = texs.first {
+            latex.open(tex)
+            nav.selection = .latex
+        } else if pdfs.count == 1 {
+            organize.open(pdfs[0])
+            nav.selection = .organize
+        } else if pdfs.count > 1 {
+            merge.add(pdfs)
+            nav.selection = .merge
+        } else if !images.isEmpty {
+            convert.mode = .imagesToPDF
+            convert.addImages(images)
+            nav.selection = .convert
+        }
+    }
+}
