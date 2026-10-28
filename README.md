@@ -26,6 +26,7 @@ La page d'ouverture : une mascotte animée (la Feuille) et des widgets à dispos
 | **Météo** | Température, ciel, ressenti, vent et les 8 prochaines heures. N'apparaît qu'avec une connexion internet |
 | **Notes & ECTS** | Moyenne de l'année, anneau des crédits acquis, note qu'il te faut sur ce qui reste pour valider chaque semestre |
 | **Planning** | Prochain shift, heures de la semaine (et du contrat), alerte si un shift tombe sur un cours ou un CC |
+| **Mon Mac** | Batterie (jauge, temps restant ou de charge, santé et cycles, alerte à 20 / 10 / 5 %), processeur, mémoire, disque libre, température, depuis quand le Mac est allumé |
 | **Comptes à rebours** | Jours restants avant tes CC, partiels, examens (repérés dans le calendrier ou ajoutés à la main) |
 | **Presse-papiers** | Les 20 derniers textes copiés, recopiés d'un clic. Rien sur le disque, mots de passe ignorés |
 | **Dossier surveillé** | Tout PDF déposé dans un dossier choisi est compressé et/ou passé à l'OCR (résultat dans « Traités par Toolbox ») |
@@ -81,6 +82,20 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
 
 ---
 
+## Révisions
+
+- **Tes CC viennent du calendrier** : le calendrier « CCs/Soutenance » (ou tout calendrier nommé CC, Examens,
+  Partiels…, réglable) est lu automatiquement. Chaque CC à venir reçoit sa **checklist**, rattachée à la bonne matière
+  d'après son titre (nom, nom du dossier ou alias de la matière).
+- **Checklist prête** : relire chaque chapitre, refaire chaque TD, revoir les TP, faire les annales de CC, s'entraîner
+  avec Annalyse, faire une fiche. Chaque ligne a ses **fichiers en un clic** (le corrigé à part, en grisé).
+  Ajoute tes propres tâches, glisse un fichier pour l'ajouter, retire une section entière.
+- **Le prochain CC est épinglé** en haut : J-x, avancement, rythme (« environ 2 tâches par jour pour finir à temps »)
+  et **avertissement en rouge** si tu es en retard (moins de 7 jours et moins de la moitié faite).
+- Cocher une séance la marque *Fait* dans Mes cours. Un CC déplacé ou renommé dans le calendrier suit tout seul.
+- Partout : widget **Prochain CC** sur l'accueil, bandeau sur la page de la matière, entrée dans ⌘K.
+- Un CC absent du calendrier : *Nouvelle révision*.
+
 ## Notes & ECTS
 
 - **Années → semestres → UE → épreuves**, avec coefficients et crédits ECTS. « Importer mes matières » crée une UE
@@ -127,7 +142,11 @@ toujours le justifier.
 - **Alertes** : un shift qui chevauche un cours, ou qui tombe le jour d'un CC ou d'un partiel, est signalé.
 - **Widget iPhone** (app gratuite Scriptable) : prochain shift, compte à rebours, pauses, heures de la semaine,
   sur l'écran d'accueil ou l'écran verrouillé. Toolbox écrit `Toolbox.json` dans iCloud à chaque changement du planning ;
-  Réglages du Planning → *Installer le widget dans Scriptable* dépose le script tout seul.
+  Réglages du Planning → *Installer les widgets dans Scriptable* dépose les scripts tout seuls.
+- **Widget iPhone « Mon Mac »** : batterie, temps restant, processeur, mémoire, disque, santé de la batterie,
+  envoyés chaque minute (`ToolboxMac.json`). « Mac en veille ? » si rien n'est arrivé depuis 10 min.
+- **Alerte batterie sur l'iPhone** : sous 20 % (réglable dans Réglages → Général), Toolbox crée un rappel
+  « 🔋 Recharge ton Mac » dans l'app Rappels, qui sonne sur l'iPhone et se coche tout seul quand le Mac est branché.
 
 ---
 
@@ -304,6 +323,7 @@ Plages de pages : `1-3, 5, 8-` (`8-` = jusqu'à la fin, `-3` = depuis le début)
 | Index de recherche des cours | `~/Library/Application Support/Toolbox/IndexCours.json` |
 | Notes et crédits | `~/Library/Application Support/Toolbox/Notes.json` |
 | Planning | `~/Library/Application Support/Toolbox/Planning.json` |
+| Révisions | `~/Library/Application Support/Toolbox/Revisions.json` |
 | Nouveaux documents LaTeX | `~/Documents/Toolbox LaTeX/` |
 | Banque d'annales | le dossier choisi dans Annalyse → Réglages |
 

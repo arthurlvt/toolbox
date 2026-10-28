@@ -354,6 +354,9 @@ final class CoursesStore: ObservableObject {
         now = nil
     }
 
+    /// Matière correspondant à un titre déjà « plié » (minuscules, sans accents).
+    func courseMatching(_ folded: String) -> Course? { courses.first { matches(folded, $0) } }
+
     private func matches(_ title: String, _ c: Course) -> Bool {
         var keys = [name(c), c.name, CourseLibrary.prettify(c.folderName).replacingOccurrences(of: #" \(S\d\)"#, with: "",
                                                                                                options: .regularExpression)]
@@ -585,6 +588,8 @@ struct CoursesToolView: View {
                 }
 
                 progressBar(c)
+
+                CourseExamBanner(course: c)
 
                 if let n = s.now, n.course.id == c.id {
                     Label("Cours en ce moment : \(n.title) — jusqu'à \(Self.hour.string(from: n.end))", systemImage: "dot.radiowaves.left.and.right")

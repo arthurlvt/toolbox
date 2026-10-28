@@ -249,6 +249,11 @@ final class DiscordPresence: ObservableObject {
             if latex.lastSuccess == true { return (what, "Ça compile du premier coup ✅") }
             return (what, "Tape des \\begin{} à la chaîne")
         case .annales: return ("Fouille la banque d'annales", "Cherche le sujet qui tombera 🔮")
+        case .revisions:
+            if let p = RevisionsStore.shared.next, let d = p.daysLeft {
+                return ("Révise pour un CC", d <= 1 ? "C'est pour \(d == 0 ? "aujourd'hui" : "demain") 😰" : "J-\(d), \(Int(p.progress * 100)) % de la checklist ✅")
+            }
+            return ("Révise", "Coche des cases ✅")
         case .grades: return ("Calcule sa moyenne", "Compte sur la compensation 🙏")
         case .calc: return ("Trace des courbes", "f(x) = tout va bien 📈")
         case .planning: return ("Regarde son planning", "Calcule ses heures 🍟")
@@ -404,7 +409,45 @@ struct GeneralTab: View {
                 }
             }
             Button("Relancer la configuration de bienvenue") { OnboardingState.shared.restart() }
+            MacAlertSettings()
         }
         .formStyle(.grouped)
+    }
+}
+
+final class MacAlertState: ObservableObject {
+    @Published var enabled = BatteryReminder.enabled { didSet { BatteryReminder.enabled = enabled } }
+    @Published var threshold = BatteryReminder.threshold { didSet { BatteryReminder.threshold = threshold } }
+    @Published var message = ""
+}
+
+struct MacAlertSettings: View {
+    @StateObject private var st = MacAlertState()
+
+    var body: some View {
+        Section("Mon Mac") {
+            Toggle("Alerte sur l'iPhone quand la batterie du Mac est basse", isOn: $st.enabled)
+            if st.enabled {
+                Picker("Seuil", selection: $st.threshold) {
+                    ForEach([30, 25, 20, 15, 10], id: \.self) { Text("\($0) %").tag($0) }
+                }
+                Text("Toolbox crée un rappel « 🔋 Recharge ton Mac » dans l'app Rappels : il sonne sur l'iPhone (iCloud) et se coche tout seul quand tu branches le Mac.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    Button("Tester l'alerte") {
+                        let m = MacStatusStore.shared
+                        if BatteryReminder.hasAccess {
+                            BatteryReminder.post(m.battery?.percent ?? 18, minutesLeft: m.battery?.minutesLeft)
+                            st.message = "Rappel créé : il sonne sur l'iPhone dans environ une minute."
+                        } else {
+                            BatteryReminder.requestAccess { ok in
+                                st.message = ok ? "Accès accordé, clique encore sur « Tester »." : "Autorise Toolbox dans Réglages Système → Confidentialité → Rappels."
+                            }
+                        }
+                    }
+                    if !st.message.isEmpty { Text(st.message).font(.caption) }
+                }
+            }
+        }
     }
 }

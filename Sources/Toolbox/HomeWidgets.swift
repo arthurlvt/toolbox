@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 
 enum HomeWidget: String, CaseIterable, Identifiable, Codable {
     case quickActions, apps, courses, vscode, today, notes, weather, exams, clipboard, watch, github, recents, tools
-    case grades, planning, nextShift
+    case grades, planning, nextShift, nextExam, mac
 
     var id: String { rawValue }
 
@@ -29,6 +29,8 @@ enum HomeWidget: String, CaseIterable, Identifiable, Codable {
         case .grades: return "Notes & ECTS"
         case .planning: return "Planning"
         case .nextShift: return "Prochain shift"
+        case .nextExam: return "Prochain CC"
+        case .mac: return "Mon Mac"
         }
     }
 
@@ -50,6 +52,8 @@ enum HomeWidget: String, CaseIterable, Identifiable, Codable {
         case .grades: return "chart.bar.doc.horizontal"
         case .planning: return "fork.knife"
         case .nextShift: return "clock.badge.checkmark"
+        case .nextExam: return "checklist"
+        case .mac: return "laptopcomputer"
         }
     }
 
@@ -79,11 +83,13 @@ final class HomeLayoutStore: ObservableObject {
     static let defaults: [WidgetSlot] = [
         WidgetSlot(widget: .quickActions, visible: true, wide: true),
         WidgetSlot(widget: .apps, visible: true, wide: true),
+        WidgetSlot(widget: .nextExam, visible: true, wide: false),
         WidgetSlot(widget: .nextShift, visible: true, wide: false),
         WidgetSlot(widget: .courses, visible: true, wide: true),
         WidgetSlot(widget: .vscode, visible: true, wide: false),
         WidgetSlot(widget: .today, visible: true, wide: false),
         WidgetSlot(widget: .weather, visible: true, wide: false),
+        WidgetSlot(widget: .mac, visible: true, wide: false),
         WidgetSlot(widget: .notes, visible: true, wide: false),
         WidgetSlot(widget: .exams, visible: true, wide: false),
         WidgetSlot(widget: .grades, visible: true, wide: false),
@@ -102,7 +108,7 @@ final class HomeLayoutStore: ObservableObject {
             loaded = saved
             // widgets apparus dans une version plus récente : ajoutés à la fin
             for d in Self.defaults where !loaded.contains(where: { $0.widget == d.widget }) {
-                if d.widget == .courses || d.widget == .apps || d.widget == .nextShift, let i = loaded.firstIndex(where: { $0.widget == .quickActions }) {
+                if d.widget == .courses || d.widget == .apps || d.widget == .nextShift || d.widget == .nextExam, let i = loaded.firstIndex(where: { $0.widget == .quickActions }) {
                     loaded.insert(d, at: i + 1)
                 } else {
                     loaded.append(d)

@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         WatchFolderStore.shared.start()
         AppShortcutsStore.shared.start()
         DiscordPresence.shared.start()
+        MacStatusStore.shared.start()
         // Notifications de début de cours (boutons « Ouvrir le dernier TD/TP », « Nouveau TP »…)
         UNUserNotificationCenter.current().delegate = self
         CourseAlerts.setup()
@@ -180,7 +181,7 @@ enum ToolSection: String, CaseIterable, Identifiable {
 }
 
 enum Tool: String, CaseIterable, Identifiable {
-    case home, courses, grades, calc
+    case home, courses, revisions, grades, calc
     case planning
     case organize, merge, split, layout
     case compress, ocr
@@ -195,7 +196,7 @@ enum Tool: String, CaseIterable, Identifiable {
     var section: ToolSection {
         switch self {
         case .home: return .home
-        case .courses, .grades, .calc: return .study
+        case .courses, .revisions, .grades, .calc: return .study
         case .planning: return .life
         case .organize, .merge, .split, .layout: return .pages
         case .compress, .ocr: return .optimize
@@ -211,6 +212,7 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return "Accueil"
         case .courses: return "Mes cours"
+        case .revisions: return "Révisions"
         case .grades: return "Notes & ECTS"
         case .calc: return "Calculatrice"
         case .planning: return "Planning"
@@ -235,6 +237,7 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return "Raccourcis, projets, agenda du jour"
         case .courses: return "Cours, TD, TP et annales rangés par matière"
+        case .revisions: return "Tes CC du calendrier, avec une checklist reliée aux cours, TD et annales"
         case .grades: return "Moyennes, crédits ECTS, compensation et note qu'il te faut au prochain CC"
         case .calc: return "Calculs, courbes, limites, dérivées et conversion en LaTeX"
         case .planning: return "Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC"
@@ -259,6 +262,7 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return "house.fill"
         case .courses: return "books.vertical.fill"
+        case .revisions: return "checklist"
         case .grades: return "chart.bar.doc.horizontal"
         case .calc: return "x.squareroot"
         case .planning: return "fork.knife"
@@ -283,6 +287,7 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return .accentColor
         case .courses: return .orange
+        case .revisions: return .mint
         case .grades: return .green
         case .calc: return .blue
         case .planning: return .yellow
@@ -395,6 +400,7 @@ struct ContentView: View {
                      newLatex: { latex.newDocument(); nav.selection = .latex })
         case .compare: CompareToolView(s: compare)
         case .courses: CoursesToolView(s: CoursesStore.shared)
+        case .revisions: RevisionsToolView(r: RevisionsStore.shared)
         case .grades: GradesToolView(g: GradesStore.shared)
         case .calc: CalcToolView(s: CalcStore.shared)
         case .planning: PlanningToolView(p: PlanningStore.shared)
@@ -459,6 +465,12 @@ struct ContentView: View {
                                        icon: "fork.knife", color: .yellow, keywords: "mcdo travail shift horaires") {
                 nav.selection = .planning; PlanningStore.shared.captureScreen()
             })
+            for p in RevisionsStore.shared.upcoming {
+                list.append(PaletteCommand(title: "Réviser : \(p.title)", subtitle: "\(RevisionsToolView.countdown(p.daysLeft)) · \(p.done)/\(p.tasks.count) fait",
+                                           icon: "checklist", color: .mint, keywords: "revision cc examen partiel") {
+                    RevisionsStore.shared.selectedID = p.id; nav.selection = .revisions
+                })
+            }
             list.append(PaletteCommand(title: "Ajouter une note", subtitle: "Notes & ECTS", icon: "chart.bar.doc.horizontal",
                                        color: .green, keywords: "moyenne ects cc partiel credits") { nav.selection = .grades })
             list.append(PaletteCommand(title: "Chercher dans mes cours", subtitle: "⌥Espace depuis n'importe quelle app",

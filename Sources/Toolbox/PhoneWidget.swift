@@ -13,7 +13,20 @@ enum PhoneWidget {
     static var iCloudDriveDir: URL { home.appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs/Toolbox") }
 
     static var hasScriptable: Bool { FileManager.default.fileExists(atPath: scriptableDir.path) }
-    static var targetDir: URL { hasScriptable ? scriptableDir : iCloudDriveDir }
+    /// Les données vont dans iCloud Drive/Toolbox : synchronisé en priorité, contrairement au dossier de Scriptable
+    /// (traité « en arrière-plan » par macOS quand Scriptable n'est pas installé sur le Mac).
+    static var targetDir: URL { iCloudDriveDir }
+
+    /// Anciennes copies des données dans le dossier de Scriptable : retirées pour ne pas afficher de vieilles infos.
+    private static var cleaned = false
+    static func cleanOldCopies() {
+        guard !cleaned else { return }
+        cleaned = true
+        publishScriptsAsText()
+        for name in [fileName, "ToolboxMac.json"] {
+            try? FileManager.default.removeItem(at: scriptableDir.appendingPathComponent(name))
+        }
+    }
 
     static var enabled: Bool {
         get { UserDefaults.standard.object(forKey: "phone.widget") as? Bool ?? true }
@@ -26,9 +39,10 @@ enum PhoneWidget {
     }
 
     private static let queue = DispatchQueue(label: "fr.arthur.toolbox.phonewidget")
+    private static var lastPayload: Data?
 
     /// Shifts des 3 prochaines semaines (et celui en cours) → Toolbox.json.
-    static func export(_ p: PlanningStore) {
+    static func export(_ p: PlanningStore, force: Bool = false) {
         guard enabled else { return }
         let iso = ISO8601DateFormatter()
         let now = Date()
@@ -47,11 +61,17 @@ enum PhoneWidget {
                 if !s.note.isEmpty { d["note"] = s.note }
                 return d
             }
-        var root: [String: Any] = ["updated": iso.string(from: now), "title": p.eventTitle, "shifts": list]
+        var root: [String: Any] = ["title": p.eventTitle, "shifts": list]
         if let c = GradeCalc.num(p.contractHours) { root["contractHours"] = c }
+        // rien n'a changé : on ne touche pas au fichier (moins de travail pour iCloud)
+        let payload = try? JSONSerialization.data(withJSONObject: root, options: [.sortedKeys])
+        guard payload != lastPayload || force else { return }
+        lastPayload = payload
+        root["updated"] = iso.string(from: now)
         guard let data = try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys]) else { return }
         let dir = targetDir
         queue.async {
+            cleanOldCopies()
             do {
                 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
                 try data.write(to: dir.appendingPathComponent(fileName), options: .atomic)
@@ -65,11 +85,28 @@ enum PhoneWidget {
     /// Dépose le script directement dans Scriptable (il apparaît tout seul sur l'iPhone).
     static func installScript() throws {
         try script.data(using: .utf8)?.write(to: scriptableDir.appendingPathComponent(scriptName), options: .atomic)
+        try installMacScript()
+        exportMac(MacStatusStore.shared, force: true)
+        export(PlanningStore.shared, force: true)
     }
 
-    static func copyScript() {
+    /// Les scripts en texte dans iCloud Drive/Toolbox : sur l'iPhone, Fichiers → ouvrir → tout sélectionner → copier.
+    static func publishScriptsAsText() {
+        let dir = iCloudDriveDir
+        queue.async {
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            for (name, text) in [("Script Prochain shift.txt", script), ("Script Mon Mac.txt", macScript)] {
+                let u = dir.appendingPathComponent(name)
+                if (try? String(contentsOf: u, encoding: .utf8)) != text {
+                    try? text.write(to: u, atomically: true, encoding: .utf8)
+                }
+            }
+        }
+    }
+
+    static func copyScript(mac: Bool = false) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(script, forType: .string)
+        NSPasteboard.general.setString(mac ? macScript : script, forType: .string)
     }
 
     // MARK: Script Scriptable
@@ -90,14 +127,19 @@ const GREEN = new Color("#32D74B")
 const GRAY = new Color("#9A9AA0")
 
 async function load() {
+  // 1) le signet « Toolbox » (dossier iCloud Drive/Toolbox, synchronisé en priorité) ; 2) le dossier de Scriptable
   const fm = FileManager.iCloud()
-  let path = fm.joinPath(fm.documentsDirectory(), FILE)
-  if (!fm.fileExists(path)) {
-    try { path = fm.joinPath(fm.bookmarkedPath("Toolbox"), FILE) } catch (e) { return null }
-    if (!fm.fileExists(path)) return null
+  const paths = []
+  try { paths.push(fm.joinPath(fm.bookmarkedPath("Toolbox"), FILE)) } catch (e) {}
+  paths.push(fm.joinPath(fm.documentsDirectory(), FILE))
+  for (const path of paths) {
+    if (!fm.fileExists(path)) continue
+    try {
+      await fm.downloadFileFromiCloud(path)
+      return JSON.parse(fm.readString(path))
+    } catch (e) {}
   }
-  await fm.downloadFileFromiCloud(path)
-  try { return JSON.parse(fm.readString(path)) } catch (e) { return null }
+  return null
 }
 
 const DAYS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."]
@@ -204,7 +246,7 @@ if (family === "accessoryInline") {
   w.addSpacer(small ? 6 : 8)
 
   if (!data) {
-    text(w, "Ouvre Toolbox sur le Mac pour envoyer ton planning.", Font.systemFont(13), GRAY, 3)
+    text(w, "Pas de données : dans Scriptable, Réglages → Signets de fichiers → + → dossier iCloud Drive/Toolbox, nommé « Toolbox ».", Font.systemFont(12), GRAY, 4)
   } else if (!next) {
     text(w, "Aucun shift prévu 🎉", Font.semiboldSystemFont(15), Color.white(), 2)
   } else {

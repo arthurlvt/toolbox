@@ -475,6 +475,8 @@ struct HomeView: View {
         case .grades: GradesWidget { openTool(.grades) }
         case .planning: PlanningWidget { openTool(.planning) }
         case .nextShift: NextShiftWidget { openTool(.planning) }
+        case .nextExam: NextExamWidget { openTool(.revisions) }
+        case .mac: MacStatusWidget()
         case .clipboard: ClipboardWidget()
         case .watch: WatchWidget()
         case .github: githubCard

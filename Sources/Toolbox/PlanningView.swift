@@ -1439,24 +1439,28 @@ struct PhoneWidgetSettings: View {
             Toggle("Envoyer les prochains shifts vers l'iPhone (iCloud)", isOn: $st.enabled)
                 .onChange(of: st.enabled) { on in if on { PhoneWidget.export(p) } }
             if st.enabled {
-                if PhoneWidget.hasScriptable {
-                    Text("Scriptable trouvé dans iCloud ✓").foregroundStyle(Color.green)
-                    Button("Installer le widget dans Scriptable") {
-                        do {
-                            try PhoneWidget.installScript()
-                            PhoneWidget.export(p)
-                            st.message = "Script « Prochain shift » ajouté : il apparaît dans Scriptable sur l'iPhone d'ici quelques secondes."
-                        } catch {
-                            st.message = error.localizedDescription
+                Text("Sur l'iPhone, une seule fois :\n1. Installe Scriptable (gratuite), iCloud activé.\n2. Scriptable → Réglages → Signets de fichiers → + → choisis le dossier iCloud Drive/Toolbox et nomme-le « Toolbox ».\n3. Ajoute les scripts : copier-coller (presse-papiers partagé, Handoff activé), ou sur l'iPhone ouvre Fichiers → iCloud Drive → Toolbox → « Script Mon Mac.txt », sélectionne tout, copie, puis + dans Scriptable et colle.")
+                    .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    if PhoneWidget.hasScriptable {
+                        Button("Installer les scripts dans Scriptable") {
+                            do {
+                                try PhoneWidget.installScript()
+                                st.message = "Scripts déposés dans Scriptable (la synchro de ce dossier peut être lente : sinon, copie-colle)."
+                            } catch {
+                                st.message = error.localizedDescription
+                            }
                         }
                     }
-                } else {
-                    Text("1. Installe l'app gratuite Scriptable sur l'iPhone et ouvre-la une fois (iCloud activé).\n2. Reviens ici : le bouton « Installer le widget » apparaîtra.")
-                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    Button("Copier le script (installation à la main)") {
+                    Button("Copier « Prochain shift »") {
                         PhoneWidget.copyScript()
-                        PhoneWidget.export(p)
-                        st.message = "Script copié. Dans Scriptable : + → colle → nomme-le « Prochain shift ». Le fichier est dans iCloud Drive/Toolbox : relie ce dossier dans Scriptable (Réglages → Signets de fichiers) sous le nom « Toolbox »."
+                        PhoneWidget.export(p, force: true)
+                        st.message = "Copié : dans Scriptable sur l'iPhone, + → Coller → nomme-le « Prochain shift »."
+                    }
+                    Button("Copier « Mon Mac »") {
+                        PhoneWidget.copyScript(mac: true)
+                        PhoneWidget.exportMac(MacStatusStore.shared, force: true)
+                        st.message = "Copié : dans Scriptable sur l'iPhone, + → Coller → nomme-le « Mon Mac »."
                     }
                 }
                 Text("Ensuite, sur l'iPhone : appui long sur l'écran d'accueil → + → Scriptable → choisis le script « Prochain shift ». Marche aussi sur l'écran verrouillé.")
