@@ -17,6 +17,8 @@ final class AppRouter: ObservableObject {
     @Published var show: Tool?
     /// « S'entraîner » depuis Mes cours : (nom affiché, nom du dossier) de la matière.
     @Published var trainFor: (String, String)?
+    /// Texte à insérer dans le document LaTeX ouvert (calculatrice…).
+    @Published var latexInsert: String?
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -163,6 +165,8 @@ struct ToolboxApp: App {
 
 enum ToolSection: String, CaseIterable, Identifiable {
     case home = "Toolbox"
+    case study = "Études"
+    case life = "Quotidien"
     case pages = "Pages"
     case optimize = "Optimiser"
     case edit = "Modifier"
@@ -176,7 +180,8 @@ enum ToolSection: String, CaseIterable, Identifiable {
 }
 
 enum Tool: String, CaseIterable, Identifiable {
-    case home, courses
+    case home, courses, grades, calc
+    case planning
     case organize, merge, split, layout
     case compress, ocr
     case stamp, security, compare, sign
@@ -189,7 +194,9 @@ enum Tool: String, CaseIterable, Identifiable {
 
     var section: ToolSection {
         switch self {
-        case .home, .courses: return .home
+        case .home: return .home
+        case .courses, .grades, .calc: return .study
+        case .planning: return .life
         case .organize, .merge, .split, .layout: return .pages
         case .compress, .ocr: return .optimize
         case .stamp, .security, .compare, .sign: return .edit
@@ -204,6 +211,9 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return "Accueil"
         case .courses: return "Mes cours"
+        case .grades: return "Notes & ECTS"
+        case .calc: return "Calculatrice"
+        case .planning: return "Planning"
         case .compare: return "Comparer"
         case .sign: return "Signer"
         case .organize: return "Organiser"
@@ -225,6 +235,9 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return "Raccourcis, projets, agenda du jour"
         case .courses: return "Cours, TD, TP et annales rangés par matière"
+        case .grades: return "Moyennes, crédits ECTS, compensation et note qu'il te faut au prochain CC"
+        case .calc: return "Calculs, courbes, limites, dérivées et conversion en LaTeX"
+        case .planning: return "Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC"
         case .compare: return "Voir ce qui a changé entre deux versions d'un PDF"
         case .sign: return "Dessiner ou importer ta signature et la poser sur un PDF"
         case .organize: return "Réordonner, pivoter, supprimer et extraire des pages"
@@ -246,6 +259,9 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return "house.fill"
         case .courses: return "books.vertical.fill"
+        case .grades: return "chart.bar.doc.horizontal"
+        case .calc: return "x.squareroot"
+        case .planning: return "fork.knife"
         case .compare: return "plus.forwardslash.minus"
         case .sign: return "signature"
         case .organize: return "square.grid.2x2"
@@ -267,6 +283,9 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return .accentColor
         case .courses: return .orange
+        case .grades: return .green
+        case .calc: return .blue
+        case .planning: return .yellow
         case .compare: return .orange
         case .sign: return .blue
         case .organize: return .blue
@@ -330,6 +349,7 @@ struct ContentView: View {
         }
         .overlay(alignment: .bottomTrailing) { ToastView() }
         .overlay { PaletteView() }
+        .overlay { OnboardingView() }
         .onAppear(perform: installPalette)
         .onChange(of: nav.selection) { _ in DiscordPresence.shared.refresh() }
         .onReceive(AppRouter.shared.$show) { tool in
@@ -337,6 +357,16 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 AppRouter.shared.show = nil
                 nav.selection = tool
+            }
+        }
+        .onReceive(AppRouter.shared.$latexInsert) { text in
+            guard let text = text else { return }
+            DispatchQueue.main.async {
+                AppRouter.shared.latexInsert = nil
+                if latex.texURL == nil { latex.newDocument() }
+                nav.selection = .latex
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { latex.send(.insert(text)) }
+                ToastCenter.shared.show("Inséré dans le document LaTeX ✓")
             }
         }
         .onReceive(AppRouter.shared.$trainFor) { target in
@@ -365,6 +395,9 @@ struct ContentView: View {
                      newLatex: { latex.newDocument(); nav.selection = .latex })
         case .compare: CompareToolView(s: compare)
         case .courses: CoursesToolView(s: CoursesStore.shared)
+        case .grades: GradesToolView(g: GradesStore.shared)
+        case .calc: CalcToolView(s: CalcStore.shared)
+        case .planning: PlanningToolView(p: PlanningStore.shared)
         case .sign: SignToolView(s: sign)
         case .organize: OrganizeToolView(model: organize)
         case .merge: MergeToolView(s: merge)
@@ -422,6 +455,12 @@ struct ContentView: View {
                                        icon: "text.viewfinder", color: .teal, keywords: "ocr copier screenshot") {
                 ScreenText.capture()
             })
+            list.append(PaletteCommand(title: "Importer mon planning", subtitle: "Photo, capture ou PDF → Calendrier",
+                                       icon: "fork.knife", color: .yellow, keywords: "mcdo travail shift horaires") {
+                nav.selection = .planning; PlanningStore.shared.captureScreen()
+            })
+            list.append(PaletteCommand(title: "Ajouter une note", subtitle: "Notes & ECTS", icon: "chart.bar.doc.horizontal",
+                                       color: .green, keywords: "moyenne ects cc partiel credits") { nav.selection = .grades })
             list.append(PaletteCommand(title: "Chercher dans mes cours", subtitle: "⌥Espace depuis n'importe quelle app",
                                        icon: "books.vertical.fill", color: .orange, keywords: "recherche contenu cours") {
                 QuickSearchPanel.shared.open()
@@ -469,8 +508,21 @@ struct ContentView: View {
             return list
         }
         PaletteState.shared.dynamicProvider = { query in
-            guard query.count >= 3 else { return [] }
-            return [PaletteCommand(title: "Créer la note « \(query) »", subtitle: "Dans l'app Notes", icon: "note.text",
+            var extra: [PaletteCommand] = []
+            // petit calcul direct dans la palette : « 2^10 », « ln(2)*3 »…
+            if query.rangeOfCharacter(from: CharacterSet(charactersIn: "0123456789")) != nil,
+               let node = try? MathEngine.parse(query), !node.containsX, !node.isNum,
+               let v = try? MathEngine.evaluate(node, env: CalcStore.shared.env), v.isFinite {
+                let shown = MathFormat.fr(v)
+                extra.append(PaletteCommand(title: "= \(shown)", subtitle: "Calculatrice · Entrée pour copier le résultat",
+                                            icon: "x.squareroot", color: .blue) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(shown, forType: .string)
+                    ToastCenter.shared.show("\(shown) copié ✓")
+                })
+            }
+            guard query.count >= 3 else { return extra }
+            return extra + [PaletteCommand(title: "Créer la note « \(query) »", subtitle: "Dans l'app Notes", icon: "note.text",
                                    color: .orange) {
                 runInBackground({ try AppleNotes.create(query) }) { r in
                     switch r {

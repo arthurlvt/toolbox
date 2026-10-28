@@ -24,6 +24,8 @@ La page d'ouverture : une mascotte animée (la Feuille) et des widgets à dispos
 | **Aujourd'hui** | Événements du jour de l'app Calendrier |
 | **Pense-bête** | Crée une note dans l'app Notes en un clic, affiche une note épinglée façon post-it, ajoute des lignes à la note épinglée |
 | **Météo** | Température, ciel, ressenti, vent et les 8 prochaines heures. N'apparaît qu'avec une connexion internet |
+| **Notes & ECTS** | Moyenne de l'année, anneau des crédits acquis, note qu'il te faut sur ce qui reste pour valider chaque semestre |
+| **Planning** | Prochain shift, heures de la semaine (et du contrat), alerte si un shift tombe sur un cours ou un CC |
 | **Comptes à rebours** | Jours restants avant tes CC, partiels, examens (repérés dans le calendrier ou ajoutés à la main) |
 | **Presse-papiers** | Les 20 derniers textes copiés, recopiés d'un clic. Rien sur le disque, mots de passe ignorés |
 | **Dossier surveillé** | Tout PDF déposé dans un dossier choisi est compressé et/ou passé à l'OCR (résultat dans « Traités par Toolbox ») |
@@ -76,6 +78,53 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
   *Nouveau TP* et *Voir la matière*. Ajoute des alias à une matière (clic droit → Renommer, couleur, alias)
   si ton emploi du temps ne l'appelle pas pareil.
 - **S'entraîner** compose un sujet avec les annales de la matière (Annalyse).
+
+---
+
+## Notes & ECTS
+
+- **Années → semestres → UE → épreuves**, avec coefficients et crédits ECTS. « Importer mes matières » crée une UE
+  par matière de *Mes cours*.
+- **Moyennes** de chaque UE, de chaque semestre (pondérées par les ECTS) et de l'année, provisoires tant que tout
+  n'est pas noté.
+- **La note qu'il te faut** sur les épreuves restantes pour valider l'UE, le semestre et l'année.
+  Si ce n'est plus atteignable, il te le dit et compte sur la compensation.
+- **Crédits acquis** : UE ≥ 10, ou compensée si le semestre (ou l'année) est validé. Règles réglables : compensation
+  semestrielle et annuelle, note plancher, rattrapage (meilleure des deux notes ou remplacement).
+- **Simulation** : tape des notes imaginaires (en violet) pour voir ce que ça donnerait.
+- **Nouvelle année** : même maquette, avec les UE validées reportées (*Acquise l'an dernier*) pour un redoublement.
+
+## Calculatrice
+
+- **Calculs** comme sur papier : `2x`, `sin x`, `x²`, `√x`, `|x|`, `3!`, `ln(2)·3`, `ans`. Le résultat donne aussi
+  sa forme exacte quand il la devine (`1/3`, `3π/4`, `√2/2`).
+- **Fonctions** : `f(x) = …` les trace, `f(2)` et `f'(1)` les évaluent. Une lettre inconnue (`a`, `k`…) devient un
+  **paramètre avec un curseur**.
+- **Graphe** : molette pour zoomer, glisser pour déplacer, pincer sur le trackpad, lecture des valeurs au pointeur,
+  repère standard ou orthonormé, cadrage automatique.
+- **Conversion en LaTeX** : bouton *TeX* sur chaque fonction (`\frac`, `\sqrt`, `\mathrm{e}^{…}`, `\sin^{2}`…),
+  copie entre `$…$` ou insertion directe dans le document LaTeX ouvert. Le graphe s'exporte en **TikZ/pgfplots**
+  ou en image, le tableau de valeurs en `tabular`.
+- **Valeurs** : tableau pour plusieurs fonctions, départ et pas réglables.
+- **Limites** : estimation en un point ou en ±∞, à gauche et à droite, avec le tableau des valeurs qui s'en approchent.
+- **Étude** : dérivée **exacte** (symbolique, simplifiée), tangente au point cliqué, annulations, extremums et
+  points d'inflexion dans la fenêtre.
+- La palette **⌘K** calcule aussi directement (`2^10` → Entrée copie le résultat).
+
+Les limites et les points remarquables sont des estimations numériques : elles donnent le résultat, la copie doit
+toujours le justifier.
+
+## Planning
+
+- **Importer** une photo, une capture d'écran (zone à sélectionner), un PDF ou du texte collé.
+  Le texte est lu sur le Mac (OCR Vision), puis les créneaux sont reconnus : `Lundi 03/11 9h-14h30`, `mar. 4 nov 11:00-15:30`,
+  coupures (`9h-12h 18h-22h`), fermetures après minuit (`18h → 1h`), plannings en colonnes (un jour par colonne).
+- **Plannings d'équipe** : ne garde que la ligne avec ton prénom.
+- Avant d'ajouter : chaque créneau est **modifiable** (jour, heures, pause), le texte lu peut être corrigé puis relu.
+- **Calendrier** : les shifts y sont ajoutés (calendrier, titre et rappel au choix).
+- **Heures** : présence moins la pause non payée (règle réglable), total de la semaine et du mois, comparaison avec
+  les heures du contrat, récap du mois à copier pour vérifier la fiche de paie.
+- **Alertes** : un shift qui chevauche un cours, ou qui tombe le jour d'un CC ou d'un partiel, est signalé.
 
 ---
 
@@ -250,6 +299,8 @@ Plages de pages : `1-3, 5, 8-` (`8-` = jusqu'à la fin, `-3` = depuis le début)
 | Historique LaTeX | `~/Library/Application Support/Toolbox/Historique/` |
 | Signatures | `~/Library/Application Support/Toolbox/Signatures/` |
 | Index de recherche des cours | `~/Library/Application Support/Toolbox/IndexCours.json` |
+| Notes et crédits | `~/Library/Application Support/Toolbox/Notes.json` |
+| Planning | `~/Library/Application Support/Toolbox/Planning.json` |
 | Nouveaux documents LaTeX | `~/Documents/Toolbox LaTeX/` |
 | Banque d'annales | le dossier choisi dans Annalyse → Réglages |
 
@@ -270,7 +321,7 @@ Sources/
   PDFCore/    moteur partagé : pages, dessin, compression, OCR, comparaison, signature, LaTeX,
               Annalyse (Annales/), bibliothèque et index des cours, GitHub, VS Code
   Toolbox/    appli SwiftUI : une vue par outil, accueil et widgets, Mes cours, éditeur LaTeX,
-              palette ⌘K, barre des menus, raccourcis globaux
+              notes et ECTS, calculatrice (MathEngine.swift), planning, palette ⌘K, barre des menus
   pdftool/    commande terminal
 Resources/    Info.plist (types de fichiers, Services, autorisations) + icône
 build.sh      compile hors du dossier (Nextcloud), assemble le .app, l'enregistre auprès de macOS

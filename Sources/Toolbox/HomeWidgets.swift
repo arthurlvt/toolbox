@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 
 enum HomeWidget: String, CaseIterable, Identifiable, Codable {
     case quickActions, apps, courses, vscode, today, notes, weather, exams, clipboard, watch, github, recents, tools
+    case grades, planning, nextShift
 
     var id: String { rawValue }
 
@@ -25,6 +26,9 @@ enum HomeWidget: String, CaseIterable, Identifiable, Codable {
         case .github: return "GitHub"
         case .recents: return "Fichiers récents"
         case .tools: return "Tous les outils"
+        case .grades: return "Notes & ECTS"
+        case .planning: return "Planning"
+        case .nextShift: return "Prochain shift"
         }
     }
 
@@ -43,6 +47,9 @@ enum HomeWidget: String, CaseIterable, Identifiable, Codable {
         case .github: return "chevron.left.slash.chevron.right"
         case .recents: return "clock.arrow.circlepath"
         case .tools: return "square.grid.2x2.fill"
+        case .grades: return "chart.bar.doc.horizontal"
+        case .planning: return "fork.knife"
+        case .nextShift: return "clock.badge.checkmark"
         }
     }
 
@@ -72,12 +79,15 @@ final class HomeLayoutStore: ObservableObject {
     static let defaults: [WidgetSlot] = [
         WidgetSlot(widget: .quickActions, visible: true, wide: true),
         WidgetSlot(widget: .apps, visible: true, wide: true),
+        WidgetSlot(widget: .nextShift, visible: true, wide: false),
         WidgetSlot(widget: .courses, visible: true, wide: true),
         WidgetSlot(widget: .vscode, visible: true, wide: false),
         WidgetSlot(widget: .today, visible: true, wide: false),
         WidgetSlot(widget: .weather, visible: true, wide: false),
         WidgetSlot(widget: .notes, visible: true, wide: false),
         WidgetSlot(widget: .exams, visible: true, wide: false),
+        WidgetSlot(widget: .grades, visible: true, wide: false),
+        WidgetSlot(widget: .planning, visible: true, wide: false),
         WidgetSlot(widget: .clipboard, visible: true, wide: false),
         WidgetSlot(widget: .watch, visible: false, wide: false),
         WidgetSlot(widget: .github, visible: true, wide: true),
@@ -92,7 +102,7 @@ final class HomeLayoutStore: ObservableObject {
             loaded = saved
             // widgets apparus dans une version plus récente : ajoutés à la fin
             for d in Self.defaults where !loaded.contains(where: { $0.widget == d.widget }) {
-                if d.widget == .courses || d.widget == .apps, let i = loaded.firstIndex(where: { $0.widget == .quickActions }) {
+                if d.widget == .courses || d.widget == .apps || d.widget == .nextShift, let i = loaded.firstIndex(where: { $0.widget == .quickActions }) {
                     loaded.insert(d, at: i + 1)
                 } else {
                     loaded.append(d)

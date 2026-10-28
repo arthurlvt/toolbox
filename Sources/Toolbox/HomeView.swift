@@ -386,7 +386,7 @@ final class HomeStore: ObservableObject {
 
     var greeting: String {
         let h = Calendar.current.component(.hour, from: now)
-        let first = NSFullUserName().split(separator: " ").first.map(String.init) ?? ""
+        let first = UserProfile.firstName
         let hello = h < 5 ? "Bonne nuit" : (h < 18 ? "Bonjour" : "Bonsoir")
         return first.isEmpty ? hello : "\(hello) \(first)"
     }
@@ -472,6 +472,9 @@ struct HomeView: View {
                 openTool(.courses)
             }
         case .exams: ExamsWidget(exams: home.exams)
+        case .grades: GradesWidget { openTool(.grades) }
+        case .planning: PlanningWidget { openTool(.planning) }
+        case .nextShift: NextShiftWidget { openTool(.planning) }
         case .clipboard: ClipboardWidget()
         case .watch: WatchWidget()
         case .github: githubCard

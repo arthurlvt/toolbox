@@ -249,6 +249,9 @@ final class DiscordPresence: ObservableObject {
             if latex.lastSuccess == true { return (what, "Ça compile du premier coup ✅") }
             return (what, "Tape des \\begin{} à la chaîne")
         case .annales: return ("Fouille la banque d'annales", "Cherche le sujet qui tombera 🔮")
+        case .grades: return ("Calcule sa moyenne", "Compte sur la compensation 🙏")
+        case .calc: return ("Trace des courbes", "f(x) = tout va bien 📈")
+        case .planning: return ("Regarde son planning", "Calcule ses heures 🍟")
         case .compare: return ("Joue au jeu des 7 différences", "Entre deux PDF 🔍")
         case .sign: return ("Signe des documents", "Sans avoir lu les conditions ✍️")
         case .compress: return ("Compresse des PDF", "Chaque octet compte")
@@ -299,6 +302,9 @@ final class GeneralSettings: ObservableObject {
             }
         }
     }
+    @Published var firstName = UserProfile.firstName {
+        didSet { if UserProfile.firstName != firstName { UserProfile.firstName = firstName } }
+    }
     @Published var courseNotify = UserDefaults.standard.object(forKey: "courses.notify") as? Bool ?? true {
         didSet { UserDefaults.standard.set(courseNotify, forKey: "courses.notify") }
     }
@@ -307,6 +313,8 @@ final class GeneralSettings: ObservableObject {
 struct SettingsView: View {
     var body: some View {
         TabView {
+            GeneralTab()
+                .tabItem { Label("Général", systemImage: "person.crop.circle") }
             DiscordSettings()
                 .tabItem { Label("Discord", systemImage: "gamecontroller.fill") }
             ShortcutSettings()
@@ -374,6 +382,28 @@ struct ShortcutSettings: View {
             Toggle("Notification au début d'un cours (d'après le calendrier)", isOn: $g.courseNotify)
             Text("Dans l'app : ⌘K palette de commandes · ⇧⌘T capture → texte · ⌘B compiler (LaTeX) · ⇧⌘N nouveau document LaTeX")
                 .font(.caption).foregroundStyle(.secondary)
+        }
+        .formStyle(.grouped)
+    }
+}
+
+struct GeneralTab: View {
+    @ObservedObject var g = GeneralSettings.shared
+    @ObservedObject var courses = CoursesStore.shared
+
+    var body: some View {
+        Form {
+            TextField("Ton prénom", text: $g.firstName)
+            LabeledContent("Dossier de cours") {
+                HStack {
+                    Text(courses.root?.path.replacingOccurrences(of: NSHomeDirectory(), with: "~") ?? "Aucun")
+                        .lineLimit(1).truncationMode(.head).foregroundStyle(.secondary)
+                    Button("Choisir…") {
+                        if let u = Panels.folder(directory: courses.root, prompt: "Mes cours sont ici") { courses.root = u }
+                    }
+                }
+            }
+            Button("Relancer la configuration de bienvenue") { OnboardingState.shared.restart() }
         }
         .formStyle(.grouped)
     }
