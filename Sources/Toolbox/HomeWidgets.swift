@@ -6,13 +6,15 @@ import UniformTypeIdentifiers
 // MARK: - Widgets de l'accueil
 
 enum HomeWidget: String, CaseIterable, Identifiable, Codable {
-    case quickActions, vscode, today, notes, weather, exams, clipboard, watch, github, recents, tools
+    case quickActions, apps, courses, vscode, today, notes, weather, exams, clipboard, watch, github, recents, tools
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .quickActions: return "Actions rapides"
+        case .apps: return "Mes apps"
+        case .courses: return "Mes cours"
         case .vscode: return "Projets VS Code"
         case .today: return "Aujourd'hui"
         case .notes: return "Pense-bête"
@@ -29,6 +31,8 @@ enum HomeWidget: String, CaseIterable, Identifiable, Codable {
     var icon: String {
         switch self {
         case .quickActions: return "bolt.fill"
+        case .apps: return "square.grid.3x3.fill"
+        case .courses: return "books.vertical.fill"
         case .vscode: return "chevron.left.forwardslash.chevron.right"
         case .today: return "calendar"
         case .notes: return "note.text"
@@ -44,7 +48,7 @@ enum HomeWidget: String, CaseIterable, Identifiable, Codable {
 
     var defaultWide: Bool {
         switch self {
-        case .quickActions, .github, .recents, .tools: return true
+        case .quickActions, .apps, .courses, .github, .recents, .tools: return true
         default: return false
         }
     }
@@ -67,6 +71,8 @@ final class HomeLayoutStore: ObservableObject {
 
     static let defaults: [WidgetSlot] = [
         WidgetSlot(widget: .quickActions, visible: true, wide: true),
+        WidgetSlot(widget: .apps, visible: true, wide: true),
+        WidgetSlot(widget: .courses, visible: true, wide: true),
         WidgetSlot(widget: .vscode, visible: true, wide: false),
         WidgetSlot(widget: .today, visible: true, wide: false),
         WidgetSlot(widget: .weather, visible: true, wide: false),
@@ -85,7 +91,13 @@ final class HomeLayoutStore: ObservableObject {
            let saved = try? JSONDecoder().decode([WidgetSlot].self, from: data) {
             loaded = saved
             // widgets apparus dans une version plus récente : ajoutés à la fin
-            for d in Self.defaults where !loaded.contains(where: { $0.widget == d.widget }) { loaded.append(d) }
+            for d in Self.defaults where !loaded.contains(where: { $0.widget == d.widget }) {
+                if d.widget == .courses || d.widget == .apps, let i = loaded.firstIndex(where: { $0.widget == .quickActions }) {
+                    loaded.insert(d, at: i + 1)
+                } else {
+                    loaded.append(d)
+                }
+            }
         }
         slots = loaded
     }
@@ -613,6 +625,20 @@ struct WidgetTray: View {
             }
             Text("− pour retirer un widget · ⇆ pour changer sa largeur · la poignée en haut de chaque widget sert à le déplacer.")
                 .font(.caption).foregroundStyle(.secondary)
+            DisclosureGroup("Choisir les widgets affichés") {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 190), alignment: .leading)], alignment: .leading, spacing: 6) {
+                    ForEach(layout.slots) { slot in
+                        let offline = slot.widget == .weather && !online
+                        Toggle(isOn: Binding(get: { slot.visible }, set: { layout.setVisible(slot.widget, $0) })) {
+                            Label(slot.widget.title, systemImage: slot.widget.icon)
+                        }
+                        .toggleStyle(.checkbox)
+                        .help(offline ? "Affiché seulement avec une connexion internet" : "")
+                    }
+                }
+                .padding(.top, 6)
+            }
+            .font(.callout)
             if hidden.isEmpty {
                 Text("Tous les widgets sont affichés.").font(.caption).foregroundStyle(.secondary)
             } else {

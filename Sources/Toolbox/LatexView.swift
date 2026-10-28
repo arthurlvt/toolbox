@@ -217,6 +217,7 @@ final class LatexModel: ObservableObject {
             self.lastDuration = Date().timeIntervalSince(start)
             switch result {
             case .success(let r):
+                defer { DiscordPresence.shared.refresh() }
                 let wasFailing = self.lastSuccess == false
                 self.issues = Latex.parseIssues(r.log)
                 self.lastSuccess = r.success

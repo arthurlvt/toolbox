@@ -465,6 +465,12 @@ struct HomeView: View {
         case .today: todayCard
         case .notes: notesCard
         case .weather: WeatherWidget(weather: home.weather)
+        case .apps: AppsWidget()
+        case .courses:
+            CoursesWidget(s: CoursesStore.shared) { c in
+                CoursesStore.shared.select(c)
+                openTool(.courses)
+            }
         case .exams: ExamsWidget(exams: home.exams)
         case .clipboard: ClipboardWidget()
         case .watch: WatchWidget()

@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import Combine
 import UniformTypeIdentifiers
+import UserNotifications
 import PDFCore
 
 // Note : aucune vue n'utilise @State. Sur les SDK récents, @State est une macro
@@ -12,9 +13,13 @@ import PDFCore
 final class AppRouter: ObservableObject {
     static let shared = AppRouter()
     @Published var incoming: [URL] = []
+    /// Outil à afficher (demandé depuis une notification, la mini-recherche…).
+    @Published var show: Tool?
+    /// « S'entraîner » depuis Mes cours : (nom affiché, nom du dossier) de la matière.
+    @Published var trainFor: (String, String)?
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     let services = ServiceProvider()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -24,6 +29,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
         ClipboardStore.shared.start()
         WatchFolderStore.shared.start()
+        AppShortcutsStore.shared.start()
+        DiscordPresence.shared.start()
+        // Notifications de début de cours (boutons « Ouvrir le dernier TD/TP », « Nouveau TP »…)
+        UNUserNotificationCenter.current().delegate = self
+        CourseAlerts.setup()
+        _ = CoursesStore.shared
+        // ⌥Espace : chercher dans ses cours depuis n'importe quelle app
+        if UserDefaults.standard.object(forKey: "courses.hotkey") as? Bool ?? true {
+            GlobalHotKey.shared.register { QuickSearchPanel.shared.toggle() }
+        }
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let id = response.notification.request.content.userInfo["course"] as? String ?? ""
+        let action = response.actionIdentifier
+        DispatchQueue.main.async { CourseAlerts.handle(action: action, courseID: id) }
+        completionHandler()
     }
 
     /// Glisser sur l'icône du Dock, « Ouvrir avec → Toolbox ».
@@ -120,6 +148,10 @@ struct ToolboxApp: App {
             }
         }
 
+        Settings {
+            SettingsView()
+        }
+
         MenuBarExtra {
             MenuBarPanel()
         } label: {
@@ -144,7 +176,7 @@ enum ToolSection: String, CaseIterable, Identifiable {
 }
 
 enum Tool: String, CaseIterable, Identifiable {
-    case home
+    case home, courses
     case organize, merge, split, layout
     case compress, ocr
     case stamp, security, compare, sign
@@ -157,7 +189,7 @@ enum Tool: String, CaseIterable, Identifiable {
 
     var section: ToolSection {
         switch self {
-        case .home: return .home
+        case .home, .courses: return .home
         case .organize, .merge, .split, .layout: return .pages
         case .compress, .ocr: return .optimize
         case .stamp, .security, .compare, .sign: return .edit
@@ -171,6 +203,7 @@ enum Tool: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .home: return "Accueil"
+        case .courses: return "Mes cours"
         case .compare: return "Comparer"
         case .sign: return "Signer"
         case .organize: return "Organiser"
@@ -191,6 +224,7 @@ enum Tool: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .home: return "Raccourcis, projets, agenda du jour"
+        case .courses: return "Cours, TD, TP et annales rangés par matière"
         case .compare: return "Voir ce qui a changé entre deux versions d'un PDF"
         case .sign: return "Dessiner ou importer ta signature et la poser sur un PDF"
         case .organize: return "Réordonner, pivoter, supprimer et extraire des pages"
@@ -211,6 +245,7 @@ enum Tool: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .home: return "house.fill"
+        case .courses: return "books.vertical.fill"
         case .compare: return "plus.forwardslash.minus"
         case .sign: return "signature"
         case .organize: return "square.grid.2x2"
@@ -231,6 +266,7 @@ enum Tool: String, CaseIterable, Identifiable {
     var color: Color {
         switch self {
         case .home: return .accentColor
+        case .courses: return .orange
         case .compare: return .orange
         case .sign: return .blue
         case .organize: return .blue
@@ -295,6 +331,21 @@ struct ContentView: View {
         .overlay(alignment: .bottomTrailing) { ToastView() }
         .overlay { PaletteView() }
         .onAppear(perform: installPalette)
+        .onChange(of: nav.selection) { _ in DiscordPresence.shared.refresh() }
+        .onReceive(AppRouter.shared.$show) { tool in
+            guard let tool = tool else { return }
+            DispatchQueue.main.async {
+                AppRouter.shared.show = nil
+                nav.selection = tool
+            }
+        }
+        .onReceive(AppRouter.shared.$trainFor) { target in
+            guard let target = target else { return }
+            DispatchQueue.main.async {
+                AppRouter.shared.trainFor = nil
+                train(name: target.0, folder: target.1)
+            }
+        }
         .onReceive(AppRouter.shared.$incoming) { urls in
             guard !urls.isEmpty else { return }
             DispatchQueue.main.async {
@@ -313,6 +364,7 @@ struct ContentView: View {
                      openFile: { route([$0]) },
                      newLatex: { latex.newDocument(); nav.selection = .latex })
         case .compare: CompareToolView(s: compare)
+        case .courses: CoursesToolView(s: CoursesStore.shared)
         case .sign: SignToolView(s: sign)
         case .organize: OrganizeToolView(model: organize)
         case .merge: MergeToolView(s: merge)
@@ -329,9 +381,31 @@ struct ContentView: View {
         }
     }
 
-    /// Ce que propose la palette ⌘K.
+    /// « S'entraîner » : la matière correspondante dans Annalyse (même nom ou même dossier), sinon une recherche.
+    private func train(name: String, folder: String) {
+        let squash: (String) -> String = { CourseLibrary.fold($0).filter { $0.isLetter || $0.isNumber } }
+        let targets = [squash(name), squash(folder)]
+        nav.selection = .annales
+        annales.tab = .banque
+        if let m = annales.config?.matieres.first(where: { targets.contains(squash($0.key)) || targets.contains(squash($0.nom)) }) {
+            annales.composeMatiere = m.key
+            annales.composeNiveau = m.niveau
+            annales.openCompose()
+        } else {
+            annales.searchText = name
+            annales.search()
+            ToastCenter.shared.show("Pas de matière « \(name) » dans Annalyse : je cherche par nom dans la banque.")
+        }
+    }
+
+    /// Ce que propose la palette ⌘K (et ce qu'affiche le statut Discord).
     private func installPalette() {
         let nav = self.nav, latex = self.latex, home = self.home
+        DiscordPresence.shared.provider = {
+            DiscordPresence.text(for: nav.selection ?? .home, latex: latex, home: home,
+                                 showFiles: DiscordPresence.shared.showFileNames)
+        }
+        DiscordPresence.shared.refresh(force: true)
         PaletteState.shared.provider = {
             var list: [PaletteCommand] = []
             list.append(PaletteCommand(title: "Nouveau document LaTeX", subtitle: "Éditeur intégré", icon: "square.and.pencil",
@@ -348,6 +422,10 @@ struct ContentView: View {
                                        icon: "text.viewfinder", color: .teal, keywords: "ocr copier screenshot") {
                 ScreenText.capture()
             })
+            list.append(PaletteCommand(title: "Chercher dans mes cours", subtitle: "⌥Espace depuis n'importe quelle app",
+                                       icon: "books.vertical.fill", color: .orange, keywords: "recherche contenu cours") {
+                QuickSearchPanel.shared.open()
+            })
             list.append(PaletteCommand(title: "Personnaliser l'accueil", icon: "slider.horizontal.3", color: .pink,
                                        keywords: "widgets accueil") {
                 nav.selection = .home
@@ -356,6 +434,27 @@ struct ContentView: View {
             for tool in Tool.allCases {
                 list.append(PaletteCommand(title: tool.title, subtitle: tool.subtitle, icon: tool.icon, color: tool.color,
                                            keywords: "outil " + tool.rawValue) { nav.selection = tool })
+            }
+            let cs = CoursesStore.shared
+            for c in cs.courses {
+                list.append(PaletteCommand(title: cs.name(c), subtitle: "Mes cours · " + c.domain, icon: "books.vertical.fill",
+                                           color: cs.color(c), keywords: "cours matiere " + c.folderName) {
+                    cs.select(c); nav.selection = .courses
+                })
+                for session in c.sessions where session.number != nil && session.kind != .autre {
+                    let target = session.items[0]
+                    list.append(PaletteCommand(title: "\(session.title) · \(cs.name(c))", subtitle: session.subtitle.isEmpty ? target.url.lastPathComponent : session.subtitle,
+                                               icon: FileBadge.style(target).0, color: cs.color(c),
+                                               keywords: c.folderName + " " + target.url.lastPathComponent) {
+                        cs.open(target)
+                    })
+                }
+            }
+            for app in AppShortcutsStore.shared.apps {
+                list.append(PaletteCommand(title: "Ouvrir \(app.name)", subtitle: "Application", icon: "app.badge",
+                                           color: .purple, keywords: "app lancer " + app.name) {
+                    AppShortcutsStore.shared.launch(app)
+                })
             }
             for f in home.codeFolders {
                 list.append(PaletteCommand(title: f.url.lastPathComponent, subtitle: "Ouvrir dans VS Code Insiders",

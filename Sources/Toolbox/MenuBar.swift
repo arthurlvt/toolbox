@@ -54,6 +54,7 @@ final class MenuBarState: ObservableObject {
 struct MenuBarPanel: View {
     @StateObject private var m = MenuBarState()
     @ObservedObject var clip = ClipboardStore.shared
+    @ObservedObject var discord = DiscordPresence.shared
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -82,6 +83,8 @@ struct MenuBarPanel: View {
             }
 
             Divider()
+
+            AppStrip()
 
             HStack(spacing: 8) {
                 Button { ScreenText.capture() } label: {
@@ -142,6 +145,9 @@ struct MenuBarPanel: View {
 
             Divider()
             HStack {
+                Toggle("Statut Discord", isOn: $discord.enabled)
+                    .toggleStyle(.switch).controlSize(.mini)
+                    .help(discord.status)
                 Spacer()
                 Button("Quitter Toolbox") { NSApp.terminate(nil) }
                     .buttonStyle(.borderless).font(.caption)

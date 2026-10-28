@@ -18,7 +18,8 @@ final class ToastCenter: ObservableObject {
     private var hide: DispatchWorkItem?
 
     func show(_ text: String, cheer: Bool = false, seconds: Double = 3) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) { self.current = Toast(text: text, cheer: cheer) }
             self.hide?.cancel()
             let work = DispatchWorkItem { [weak self] in
