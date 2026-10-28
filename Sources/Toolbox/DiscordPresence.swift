@@ -436,12 +436,18 @@ struct MacAlertSettings: View {
                 HStack {
                     Button("Tester l'alerte") {
                         let m = MacStatusStore.shared
+                        let send: () -> Void = {
+                            if let err = BatteryReminder.post(m.battery?.percent ?? 18, minutesLeft: m.battery?.minutesLeft, retry: false) {
+                                st.message = "Échec : \(err)"
+                            } else {
+                                st.message = "Rappel « 🔋 Recharge ton Mac » créé : il sonne sur l'iPhone dans 2 minutes."
+                            }
+                        }
                         if BatteryReminder.hasAccess {
-                            BatteryReminder.post(m.battery?.percent ?? 18, minutesLeft: m.battery?.minutesLeft)
-                            st.message = "Rappel créé : il sonne sur l'iPhone dans environ une minute."
+                            send()
                         } else {
                             BatteryReminder.requestAccess { ok in
-                                st.message = ok ? "Accès accordé, clique encore sur « Tester »." : "Autorise Toolbox dans Réglages Système → Confidentialité → Rappels."
+                                if ok { send() } else { st.message = "Autorise Toolbox dans Réglages Système → Confidentialité et sécurité → Rappels." }
                             }
                         }
                     }

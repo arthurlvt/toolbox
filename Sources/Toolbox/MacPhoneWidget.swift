@@ -243,7 +243,8 @@ enum BatteryReminder {
     static var hasAccess: Bool { EKEventStore.authorizationStatus(for: .reminder).rawValue == 3 }
 
     static func requestAccess(_ done: @escaping (Bool) -> Void) {
-        let finish: (Bool, Error?) -> Void = { ok, _ in DispatchQueue.main.async { done(ok) } }
+        // le magasin ouvert avant l'autorisation ne voit aucune liste : on le recharge
+        let finish: (Bool, Error?) -> Void = { ok, _ in DispatchQueue.main.async { store.reset(); done(ok) } }
         if #available(macOS 14.0, *) {
             store.requestFullAccessToReminders(completion: finish)
         } else {
@@ -251,30 +252,40 @@ enum BatteryReminder {
         }
     }
 
-    /// Crée (ou remplace) le rappel, avec une alarme dans une minute pour laisser iCloud le livrer à l'iPhone.
-    static func post(_ percent: Int, minutesLeft: Int?, retry: Bool = true) {
-        guard enabled else { return }
+    /// Crée (ou remplace) le rappel, avec une alarme 2 minutes plus tard pour laisser iCloud le livrer à l'iPhone.
+    /// Renvoie un message d'erreur, ou nil si tout va bien.
+    @discardableResult
+    static func post(_ percent: Int, minutesLeft: Int?, retry: Bool = true) -> String? {
+        guard enabled else { return "alerte désactivée" }
         guard hasAccess else {
             if retry, EKEventStore.authorizationStatus(for: .reminder) == .notDetermined {
                 requestAccess { ok in if ok { post(percent, minutesLeft: minutesLeft, retry: false) } }
             }
-            return
+            return "pas d'accès aux Rappels (Réglages Système → Confidentialité et sécurité → Rappels)"
         }
         clear()
-        guard let list = store.defaultCalendarForNewReminders() else { return }
+        store.refreshSourcesIfNecessary()
+        var target = store.defaultCalendarForNewReminders() ?? store.calendars(for: .reminder).first { $0.allowsContentModifications }
+        if target == nil {
+            store.reset()
+            target = store.defaultCalendarForNewReminders() ?? store.calendars(for: .reminder).first { $0.allowsContentModifications }
+        }
+        guard let list = target else { return "aucune liste de rappels trouvée (ouvre l'app Rappels une fois)" }
         let r = EKReminder(eventStore: store)
         r.title = "🔋 Recharge ton Mac (\(percent) %)"
         r.notes = (minutesLeft.map { "Environ \(MacStatusStore.duration($0)) d'autonomie. " } ?? "") + "Envoyé par Toolbox, disparaît tout seul quand le Mac est branché."
         r.calendar = list
-        let when = Date().addingTimeInterval(60)
+        let when = Date().addingTimeInterval(120)
         r.dueDateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: when)
         r.addAlarm(EKAlarm(absoluteDate: when))
         r.priority = 1
         do {
             try store.save(r, commit: true)
             lastID = r.calendarItemIdentifier
+            return nil
         } catch {
             NSLog("Toolbox rappel batterie : \(error.localizedDescription)")
+            return error.localizedDescription
         }
     }
 
