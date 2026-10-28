@@ -85,31 +85,72 @@ enum PhoneWidget {
 
     /// Dépose le script directement dans Scriptable (il apparaît tout seul sur l'iPhone).
     static func installScript() throws {
-        try script.data(using: .utf8)?.write(to: scriptableDir.appendingPathComponent(scriptName), options: .atomic)
-        try installMacScript()
-        try dayScript.data(using: .utf8)?.write(to: scriptableDir.appendingPathComponent(dayScriptName), options: .atomic)
+        for w in widgets {
+            try loader(w.name, color: w.color, glyph: w.glyph).data(using: .utf8)?
+                .write(to: scriptableDir.appendingPathComponent("\(w.name).js"), options: .atomic)
+        }
+        publishScriptsAsText()
         DayExport.export(force: true)
         exportMac(MacStatusStore.shared, force: true)
         export(PlanningStore.shared, force: true)
     }
 
     /// Les scripts en texte dans iCloud Drive/Toolbox : sur l'iPhone, Fichiers → ouvrir → tout sélectionner → copier.
+    /// Les widgets de l'iPhone : (nom, code complet, couleur et icône de Scriptable).
+    static var widgets: [(name: String, code: String, color: String, glyph: String)] {
+        [("Prochain shift", script, "yellow", "hamburger"), ("Mon Mac", macScript, "deep-blue", "laptop"), ("Ma journée", dayScript, "orange", "sun")]
+    }
+
+    /// Script à installer une seule fois dans Scriptable : il exécute la dernière version du code,
+    /// déposée par Toolbox dans iCloud Drive/Toolbox/code/. Les mises à jour arrivent donc toutes seules.
+    static func loader(_ name: String, color: String, glyph: String) -> String {
+        """
+        // Variables used by Scriptable.
+        // These must be at the very top of the file. Do not edit.
+        // icon-color: \(color); icon-glyph: \(glyph);
+
+        // \(name) — lanceur Toolbox : exécute la dernière version du widget, envoyée par Toolbox sur le Mac
+        // (iCloud Drive/Toolbox/code/\(name).js). Rien à recopier lors des mises à jour.
+        const fm = FileManager.iCloud()
+        let code = null
+        try {
+          const path = fm.joinPath(fm.joinPath(fm.bookmarkedPath("Toolbox"), "code"), "\(name).js")
+          await fm.downloadFileFromiCloud(path)
+          code = fm.readString(path)
+        } catch (e) {}
+        if (!code) {
+          const w = new ListWidget()
+          const t = w.addText("Code introuvable : vérifie le signet « Toolbox » (Settings → File Bookmarks) et ouvre Toolbox sur le Mac.")
+          t.font = Font.systemFont(12)
+          Script.setWidget(w)
+          if (config.runsInApp) await w.presentMedium()
+          Script.complete()
+        } else {
+          await (new Function("return (async () => {\\n" + code + "\\n})()"))()
+        }
+        """
+    }
+
     static func publishScriptsAsText() {
         let dir = iCloudDriveDir
+        let items = widgets
         queue.async {
-            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            for (name, text) in [("Script Prochain shift.txt", script), ("Script Mon Mac.txt", macScript), ("Script Ma journée.txt", dayScript)] {
-                let u = dir.appendingPathComponent(name)
-                if (try? String(contentsOf: u, encoding: .utf8)) != text {
-                    try? text.write(to: u, atomically: true, encoding: .utf8)
-                }
+            let codeDir = dir.appendingPathComponent("code")
+            try? FileManager.default.createDirectory(at: codeDir, withIntermediateDirectories: true)
+            func put(_ text: String, _ u: URL) {
+                if (try? String(contentsOf: u, encoding: .utf8)) != text { try? text.write(to: u, atomically: true, encoding: .utf8) }
+            }
+            for w in items {
+                put(w.code, codeDir.appendingPathComponent("\(w.name).js"))                                       // le vrai code (mis à jour)
+                put(loader(w.name, color: w.color, glyph: w.glyph), dir.appendingPathComponent("Script \(w.name).txt"))  // à installer une fois
             }
         }
     }
 
     static func copyScript(mac: Bool = false, day: Bool = false) {
+        let w = widgets[day ? 2 : (mac ? 1 : 0)]
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(day ? dayScript : (mac ? macScript : script), forType: .string)
+        NSPasteboard.general.setString(loader(w.name, color: w.color, glyph: w.glyph), forType: .string)
     }
 
     // MARK: Script Scriptable

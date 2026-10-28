@@ -163,6 +163,8 @@ toujours le justifier.
 - **Widget iPhone** (app gratuite Scriptable) : prochain shift, compte à rebours, pauses, heures de la semaine,
   sur l'écran d'accueil ou l'écran verrouillé. Toolbox écrit `Toolbox.json` dans iCloud à chaque changement du planning ;
   Réglages du Planning → *Installer les widgets dans Scriptable* dépose les scripts tout seuls.
+- **Scripts iPhone = lanceurs** : le script installé dans Scriptable ne fait que charger
+  `iCloud Drive/Toolbox/code/<nom>.js`, que Toolbox met à jour. Plus rien à recopier après une mise à jour.
 - **Widget iPhone « Mon Mac »** : batterie, temps restant, processeur, mémoire, disque, santé de la batterie,
   envoyés chaque minute (`ToolboxMac.json`). « Mac en veille ? » si rien n'est arrivé depuis 10 min.
 - **Casque Nothing / CMF** : batterie lue directement sur le casque (canal Bluetooth privé de Nothing X, protocole

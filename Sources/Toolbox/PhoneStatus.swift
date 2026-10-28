@@ -143,7 +143,7 @@ struct PhoneWidgetSettings: View {
                     if on { PhoneWidget.export(PlanningStore.shared, force: true); PhoneWidget.exportMac(MacStatusStore.shared, force: true) }
                 }
             if st.enabled {
-                Text("Sur l'iPhone, une seule fois :\n1. Installe Scriptable (gratuite), iCloud activé.\n2. Scriptable → Settings → File Bookmarks → + → Pick Folder → iCloud Drive → Toolbox, nommé « Toolbox ».\n3. Ajoute les scripts : Fichiers → iCloud Drive → Toolbox → « Script Ma journée.txt », « Script Mon Mac.txt », « Script Prochain shift.txt », tout sélectionner, copier, puis + dans Scriptable et coller.\n4. Écran d'accueil : appui long → + → Scriptable → choisis le script.")
+                Text("Sur l'iPhone, une seule fois :\n1. Installe Scriptable (gratuite), iCloud activé.\n2. Scriptable → Settings → File Bookmarks → + → Pick Folder → iCloud Drive → Toolbox, nommé « Toolbox ».\n3. Ajoute les scripts (une seule fois : ce sont des lanceurs, les mises à jour arrivent ensuite toutes seules) : Fichiers → iCloud Drive → Toolbox → « Script Ma journée.txt », « Script Mon Mac.txt », « Script Prochain shift.txt », tout sélectionner, copier, puis + dans Scriptable et coller.\n4. Écran d'accueil : appui long → + → Scriptable → choisis le script.")
                     .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 HStack {
                     if PhoneWidget.hasScriptable {
