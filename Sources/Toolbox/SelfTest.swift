@@ -204,6 +204,19 @@ enum SelfTest {
         check("bibliothèque : recherche « dérivée produit »", LatexLibrary.search("dérivée produit").contains { $0.latex.contains("u'v") })
         check("paquet amssymb détecté", LatexLibraryState.hasPackage("amssymb", in: "\\documentclass{article}\n\\usepackage{amsmath, amssymb}"))
         check("paquet amssymb manquant repéré", !LatexLibraryState.hasPackage("amssymb", in: "\\documentclass{article}\n\\usepackage{amsmath}"))
+        // suppression : dossier entier seulement s'il ne contient que le document
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appendingPathComponent("toolbox-selftest-\(UUID().uuidString)/TD4", isDirectory: true)
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let tex = dir.appendingPathComponent("TD4.tex")
+        for n in ["TD4.tex", "TD4.pdf", "TD4.aux"] { try? "x".write(to: dir.appendingPathComponent(n), atomically: true, encoding: .utf8) }
+        let doc = LatexDocsStore.Doc(url: tex, kind: "td", title: "TD 4", matiere: "", modified: Date(), createdByToolbox: true)
+        check("suppression : dossier dédié entier", LatexDocsStore.targets(for: doc).wholeFolder)
+        try? "x".write(to: dir.appendingPathComponent("sujet.pdf"), atomically: true, encoding: .utf8)
+        let t2 = LatexDocsStore.targets(for: doc)
+        check("suppression : le sujet PDF est gardé", !t2.wholeFolder && t2.items.count == 3 && !t2.items.contains { $0.lastPathComponent == "sujet.pdf" },
+              t2.items.map { $0.lastPathComponent }.joined(separator: ", "))
+        try? fm.removeItem(at: dir.deletingLastPathComponent())
         check("échappement LaTeX", LatexDocTemplates.esc("50 % & C#") == "50 \\% \\& C\\#", LatexDocTemplates.esc("50 % & C#"))
     }
 }

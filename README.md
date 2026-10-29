@@ -223,6 +223,11 @@ Un petit Overleaf hors ligne : le code à gauche, le PDF à droite.
 
 **Le reste**
 - **Historique** : une version gardée à chaque compilation, comparaison et restauration.
+- **Mes documents** (⇧⌘O, bouton dans la barre, ⌘K, ou la liste sous « Nouveau document » quand rien n'est ouvert) :
+  tous les documents créés avec Toolbox, ceux de `Documents/Toolbox LaTeX` et les `.tex` ouverts récemment, avec recherche
+  et filtre par type. Double-clic ou ✎ pour rouvrir et modifier, 🗑 pour **mettre à la corbeille** (après confirmation) :
+  tout le dossier s'il ne contient que ce document, sinon seulement le `.tex` et ses fichiers de compilation
+  (un sujet PDF ou tes autres fichiers restent). Récupérable depuis la Corbeille.
 - **Symboles & formules** (⇧⌘M, bouton √x ou ⌘K) : plus de 230 symboles et formules prêts à coller, avec recherche
   (« union », « xor », « dérivée produit »…) : ensembles (ℕ ℤ ℚ ℝ ℂ ∅ ∈ ∉ ⊆ ⊈ ∪ ∩ ∖ 𝒫(E)…), logique (∀ ∃ ¬ ∧ ∨ ⊕ ⇒ ⇔, De Morgan…),
   applications (↦, composée, image directe/réciproque, injective…), relations, analyse (lim, ∫, ∑, ⌊x⌋, o, O…),

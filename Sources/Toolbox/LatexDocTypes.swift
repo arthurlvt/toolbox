@@ -975,6 +975,9 @@ extension LatexModel {
             try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             let text = LatexDocTemplates.document(form.values)
             try text.write(to: url, atomically: true, encoding: .utf8)
+            LatexDocsStore.shared.register(url, kind: form.kind.rawValue,
+                                           title: form.kind == .test ? "Test – semaine du \(NewLatexDocForm.weekLabel(form.week))" : form.fullTitle.replacingOccurrences(of: "--", with: "–"),
+                                           matiere: form.kind == .autre ? "" : form.courseName)
             form.remember()
             form.show = false
             open(url)

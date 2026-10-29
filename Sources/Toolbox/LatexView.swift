@@ -345,6 +345,7 @@ final class LatexModel: ObservableObject {
     func createProject(in parent: URL) {
         do {
             let main = try newTemplate.createProject(title: newTitle, author: newAuthor, in: parent)
+            LatexDocsStore.shared.register(main, kind: "projet", title: newTitle, matiere: "")
             showNewProject = false
             open(main)
             compile()
@@ -372,6 +373,7 @@ final class LatexModel: ObservableObject {
             try fm.createDirectory(at: dir, withIntermediateDirectories: true)
             let main = dir.appendingPathComponent("main.tex")
             try Self.blankDocument.write(to: main, atomically: true, encoding: .utf8)
+            LatexDocsStore.shared.register(main, kind: "autre", title: dir.lastPathComponent, matiere: "")
             open(main)
             send(.goTo(line: 15))
             compile()
@@ -586,6 +588,7 @@ enum Editor {
 struct LatexToolView: View {
     @ObservedObject var model: LatexModel
     @ObservedObject var lib = LatexLibraryState.shared
+    @ObservedObject var docs = LatexDocsStore.shared
 
     private var explainShown: Binding<Bool> {
         Binding(get: { model.ai.showExplain }, set: { model.ai.showExplain = $0 })
@@ -649,13 +652,28 @@ struct LatexToolView: View {
                     Spacer()
                     toolsInfo
                 }
-                Spacer()
+                LatexDocsList(model: model)
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(.regularMaterial))
             }
             StatusBanner(message: model.status)
         }
         .padding(20)
         .sheet(isPresented: $model.showNewProject) { NewProjectSheet(model: model) }
         .background(NewDocSheetHost(model: model))
+    }
+
+    // MARK: Mes documents
+
+    private var docsButton: some View {
+        Button { LatexDocsStore.shared.showPopover.toggle() } label: { Image(systemName: "doc.on.doc") }
+            .keyboardShortcut("o", modifiers: [.command, .shift])
+            .help("Mes documents LaTeX : rouvrir, modifier ou supprimer (⇧⌘O)")
+            .popover(isPresented: $docs.showPopover, arrowEdge: .bottom) {
+                LatexDocsList(model: model, compact: true)
+                    .padding(14)
+                    .frame(width: 460, height: 480)
+            }
     }
 
     // MARK: Symboles & formules
@@ -692,6 +710,7 @@ struct LatexToolView: View {
                     .lineLimit(1).truncationMode(.head)
             }
             Spacer()
+            docsButton
             libraryButton(compact: true)
             Button { model.ai.openFormula() } label: { Image(systemName: "camera.viewfinder") }
                 .help("Formule depuis une photo ou une capture → LaTeX (IA locale)")
@@ -747,6 +766,15 @@ struct LatexToolView: View {
                 Button("Nouveau projet depuis un modèle…") { model.showNewProject = true }
                 Button("Choisir un autre .tex…") {
                     if let u = Panels.open([.tex]).first { model.open(u) }
+                }
+                Button("Mes documents…") { docs.showPopover = true }
+                Button("Supprimer ce document…") {
+                    if let doc = docs.docs.first(where: { $0.url.path == tex.path }) {
+                        docs.delete(doc, model: model)
+                    } else {
+                        docs.delete(LatexDocsStore.Doc(url: tex, kind: "ouvert", title: LatexDocsStore.guessTitle(tex), matiere: "",
+                                                       modified: Date(), createdByToolbox: false), model: model)
+                    }
                 }
                 Button("Fermer") { model.close() }
             } label: {

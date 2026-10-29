@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         NSApp.activate(ignoringOtherApps: true)
         ClipboardStore.shared.start()
         WatchFolderStore.shared.start()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { LatexDocsStore.shared.refresh() }
         AppShortcutsStore.shared.start()
         DiscordPresence.shared.start()
         MacStatusStore.shared.start()
@@ -466,6 +467,20 @@ struct ContentView: View {
                                        color: .indigo, keywords: "tex creer nouveau") {
                 latex.newDocument(); nav.selection = .latex
             })
+            list.append(PaletteCommand(title: "Mes documents LaTeX", subtitle: "Rouvrir, modifier ou supprimer un TD, TP, cours, test…",
+                                       icon: "doc.on.doc", color: .indigo, keywords: "tex documents ouvrir modifier supprimer corbeille td tp cours test") {
+                nav.selection = .latex
+                if latex.texURL != nil {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { LatexDocsStore.shared.showPopover = true }
+                }
+            })
+            for d in LatexDocsStore.shared.docs.prefix(15) {
+                list.append(PaletteCommand(title: d.title, subtitle: [d.kindTitle, d.matiere].filter { !$0.isEmpty }.joined(separator: " · "),
+                                           icon: d.icon, color: .indigo, keywords: "tex latex " + d.url.lastPathComponent) {
+                    nav.selection = .latex
+                    if latex.texURL?.path != d.url.path { latex.open(d.url); latex.compile() }
+                })
+            }
             list.append(PaletteCommand(title: "Symboles & formules LaTeX", subtitle: "Ensembles, logique, limites, dérivées… prêts à coller",
                                        icon: "x.squareroot", color: .indigo,
                                        keywords: "symbole formule latex ensemble union inter appartient logique xor implique limite derivee integrale grec") {
