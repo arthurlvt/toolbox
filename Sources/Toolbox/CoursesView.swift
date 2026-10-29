@@ -44,10 +44,7 @@ final class CoursesStore: ObservableObject {
     init() {
         if let p = UserDefaults.standard.string(forKey: "courses.root") {
             root = URL(fileURLWithPath: p)
-        } else {
-            let guess = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Nextcloud/cours/uapv-cours/cours")
-            if FileManager.default.fileExists(atPath: guess.path) { root = guess }
-        }
+        }   // sinon : choisi au premier lancement ou dans « Mes cours »
         if let data = UserDefaults.standard.data(forKey: "courses.custom"),
            let c = try? JSONDecoder().decode([String: CourseCustom].self, from: data) { custom = c }
         scan()

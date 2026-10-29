@@ -29,8 +29,8 @@ final class UpdateStore: ObservableObject {
     static func findSource() -> URL? {
         var candidates: [String] = []
         if let saved = UserDefaults.standard.string(forKey: "build.sourceDir") { candidates.append(saved) }
-        candidates += [NSHomeDirectory() + "/Nextcloud/cours/projets-perso/pdf-toolbox",
-                       NSHomeDirectory() + "/Developer/pdf-toolbox", NSHomeDirectory() + "/pdf-toolbox"]
+        candidates += ["Developer/pdf-toolbox", "Developer/toolbox", "Projects/pdf-toolbox", "pdf-toolbox", "toolbox"]
+            .map { NSHomeDirectory() + "/" + $0 }
         return candidates.map { URL(fileURLWithPath: $0) }.first { isSource($0) }
     }
 

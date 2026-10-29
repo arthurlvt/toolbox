@@ -277,7 +277,7 @@ struct OnboardingView: View {
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
                     GridRow {
                         Text("Ton nom sur le planning").foregroundStyle(.secondary)
-                        TextField("Ex. : Arthur L.", text: $o.planningName).textFieldStyle(.roundedBorder).frame(width: 220)
+                        TextField("Ex. : Camille D.", text: $o.planningName).textFieldStyle(.roundedBorder).frame(width: 220)
                     }
                     GridRow {
                         Text("Nom du calendrier").foregroundStyle(.secondary)

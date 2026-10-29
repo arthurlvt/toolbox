@@ -96,8 +96,10 @@ final class AnnalesStore: ObservableObject {
     init() {
         if let p = defaults.string(forKey: "annales.root") { annalyseRoot = URL(fileURLWithPath: p) }
         else {
-            let guess = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Nextcloud/cours/projets-perso/Annalyse")
-            if FileManager.default.fileExists(atPath: guess.appendingPathComponent("config").path) { annalyseRoot = guess }
+            for dir in ["Annalyse", "Documents/Annalyse", "Developer/Annalyse", "Developer/annalyse"] {
+                let guess = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(dir)
+                if FileManager.default.fileExists(atPath: guess.appendingPathComponent("config").path) { annalyseRoot = guess; break }
+            }
         }
         if let p = defaults.string(forKey: "annales.bank") { bankRoot = URL(fileURLWithPath: p) }
         else if let root = annalyseRoot { bankRoot = root.appendingPathComponent("banque") }

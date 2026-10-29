@@ -110,9 +110,7 @@ final class HomeStore: ObservableObject {
     }
     @Published var cloneFolder: URL = {
         if let p = UserDefaults.standard.string(forKey: "home.github.clonedir") { return URL(fileURLWithPath: p) }
-        let guess = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Nextcloud/cours/projets-perso/github")
-        return FileManager.default.fileExists(atPath: guess.path)
-            ? guess : FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Developer")
+        return FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Developer")
     }() {
         didSet { UserDefaults.standard.set(cloneFolder.path, forKey: "home.github.clonedir") }
     }

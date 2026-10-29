@@ -309,17 +309,6 @@ enum SelfTest {
                   g.origin.x >= 0 && g.origin.y >= 0 && g.origin.x + TourOverlay.groupSize.width <= win.width && g.origin.y + TourOverlay.groupSize.height <= win.height)
         }
         check("visite : commence et finit au centre", TourStore.buildSteps().first?.target == nil && TourStore.buildSteps().last?.target == nil)
-        // banc de test
-        check("banc : arguments entre guillemets", Bench.splitArgs(#"-n 3 "deux mots" 'x y'"#) == ["-n", "3", "deux mots", "x y"],
-              "\(Bench.splitArgs(#"-n 3 "deux mots" 'x y'"#))")
-        check("banc : espaces de fin ignorés", Bench.matches("12 \n34\n\n", "12\n34", mode: .trim))
-        check("banc : différence repérée ligne 2", Bench.firstDifference("a\nb\nc", "a\nx\nc") == 2)
-        check("banc : erreur clang lue", Bench.parseDiagnostics("/tmp/tp/main.c:12:5: error: use of undeclared identifier 'x'", language: .c).first?.line == 12)
-        check("banc : erreur Python lue", Bench.parseDiagnostics("  File \"tp.py\", line 3\n    print(\nSyntaxError: '(' was never closed", language: .python).first?.line == 3)
-        check("banc : AddressSanitizer expliqué",
-              Bench.sanitizerSummary("SUMMARY: AddressSanitizer: heap-buffer-overflow /Users/a/TP3/main.c:3 in main")?.hasPrefix("Dépassement d'un tableau alloué") == true,
-              Bench.sanitizerSummary("SUMMARY: AddressSanitizer: heap-buffer-overflow /Users/a/TP3/main.c:3 in main") ?? "nil")
-        check("banc : fuites lues", Bench.parseLeaks("Process 42: 2 leaks for 64 total leaked bytes.") == "2 fuites mémoire, 64 octets jamais libérés")
         check("échappement LaTeX", LatexDocTemplates.esc("50 % & C#") == "50 \\% \\& C\\#", LatexDocTemplates.esc("50 % & C#"))
     }
 }

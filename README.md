@@ -7,6 +7,23 @@ Mon idée de départ était de publier un répo pour chaque mini-projets de cett
 **Cette application n'est malheureusement disponible que sur MacOS pour le moment mais sera peut être bientôt étendue à d'autre OS si la motivation me vient**
 
 Appli native (Swift, SwiftUI, PDFKit, Vision) et commande terminal `pdftool`, qui partagent le même moteur.
+
+**Projet libre sous licence [GPL-3.0](LICENSE)** : les contributions sont les bienvenues (voir
+[Contribuer](#contribuer)).
+
+### Ce qui marche sur n'importe quel Mac, et ce qui est en option
+
+Le cœur de Toolbox ne demande rien de particulier : outils PDF, OCR, LaTeX, Mes cours, notes et ECTS, calculatrices,
+archives, nettoyage du disque, IA locale. Certaines **intégrations sont optionnelles** et pensées pour un matériel
+précis. Le premier lancement demande ce que tu as et masque ce qui ne te sert pas :
+
+| Intégration | Ce qu'il faut | Sinon |
+|---|---|---|
+| Widgets sur le téléphone (prochain shift, Mon Mac, Ma journée), batterie du téléphone | un **iPhone** avec [Scriptable](https://scriptable.app) et iCloud Drive | masqué ; Android : [à faire](#feuille-de-route) |
+| Batterie, réduction de bruit, égaliseur du casque, Mode cours avec le casque | un casque ou des écouteurs **Nothing / CMF** | masqué ; autres marques : [à faire](#feuille-de-route) |
+| Planning importé depuis une photo | un planning sous forme de tableau (testé avec celui d'un McDonald's) | la page Planning peut être masquée |
+| Maquette de diplôme dans Notes & ECTS | L1 Informatique du CERI (Avignon) fournie en exemple | crée tes UE à la main, ou ajoute ta maquette |
+
 ---
 
 ## Premier lancement
@@ -195,21 +212,6 @@ Trois modes en haut de la page :
 
 Les limites et les points remarquables sont des estimations numériques : elles donnent le résultat, la copie doit
 toujours le justifier.
-
-## Banc de test (TP en C, C++, Python)
-
-Dépose le dossier d'un TP (ou choisis un des derniers TP de *Mes cours*) :
-- **Compilation** avec clang, AddressSanitizer et UBSan (options modifiables, fichiers à cocher). Les erreurs et
-  avertissements sont listés et s'ouvrent à la bonne ligne dans VS Code. En Python : vérification de la syntaxe.
-- **Tests** : arguments (`argv`), entrée clavier (stdin) et sortie attendue, comparée au caractère près, sans les
-  espaces de fin, ou « contient ». ⌘R compile et lance tout. Les lignes qui diffèrent sont en rouge (l'attendu au
-  survol). Un essai sans sortie attendue montre simplement ce qu'affiche le programme, et « Utiliser comme sortie
-  attendue » en fait un test.
-- **Erreurs mémoire expliquées en français** : dépassement de tableau, utilisation après `free`, double `free`,
-  pointeur NULL, comportement indéfini, erreur de segmentation, division par zéro, boucle infinie (délai réglable).
-- **Fuites mémoire** : une seconde compilation sans sanitizer est lancée sous `leaks` (outil d'Apple) pour chaque test.
-- Les tests sont gardés dans le dossier du TP (`.toolbox-tests.json`, exclu de l'archive « prêt à rendre »).
-- Quand tout est vert : **« Préparer le .zip à rendre »** ouvre Compresser & archiver avec le dossier et le mode TP.
 
 ## Planning
 
@@ -429,7 +431,7 @@ notarisation d'Apple (`notarytool`).
 | Outil | À quoi il sert dans Toolbox | Obligatoire | Comment l'avoir |
 |---|---|---|---|
 | macOS 13 (Ventura) ou plus récent | — | oui | — |
-| Outils de ligne de commande Apple : `swift`, `clang`, `git`, `python3`, `make`, `leaks` | compiler Toolbox, mise à jour intégrée, banc de test (C, C++, Python, fuites mémoire) | oui pour compiler | `xcode-select --install` |
+| Outils de ligne de commande Apple : `swift`, `clang`, `git` | compiler Toolbox, mise à jour intégrée | oui pour compiler | `xcode-select --install` |
 | [Homebrew](https://brew.sh) | installer les outils ci-dessous | non | setup ou Réglages → *Outils à installer* |
 | Ghostscript (`gs`) | compression des PDF bien plus efficace (sinon PDFKit) | non | setup (`brew install ghostscript`) |
 | BasicTeX + paquets (`pdflatex`, `xelatex`, `latexmk`, `synctex`, `texcount`, `tcolorbox`…) | éditeur LaTeX, modèles, symboles, Annalyse | non (onglet LaTeX) | setup (`brew install --cask basictex` + `tlmgr`) |
@@ -559,7 +561,7 @@ Sources/
   PDFCore/    moteur partagé : pages, dessin, compression, OCR, comparaison, signature, LaTeX,
               Annalyse (Annales/), bibliothèque et index des cours, GitHub, VS Code
   Toolbox/    appli SwiftUI : une vue par outil, accueil et widgets, Mes cours, éditeur LaTeX,
-              notes et ECTS, calculatrices (MathEngine.swift, ClassicCalc.swift), banc de test (TestBench.swift), planning, casque, archives
+              notes et ECTS, calculatrices (MathEngine.swift, ClassicCalc.swift), planning, casque, archives
               (ArchiveTool.swift), modèles LaTeX (LatexDocTypes.swift), bibliothèque de symboles
               (LatexLibrary.swift), IA locale (OllamaService.swift, LatexAIDoc.swift), profil et outils à installer
               (Profile.swift), visite guidée (Tour.swift), palette ⌘K, barre des menus
@@ -584,3 +586,34 @@ make-dmg.sh   fabrique le .dmg à partir de build/Toolbox.app
 - Montrer quelque chose dans la visite guidée : `.tourTarget("id")` sur la vue, puis une étape dans
   `TourStore.buildSteps()` ou `TourStore.miniSteps(_:)` (`Tour.swift`).
 - Masquer un outil selon le profil : `AppProfile.shows(_:)` / `allows(_:)` (`Profile.swift`).
+
+---
+
+## Feuille de route
+
+Des pistes où une aide serait précieuse :
+- **Android** : un équivalent des widgets iPhone (Scriptable n'existe que sur iOS). Piste : un fichier JSON servi par
+  Nextcloud / WebDAV ou un petit serveur local, lu par une app de widgets comme KWGT.
+- **Autres casques** : la batterie générique des appareils Bluetooth connue de macOS (AirPods, Beats, Sony, Bose…), puis
+  les réglages avancés marque par marque (le code du casque Nothing est dans `Headphone.swift`).
+- **Autres maquettes de diplôme** pour Notes & ECTS (`GradesStore.l1InfoAvignon()` sert de modèle).
+- **Autres plannings** que celui d'un McDonald's (`ShiftParser` dans `PlanningView.swift`).
+- **Traduction** de l'interface (tout est en français pour l'instant).
+- **Linux / Windows** un jour : `PDFCore` et `pdftool` sont le plus portable, l'interface SwiftUI ne l'est pas.
+
+## Contribuer
+
+Tout est expliqué dans [CONTRIBUTING.md](CONTRIBUTING.md) : compiler, lancer les tests, ajouter un outil, un widget
+ou un casque. Les idées et les bugs se signalent dans les *Issues* (des modèles sont prêts).
+
+## Licence et crédits
+
+Toolbox est distribué sous **GNU GPL v3.0** : tu peux l'utiliser, l'étudier, le modifier et le redistribuer, à
+condition que les versions modifiées restent sous la même licence et que leur code source soit disponible.
+Texte complet : [LICENSE](LICENSE).
+
+- Protocole Bluetooth des casques Nothing / CMF : documenté par le projet libre
+  [BudsLink](https://github.com/maniacx/BudsLink) (GPL-3.0).
+- IA locale : [Ollama](https://ollama.com). Météo : [Open-Meteo](https://open-meteo.com).
+- LaTeX : [TeX Live](https://tug.org/texlive/) / BasicTeX. Compression : [Ghostscript](https://ghostscript.com) (AGPL),
+  appelé comme programme externe, non inclus.
