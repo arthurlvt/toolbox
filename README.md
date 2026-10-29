@@ -223,6 +223,13 @@ Un petit Overleaf hors ligne : le code à gauche, le PDF à droite.
 
 **Le reste**
 - **Historique** : une version gardée à chaque compilation, comparaison et restauration.
+- **Symboles & formules** (⇧⌘M, bouton √x ou ⌘K) : plus de 230 symboles et formules prêts à coller, avec recherche
+  (« union », « xor », « dérivée produit »…) : ensembles (ℕ ℤ ℚ ℝ ℂ ∅ ∈ ∉ ⊆ ⊈ ∪ ∩ ∖ 𝒫(E)…), logique (∀ ∃ ¬ ∧ ∨ ⊕ ⇒ ⇔, De Morgan…),
+  applications (↦, composée, image directe/réciproque, injective…), relations, analyse (lim, ∫, ∑, ⌊x⌋, o, O…),
+  formules (ε-δ, limites usuelles, dérivées, TVI, TAF, binôme, DL…), structures (cas, système, align, matrices,
+  tableau de variations, table de vérité, récurrence), lettres grecques, flèches, info. Clic = insertion au curseur
+  (ou entre `$…$`), clic droit = copier ; les derniers utilisés restent dans « Récents ». Si un symbole demande
+  `amssymb` ou `mathtools` et que le document ne le charge pas, un bouton l'ajoute.
 - **Formule depuis une photo** : image ou capture → code LaTeX (modèle de vision Ollama) → aperçu → insertion.
 - **Nouveau document** (⇧⌘N, ⌘K ou l'accueil) : Toolbox demande le type, **TD, TP, Cours, Test hebdo, Rapport ou Autre**, et crée un
   modèle pré-rempli dans le style des modèles d'Annalyse (`annales.cls`, cahier de projet), autonome (pas de classe à copier) :

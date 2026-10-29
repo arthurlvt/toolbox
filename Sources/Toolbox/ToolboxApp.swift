@@ -466,6 +466,12 @@ struct ContentView: View {
                                        color: .indigo, keywords: "tex creer nouveau") {
                 latex.newDocument(); nav.selection = .latex
             })
+            list.append(PaletteCommand(title: "Symboles & formules LaTeX", subtitle: "Ensembles, logique, limites, dérivées… prêts à coller",
+                                       icon: "x.squareroot", color: .indigo,
+                                       keywords: "symbole formule latex ensemble union inter appartient logique xor implique limite derivee integrale grec") {
+                nav.selection = .latex
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { LatexLibraryState.shared.show = true }
+            })
             if latex.texURL != nil {
                 list.append(PaletteCommand(title: "Compiler le LaTeX", subtitle: latex.texURL?.lastPathComponent ?? "",
                                            icon: "play.fill", color: .indigo, keywords: "compile pdf") {

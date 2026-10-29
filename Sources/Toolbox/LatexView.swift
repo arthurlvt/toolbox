@@ -585,6 +585,7 @@ enum Editor {
 
 struct LatexToolView: View {
     @ObservedObject var model: LatexModel
+    @ObservedObject var lib = LatexLibraryState.shared
 
     private var explainShown: Binding<Bool> {
         Binding(get: { model.ai.showExplain }, set: { model.ai.showExplain = $0 })
@@ -643,6 +644,8 @@ struct LatexToolView: View {
                         Label("Depuis un modèle…", systemImage: "doc.badge.plus")
                     }
                     .controlSize(.large)
+                    libraryButton(compact: false)
+                        .controlSize(.large)
                     Spacer()
                     toolsInfo
                 }
@@ -653,6 +656,21 @@ struct LatexToolView: View {
         .padding(20)
         .sheet(isPresented: $model.showNewProject) { NewProjectSheet(model: model) }
         .background(NewDocSheetHost(model: model))
+    }
+
+    // MARK: Symboles & formules
+
+    private func libraryButton(compact: Bool) -> some View {
+        Button { lib.show.toggle() } label: {
+            if compact {
+                Label("Symboles", systemImage: "x.squareroot")
+            } else {
+                Label("Symboles & formules", systemImage: "x.squareroot")
+            }
+        }
+        .keyboardShortcut("m", modifiers: [.command, .shift])
+        .help("Bibliothèque de symboles et formules LaTeX : ensembles, logique, limites, dérivées… (⇧⌘M)")
+        .popover(isPresented: $lib.show, arrowEdge: .bottom) { LatexLibraryView(model: model) }
     }
 
     // MARK: Barre de contrôle
@@ -674,6 +692,7 @@ struct LatexToolView: View {
                     .lineLimit(1).truncationMode(.head)
             }
             Spacer()
+            libraryButton(compact: true)
             Button { model.ai.openFormula() } label: { Image(systemName: "camera.viewfinder") }
                 .help("Formule depuis une photo ou une capture → LaTeX (IA locale)")
             Button { model.showHistory = true } label: { Image(systemName: "clock.arrow.circlepath") }

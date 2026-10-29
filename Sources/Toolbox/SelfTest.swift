@@ -198,6 +198,12 @@ enum SelfTest {
             check("modèle \(kind.title) : accolades équilibrées", open == close, "\(open) { pour \(close) }")
             check("modèle \(kind.title) : pas d'interpolation oubliée", !t.contains("\\#("))
         }
+        let lib = LatexLibrary.all
+        check("bibliothèque LaTeX : \(lib.count) symboles et formules", lib.count > 200)
+        check("bibliothèque : recherche « xor »", !LatexLibrary.search("xor").isEmpty)
+        check("bibliothèque : recherche « dérivée produit »", LatexLibrary.search("dérivée produit").contains { $0.latex.contains("u'v") })
+        check("paquet amssymb détecté", LatexLibraryState.hasPackage("amssymb", in: "\\documentclass{article}\n\\usepackage{amsmath, amssymb}"))
+        check("paquet amssymb manquant repéré", !LatexLibraryState.hasPackage("amssymb", in: "\\documentclass{article}\n\\usepackage{amsmath}"))
         check("échappement LaTeX", LatexDocTemplates.esc("50 % & C#") == "50 \\% \\& C\\#", LatexDocTemplates.esc("50 % & C#"))
     }
 }
