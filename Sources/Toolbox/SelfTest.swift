@@ -1,0 +1,314 @@
+import Foundation
+
+/// Tests des calculs sensibles, lancés par `Toolbox --selftest` (et par build.sh après chaque compilation).
+/// Pas de XCTest : il n'est pas fourni avec les seuls outils en ligne de commande d'Apple.
+enum SelfTest {
+    private static var passed = 0
+    private static var failed: [String] = []
+
+    private static func check(_ name: String, _ ok: Bool, _ detail: @autoclosure () -> String = "") {
+        if ok { passed += 1 } else { failed.append(name + (detail().isEmpty ? "" : " → " + detail())) }
+    }
+
+    private static func near(_ a: Double, _ b: Double, _ tol: Double = 1e-6) -> Bool { Swift.abs(a - b) <= tol * max(1, Swift.abs(b)) }
+
+    static func run() -> Int32 {
+        math()
+        analysis()
+        grades()
+        planning()
+        headphone()
+        latexTemplates()
+        print("Toolbox --selftest : \(passed) réussi\(passed > 1 ? "s" : ""), \(failed.count) échec\(failed.count > 1 ? "s" : "")")
+        for f in failed { print("  ✗ " + f) }
+        return failed.isEmpty ? 0 : 1
+    }
+
+    // MARK: Calculatrice
+
+    private static func value(_ expr: String, x: Double = 0) -> Double? {
+        guard let n = try? MathEngine.parse(expr, userFunctions: ["f", "g"]) else { return nil }
+        return try? MathEngine.evaluate(n, env: MathEnv(), x: x)
+    }
+
+    private static func math() {
+        let cases: [(String, Double, Double)] = [
+            ("2x", 3, 6), ("3(x+1)", 1, 6), ("x²", 4, 16), ("-x^2", 2, -4), ("2^3^2", 0, 512),
+            ("|x-3|", 1, 2), ("3!", 0, 6), ("sqrt(16)", 0, 4), ("√9", 0, 3), ("ln(e)", 0, 1),
+            ("sin(pi/2)", 0, 1), ("sin 2x", Double.pi / 4, 1), ("x sin x", Double.pi / 2, Double.pi / 2),
+            ("2,5x", 2, 5), ("1/2x", 4, 2), ("x^(1/3)", -8, -2), ("exp(0)+cos 0", 0, 2),
+        ]
+        for (e, x, want) in cases {
+            let got = value(e, x: x)
+            check("calcul « \(e) » en x = \(x)", got.map { near($0, want) } ?? false, "obtenu \(got.map { "\($0)" } ?? "erreur"), attendu \(want)")
+        }
+        check("erreur sur parenthèse manquante", (try? MathEngine.parse("(x+1")) == nil)
+        check("erreur sur symbole inconnu", (try? MathEngine.parse("x $ 2")) == nil)
+
+        // dérivées exactes (simplifiées)
+        let derivs: [(String, String)] = [("x^2", "2x"), ("sin(x)", "cos(x)"), ("3x + 5", "3")]
+        for (e, want) in derivs {
+            let got = (try? MathEngine.parse(e)).flatMap { try? MathEngine.derivative($0, env: MathEnv()) }.map { MathFormat.text(MathEngine.simplify($0)) }
+            check("dérivée de \(e)", got == want, "obtenu \(got ?? "erreur"), attendu \(want)")
+        }
+        // dérivée évaluée : (x ln x)' = ln x + 1
+        if let n = try? MathEngine.parse("x ln(x)"), let d = try? MathEngine.derivative(n, env: MathEnv()),
+           let v = try? MathEngine.evaluate(d, env: MathEnv(), x: M_E) {
+            check("dérivée de x ln x en e", near(v, 2), "obtenu \(v)")
+        } else {
+            check("dérivée de x ln x", false, "erreur")
+        }
+
+        // LaTeX
+        let tex: [(String, String)] = [("x^2", "x^{2}"), ("1/2", "\\frac{1}{2}"), ("sqrt(x)", "\\sqrt{x}"), ("e^x", "\\mathrm{e}^{x}")]
+        for (e, want) in tex {
+            let got = (try? MathEngine.parse(e)).map { MathFormat.latex($0) }
+            check("LaTeX de \(e)", got == want, "obtenu \(got ?? "erreur"), attendu \(want)")
+        }
+        check("forme exacte 1/3", MathFormat.exactGuess(1.0 / 3) == "1/3", MathFormat.exactGuess(1.0 / 3) ?? "nil")
+        check("forme exacte √2/2", MathFormat.exactGuess(2.0.squareRoot() / 2) == "√2/2", MathFormat.exactGuess(2.0.squareRoot() / 2) ?? "nil")
+        check("affichage 2,5", MathFormat.fr(2.5) == "2,5", MathFormat.fr(2.5))
+    }
+
+    private static func analysis() {
+        func fn(_ e: String) -> MathEngine.Fn? { (try? MathEngine.parse(e)).flatMap { try? MathEngine.compile($0, env: MathEnv()) } }
+        if let f = fn("sin(x)/x") {
+            let r = MathAnalysis.limit(f, at: 0)
+            check("lim sin(x)/x en 0 = 1", r.verdict.hasSuffix(": 1"), r.verdict)
+        }
+        if let f = fn("1/x") {
+            let r = MathAnalysis.limit(f, at: 0)
+            check("pas de limite de 1/x en 0", r.verdict.hasPrefix("Pas de limite"), r.verdict)
+        }
+        if let f = fn("(2x+1)/(x-3)") {
+            let r = MathAnalysis.limit(f, at: .infinity)
+            check("lim (2x+1)/(x-3) en +∞ = 2", r.verdict.hasSuffix(": 2"), r.verdict)
+        }
+        if let f = fn("x^2 - 2x - 3") {
+            let roots = MathAnalysis.roots(f, from: -10, to: 10).map(MathAnalysis.clean)
+            check("racines de x² - 2x - 3", roots.count == 2 && near(roots[0], -1, 1e-6) && near(roots[1], 3, 1e-6), "\(roots)")
+        }
+        if let f = fn("tan(x)") {
+            let roots = MathAnalysis.roots(f, from: 1, to: 2)
+            check("tan : pas de fausse racine à l'asymptote", roots.isEmpty, "\(roots)")
+        }
+    }
+
+    // MARK: Notes et ECTS
+
+    private static func grades() {
+        let rules = GradeRules()
+        let u = GradeUnit(name: "Analyse", credits: "6", items: [GradeItem(name: "CC1", weight: "1", note: "8"), GradeItem(name: "CC2", weight: "2")])
+        let r = GradeCalc.unit(u, rules: rules, simulate: false)
+        check("note nécessaire (8 au CC1 coef 1, CC2 coef 2)", r.needed.map { near($0, 11) } ?? false, "\(String(describing: r.needed))")
+        check("moyenne provisoire", r.average.map { near($0, 8) } ?? false)
+
+        let rattrapage = GradeUnit(name: "Algo", credits: "6", items: [GradeItem(name: "Exam", weight: "1", note: "7", resit: "12")])
+        check("rattrapage : meilleure note", GradeCalc.unit(rattrapage, rules: rules, simulate: false).average.map { near($0, 12) } ?? false)
+
+        func unit(_ name: String, _ note: String) -> GradeUnit {
+            GradeUnit(name: name, credits: "6", items: [GradeItem(name: "Exam", weight: "1", note: note)])
+        }
+        let s1 = GradeSemester(name: "S1", units: [unit("A", "12"), unit("B", "8")])
+        let year = GradeYear(name: "L1", semesters: [s1])
+        let y = GradeCalc.year(year, simulate: false)
+        let sr = y.semesters[s1.id]
+        check("semestre à 10 validé par compensation", sr?.validated == true, "moyenne \(String(describing: sr?.average))")
+        check("UE à 8 compensée", sr?.units[s1.units[1].id]?.status == .compensated)
+        check("12 ECTS acquis", near(y.acquired, 12), "\(y.acquired)")
+
+        var strict = GradeRules()
+        strict.floor = "9"
+        let y2 = GradeCalc.year(GradeYear(name: "L1", semesters: [s1], rules: strict), simulate: false)
+        check("note plancher 9 : pas de compensation", y2.semesters[s1.id]?.units[s1.units[1].id]?.status == .failed)
+
+        let s2 = GradeSemester(name: "S1", units: [unit("A", "12"), GradeUnit(name: "B", credits: "6", items: [GradeItem(name: "Exam", weight: "1")])])
+        let y3 = GradeCalc.year(GradeYear(name: "L1", semesters: [s2]), simulate: false)
+        check("note nécessaire pour valider le semestre", y3.semesters[s2.id]?.needed.map { near($0, 8) } ?? false,
+              "\(String(describing: y3.semesters[s2.id]?.needed))")
+
+        // UE à matières (EC) : moyenne des matières pondérée par leur coefficient
+        let groupe = GradeUnit(name: "UE", credits: "6", subjects: [
+            GradeSubject(name: "A", weight: "2", items: [GradeItem(name: "CC1", note: "12"), GradeItem(name: "CC2", note: "12")]),
+            GradeSubject(name: "B", weight: "1", items: [GradeItem(name: "CC1", note: "6")])])
+        check("UE à matières : (2×12 + 1×6) / 3 = 10", GradeCalc.unit(groupe, rules: rules, simulate: false).average.map { near($0, 10) } ?? false)
+        var groupe2 = groupe
+        groupe2.subjects[1].items = [GradeItem(name: "CC1")]
+        check("UE à matières : il faut 6 en B", GradeCalc.unit(groupe2, rules: rules, simulate: false).needed.map { near($0, 6) } ?? false,
+              "\(String(describing: GradeCalc.unit(groupe2, rules: rules, simulate: false).needed))")
+
+        // UE hors moyenne (ouverture, sport, PIX)
+        let horsMoyenne = GradeUnit(name: "UEO", credits: "0", items: [GradeItem(name: "Note", note: "2")], inAverage: false)
+        let s3 = GradeSemester(name: "S1", units: [unit("A", "12"), horsMoyenne])
+        let y4 = GradeCalc.year(GradeYear(name: "L1", semesters: [s3]), simulate: false)
+        check("UE hors moyenne ignorée", y4.semesters[s3.id]?.average.map { near($0, 12) } ?? false && y4.semesters[s3.id]?.validated == true)
+
+        // pas de rattrapage
+        var sansRatt = GradeRules()
+        sansRatt.resit = false
+        check("sans rattrapage, la note de session 2 est ignorée", GradeCalc.unit(rattrapage, rules: sansRatt, simulate: false).average.map { near($0, 7) } ?? false)
+
+        // compensation entre semestres
+        let sa = GradeSemester(name: "S1", units: [unit("A", "8")]), sb = GradeSemester(name: "S2", units: [unit("B", "12")])
+        let y5 = GradeCalc.year(GradeYear(name: "L1", semesters: [sa, sb]), simulate: false)
+        check("S1 à 8 compensé par S2 à 12", y5.validated && y5.semesters[sa.id]?.units[sa.units[0].id]?.status == .compensated)
+
+        // anciens fichiers (sans code ni matières) relus sans perte
+        let old = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","name":"Algo","credits":"6","items":[],"carried":false}"#
+        let decoded = try? JSONDecoder().decode(GradeUnit.self, from: Data(old.utf8))
+        check("ancien format de notes relu", decoded?.name == "Algo" && decoded?.inAverage == true && decoded?.subjects.isEmpty == true)
+        // exemple complet de S1 (notes fictives) : moyenne 9,07, semestre non validé, 11 crédits (C/C++ 5 + UE 0153 4 + sport 2)
+        var l1 = GradeYear(name: "L1", semesters: GradesStore.l1InfoAvignon())
+        l1.rules.resit = false
+        l1.rules.subjectCredits = true
+        let notesS1 = ["S-E02-6502": "8", "S-E02-6504": "7", "S-E06-6508": "9", "S-E06-0151": "13", "S-E06-6506": "6",
+                       "S-E02-6508": "8", "S-E06-0152": "11", "S-E06-0153": "14"]
+        for ui in l1.semesters[0].units.indices {
+            for si in l1.semesters[0].units[ui].subjects.indices {
+                let code = l1.semesters[0].units[ui].subjects[si].code
+                l1.semesters[0].units[ui].subjects[si].items = [GradeItem(name: "Note", note: notesS1[code] ?? "")]
+            }
+            if l1.semesters[0].units[ui].code == "T-U13-9201" { l1.semesters[0].units[ui].items = [GradeItem(name: "Résultat", note: "obt.")] }
+        }
+        l1.semesters.removeLast()
+        let rl1 = GradeCalc.year(l1, simulate: false)
+        let s1r = rl1.semesters[l1.semesters[0].id]
+        check("S1 complet : moyenne 9,07", s1r?.average.map { near($0, 9.07, 0.01) } ?? false, "\(String(describing: s1r?.average))")
+        check("S1 complet : 11 crédits obtenus", s1r.map { near($0.acquired, 11) } ?? false, "\(String(describing: s1r?.acquired))")
+        check("maquette : 28 crédits d'UE + 2 de sport au S1", s1r.map { near($0.credits, 30) } ?? false)
+        check("maquette L1 : 3 UE à matières par semestre",
+              GradesStore.l1InfoAvignon().allSatisfy { $0.units.filter { !$0.subjects.isEmpty }.count == 3 })
+    }
+
+    // MARK: Planning
+
+    private static func planning() {
+        let r = ShiftParser.ranges(in: ShiftParser.normalize("sam. 31 oct. 2026, 11:30 – 14:30"))
+        check("créneau 11:30 – 14:30", r.count == 1 && r[0].2 == 690 && r[0].3 == 870, "\(r)")
+        let split = ShiftParser.ranges(in: ShiftParser.normalize("Ven 7/11 9h-12h 18h-22h"))
+        check("coupure 9h-12h 18h-22h", split.count == 2 && split[1].2 == 1080 && split[1].3 == 1320, "\(split)")
+        let night = ShiftParser.ranges(in: ShiftParser.normalize("Mercredi 5 novembre 18h → 1h"))
+        check("fermeture après minuit", night.first.map { $0.3 - $0.2 == 7 * 60 } ?? false, "\(night)")
+        let d = ShiftParser.dates(in: ShiftParser.normalize("sam. 31 oct. 2026"))
+        check("date « sam. 31 oct. »", d.first.map { $0.2.day == 31 && $0.2.month == 10 && $0.2.weekday == 5 } ?? false, "\(d.map { $0.2 })")
+        check("« mars » n'est pas « mardi »", ShiftParser.dates(in: "3 mars").first?.2.weekday == nil)
+
+        // capture de l'app McDo : trois créneaux le même jour → une journée, deux pauses, 8 h 15 payées
+        let text = """
+        sam. 31 oct. 2026
+        Quart de travail McDonald's SENAS
+        sam. 31 oct. 2026, 11:30 – 14:30
+        Quart de travail McDonald's SENAS
+        sam. 31 oct. 2026, 18:45 – 21:00
+        Quart de travail McDonald's SENAS
+        sam. 31 oct. 2026, 15:00 – 18:00
+        """
+        let found = ShiftParser.parse(ShiftParser.tokens(fromText: text), name: nil, weekStart: nil, breakFor: { _ in 0 })
+        check("3 créneaux lus", found.drafts.count == 3, "\(found.drafts.count)")
+        let merged = PlanningStore.mergeByDay(found.drafts)
+        check("regroupés en 1 journée", merged.count == 1, "\(merged.count)")
+        if let m = merged.first {
+            check("2 pauses (14:30–15:00, 18:00–18:45)", m.gaps.count == 2 && m.gapMinutes == 75, "\(m.gaps)")
+            check("8 h 15 payées", m.paidMinutes == 495, "\(m.paidMinutes)")
+            let s = WorkShift(start: m.start, end: m.end, breakMinutes: m.gaps.isEmpty ? m.breakMinutes : m.gapMinutes)
+            check("8 h 15 une fois enregistré", s.paidMinutes == 495, "\(s.paidMinutes)")
+        }
+
+        // réparation de l'ancienne minute en trop
+        let ref = Date(timeIntervalSinceReferenceDate: 815135400)
+        let json: [String: Any] = [
+            "id": UUID().uuidString, "start": ref.timeIntervalSinceReferenceDate, "end": ref.timeIntervalSinceReferenceDate + 570 * 60,
+            "breakMinutes": 77, "note": "",
+            "pauses": [["start": ref.timeIntervalSinceReferenceDate + 180 * 60, "end": ref.timeIntervalSinceReferenceDate + 210 * 60],
+                       ["start": ref.timeIntervalSinceReferenceDate + 390 * 60, "end": ref.timeIntervalSinceReferenceDate + 435 * 60]],
+        ]
+        if let data = try? JSONSerialization.data(withJSONObject: json), let s = try? JSONDecoder().decode(WorkShift.self, from: data) {
+            check("ancien shift réparé (77 → 75 min de pause)", s.breakMinutes == 75 && s.paidMinutes == 495, "\(s.breakMinutes), \(s.paidMinutes)")
+        } else {
+            check("décodage d'un shift", false, "erreur")
+        }
+    }
+
+    // MARK: Casque
+
+    private static func headphone() {
+        let crc = HeadphoneStore.crc16([0x55, 0x60, 0x01, 0x07, 0xC0, 0x00, 0x00, 0x01])
+        check("CRC de la demande de batterie (ac df)", crc == 0xDFAC, String(format: "%04x", crc))
+    }
+
+    // MARK: Modèles LaTeX
+
+    private static func latexTemplates() {
+        for kind in LatexDocKind.allCases {
+            let v = LatexDocTemplates.Values(kind: kind, matiere: "Analyse 1", number: 4, theme: "Limites & continuité",
+                                             fullTitle: "\(kind.title) 4 -- Limites", author: "Arthur", formation: "Licence 1 Informatique",
+                                             enseignant: "", objectif: "50 % du cours", annee: "2026--2027", corrige: true, language: "C")
+            let t = LatexDocTemplates.document(v)
+            let open = t.filter { $0 == "{" }.count - t.components(separatedBy: "\\{").count + 1
+            let close = t.filter { $0 == "}" }.count - t.components(separatedBy: "\\}").count + 1
+            check("modèle \(kind.title) : document complet", t.contains("\\begin{document}") && t.hasSuffix("\\end{document}"))
+            check("modèle \(kind.title) : accolades équilibrées", open == close, "\(open) { pour \(close) }")
+            check("modèle \(kind.title) : pas d'interpolation oubliée", !t.contains("\\#("))
+        }
+        let lib = LatexLibrary.all
+        check("bibliothèque LaTeX : \(lib.count) symboles et formules", lib.count > 200)
+        check("bibliothèque : recherche « xor »", !LatexLibrary.search("xor").isEmpty)
+        check("bibliothèque : recherche « dérivée produit »", LatexLibrary.search("dérivée produit").contains { $0.latex.contains("u'v") })
+        check("paquet amssymb détecté", LatexLibraryState.hasPackage("amssymb", in: "\\documentclass{article}\n\\usepackage{amsmath, amssymb}"))
+        check("paquet amssymb manquant repéré", !LatexLibraryState.hasPackage("amssymb", in: "\\documentclass{article}\n\\usepackage{amsmath}"))
+        // suppression : dossier entier seulement s'il ne contient que le document
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appendingPathComponent("toolbox-selftest-\(UUID().uuidString)/TD4", isDirectory: true)
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let tex = dir.appendingPathComponent("TD4.tex")
+        for n in ["TD4.tex", "TD4.pdf", "TD4.aux"] { try? "x".write(to: dir.appendingPathComponent(n), atomically: true, encoding: .utf8) }
+        let doc = LatexDocsStore.Doc(url: tex, kind: "td", title: "TD 4", matiere: "", modified: Date(), createdByToolbox: true)
+        check("suppression : dossier dédié entier", LatexDocsStore.targets(for: doc).wholeFolder)
+        try? "x".write(to: dir.appendingPathComponent("sujet.pdf"), atomically: true, encoding: .utf8)
+        let t2 = LatexDocsStore.targets(for: doc)
+        check("suppression : le sujet PDF est gardé", !t2.wholeFolder && t2.items.count == 3 && !t2.items.contains { $0.lastPathComponent == "sujet.pdf" },
+              t2.items.map { $0.lastPathComponent }.joined(separator: ", "))
+        try? fm.removeItem(at: dir.deletingLastPathComponent())
+        let answer = "Voici :\n```latex\n\\documentclass{article}\n\\begin{document}\nx\n\\end{document}\n```\nBonne journée"
+        check("IA : document extrait du bloc ```latex", LatexDocGenerator.extractDocument(answer) == "\\documentclass{article}\n\\begin{document}\nx\n\\end{document}\n",
+              LatexDocGenerator.extractDocument(answer) ?? "nil")
+        check("IA : réponse sans document refusée", LatexDocGenerator.extractDocument("Désolé, je ne peux pas.") == nil)
+        check("IA : titre court", LatexDocGenerator.shortTitle("une fiche de révision sur les suites, deux colonnes, avec tableau") == "Une fiche de révision sur les suites",
+              LatexDocGenerator.shortTitle("une fiche de révision sur les suites, deux colonnes, avec tableau"))
+        check("profil : « McDonald's Sénas » → calendrier Macdo", AppProfile.shortName("McDonald's Sénas") == "Macdo")
+        check("profil : « Carrefour Cavaillon » → Carrefour", AppProfile.shortName("Carrefour Cavaillon") == "Carrefour")
+        // calculatrice scientifique (les réglages de l'utilisateur sont remis comme avant)
+        let saved = ["sci.deg", "prog.bits", "prog.signed", "prog.base"].map { ($0, UserDefaults.standard.object(forKey: $0)) }
+        defer { for (k, v) in saved { UserDefaults.standard.set(v, forKey: k) } }
+        let sci = SciCalc()
+        sci.degrees = true
+        check("scientifique : sin(30) = 0,5 en degrés", (try? sci.value(of: "sin(30")).map { near($0, 0.5) } ?? false)
+        sci.degrees = false
+        check("scientifique : 2,5×(3+1 = 10 (parenthèse fermée toute seule)", (try? sci.value(of: "2,5×(3+1")).map { near($0, 10) } ?? false)
+        check("scientifique : 50% = 0,5", (try? sci.value(of: "50%")).map { near($0, 0.5) } ?? false)
+        check("scientifique : 8^(1/3 = 2", (try? sci.value(of: "8^(1/3")).map { near($0, 2) } ?? false)
+        // calculatrice programmeur
+        let pc = ProgCalc()
+        pc.bits = 8; pc.signed = true
+        pc.value = 0xFF
+        check("programmeur : 0xFF signé sur 8 bits = −1", pc.text(pc.value, base: .dec) == "-1", pc.text(pc.value, base: .dec))
+        pc.value = 200; pc.op("+"); pc.value = 100; pc.equals()
+        check("programmeur : 200 + 100 sur 8 bits = 44 (débordement)", pc.value == 44, "\(pc.value)")
+        pc.bits = 32; pc.signed = false
+        pc.value = 0b1100; pc.op("XOR"); pc.value = 0b1010; pc.equals()
+        check("programmeur : 1100 XOR 1010 = 0110", pc.value == 0b0110, "\(pc.value)")
+        check("programmeur : affichage binaire groupé", pc.text(0xA5, base: .bin) == "1010 0101", pc.text(0xA5, base: .bin))
+        // archives
+        check("archive : nom de base de TP3.tar.gz", ArchiveTool.baseName(URL(fileURLWithPath: "/tmp/TP3.tar.gz")) == "TP3")
+        check("archive : motifs zip pour .git", ArchiveTool.zipPatterns([".git"]).contains("*/.git/*"))
+        // visite guidée : la bulle reste dans la fenêtre, même pour un bouton collé au bord
+        let win = CGSize(width: 1200, height: 780)
+        for r in [CGRect(x: 1150, y: 10, width: 40, height: 24), CGRect(x: 10, y: 740, width: 60, height: 30), CGRect(x: 0, y: 0, width: 220, height: 780)] {
+            let g = TourOverlay.place(lens: TourOverlay.lens(for: r), size: win)
+            check("visite : bulle dans la fenêtre pour \(Int(r.minX)),\(Int(r.minY))",
+                  g.origin.x >= 0 && g.origin.y >= 0 && g.origin.x + TourOverlay.groupSize.width <= win.width && g.origin.y + TourOverlay.groupSize.height <= win.height)
+        }
+        check("visite : commence et finit au centre", TourStore.buildSteps().first?.target == nil && TourStore.buildSteps().last?.target == nil)
+        check("échappement LaTeX", LatexDocTemplates.esc("50 % & C#") == "50 \\% \\& C\\#", LatexDocTemplates.esc("50 % & C#"))
+    }
+}
