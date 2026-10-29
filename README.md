@@ -11,6 +11,24 @@ Appli native (Swift, SwiftUI, PDFKit, Vision) et commande terminal `pdftool`, qu
 
 ---
 
+## Premier lancement
+
+La Feuille pose quelques questions (relançables dans Réglages → Général) :
+- **ton prénom** ;
+- **étudiant ?** Si oui : dossier de cours et, en option, la maquette L1 Informatique (CERI) dans Notes & ECTS.
+  Si non : Mes cours, Révisions, Notes & ECTS et leurs widgets sont masqués ;
+- **tu travailles ? où ?** Si oui : ton nom tel qu'il apparaît sur le planning, le nom du calendrier dédié
+  (« Macdo » pour un McDonald's) qui est créé tout de suite. Si non : Planning et ses widgets sont masqués ;
+- **tes appareils** : iPhone (widgets Scriptable, batterie de l'iPhone) et casque Nothing (détecté s'il est
+  appairé). Sans eux, les pages, lignes et réglages correspondants disparaissent ;
+- **les outils à installer** : Homebrew, LaTeX (BasicTeX + les paquets des modèles), Ghostscript, Ollama et un
+  modèle IA choisi selon la RAM du Mac (3B jusqu'à 12 Go, 7B au-delà). Ce qui est déjà là est coché « Installé », la
+  place nécessaire est comparée à l'espace libre, et l'installation se fait dans le Terminal (mot de passe tapé
+  là-bas, jamais dans Toolbox) ;
+- tes apps favorites et deux permissions (Calendrier, Notes).
+
+Tout se rechange ensuite dans **Réglages → Général → Mon profil / Outils à installer**.
+
 ## Accueil
 
 La page d'ouverture : une mascotte animée (la Feuille) et des widgets à disposer comme on veut.

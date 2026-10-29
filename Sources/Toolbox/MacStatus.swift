@@ -264,8 +264,8 @@ struct MacStatusWidget: View {
                 }
                 Spacer()
             }
-            HeadphoneRow()
-            PhoneRow()
+            IfProfile(\.hasHeadphone) { HeadphoneRow() }
+            IfProfile(\.hasPhone) { PhoneRow() }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                 stat("cpu", "Processeur", "\(Int((m.cpu * 100).rounded())) %", m.cpu)
                 stat("memorychip", "Mémoire", "\(MacStatusStore.bytes(m.memoryUsed)) / \(MacStatusStore.bytes(m.memoryTotal))",

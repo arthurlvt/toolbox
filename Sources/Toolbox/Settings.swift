@@ -74,6 +74,7 @@ struct GeneralTab: View {
                 }
             }
             Button("Relancer la configuration de bienvenue") { OnboardingState.shared.restart() }
+            ProfileSettings()
             MacAlertSettings()
             NightlySettings()
             MorningSettings()

@@ -35,11 +35,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         AppShortcutsStore.shared.start()
         DiscordPresence.shared.start()
         MacStatusStore.shared.start()
-        HeadphoneStore.shared.start()
-        HeadphoneAuto.shared.start()
+        if AppProfile.shared.hasHeadphone {
+            HeadphoneStore.shared.start()
+            HeadphoneAuto.shared.start()
+        }
         MorningCheck.shared.start()
         ClassMode.shared.start()
-        PhoneStatusStore.shared.start()
+        if AppProfile.shared.hasPhone { PhoneStatusStore.shared.start() }
         // IA locale : Ollama démarré en arrière-plan s'il ne tourne pas (réglable)
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { OllamaService.shared.startIfNeeded() }
         // Notifications de début de cours (boutons « Ouvrir le dernier TD/TP », « Nouveau TP »…)
@@ -336,6 +338,7 @@ final class NavigationState: ObservableObject {
 
 struct ContentView: View {
     @StateObject private var nav = NavigationState()
+    @ObservedObject private var profile = AppProfile.shared
     // Modèles qui survivent au changement d'outil (et reçoivent les fichiers du Finder).
     @StateObject private var organize = OrganizeModel()
     @StateObject private var latex = LatexModel()
@@ -350,8 +353,10 @@ struct ContentView: View {
         NavigationSplitView {
             List(selection: $nav.selection) {
                 ForEach(ToolSection.allCases) { section in
+                    let tools = section.tools.filter { profile.shows($0) }
+                    if !tools.isEmpty {
                     Section(section.rawValue) {
-                        ForEach(section.tools) { tool in
+                        ForEach(tools) { tool in
                             NavigationLink(value: tool) {
                                 Label {
                                     Text(tool.title)
@@ -360,6 +365,7 @@ struct ContentView: View {
                                 }
                             }
                         }
+                    }
                     }
                 }
             }
@@ -378,6 +384,9 @@ struct ContentView: View {
         .overlay { OnboardingView() }
         .onAppear(perform: installPalette)
         .onChange(of: nav.selection) { _ in DiscordPresence.shared.refresh() }
+        .onChange(of: profile.student) { _ in leaveHiddenTool() }
+        .onChange(of: profile.worker) { _ in leaveHiddenTool() }
+        .onChange(of: profile.hasHeadphone) { _ in leaveHiddenTool() }
         .onReceive(AppRouter.shared.$show) { tool in
             guard let tool = tool else { return }
             DispatchQueue.main.async {
@@ -409,6 +418,11 @@ struct ContentView: View {
                 route(urls)
             }
         }
+    }
+
+    /// Une page qui vient d'être masquée (profil) : retour à l'accueil.
+    private func leaveHiddenTool() {
+        if let t = nav.selection, !profile.shows(t) { nav.selection = .home }
     }
 
     @ViewBuilder
@@ -541,7 +555,7 @@ struct ContentView: View {
                 nav.selection = .home
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) { home.layout.editing = true }
             })
-            for tool in Tool.allCases {
+            for tool in Tool.allCases where AppProfile.shared.shows(tool) {
                 list.append(PaletteCommand(title: tool.title, subtitle: tool.subtitle, icon: tool.icon, color: tool.color,
                                            keywords: "outil " + tool.rawValue) { nav.selection = tool })
             }

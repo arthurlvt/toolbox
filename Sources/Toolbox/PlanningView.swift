@@ -729,13 +729,19 @@ final class PlanningStore: ObservableObject {
         }
     }
 
-    var eventTitleCalendarName: String { "McDo" }
+    /// Nom du calendrier dédié (choisi à la configuration : « Macdo », « Carrefour »…).
+    @Published var calendarName = UserDefaults.standard.string(forKey: "planning.calname") ?? "McDo" {
+        didSet { UserDefaults.standard.set(calendarName, forKey: "planning.calname") }
+    }
+    var eventTitleCalendarName: String { calendarName.isEmpty ? "Travail" : calendarName }
 
     /// Un calendrier déjà créé pour le travail : « Macdo », « McDo », « McDonald's », « Travail »…
     var workCalendar: EKCalendar? {
         calendars.first { c in
             let t = CourseLibrary.fold(c.title).filter { $0.isLetter }
-            return t.hasPrefix("macdo") || t.hasPrefix("mcdo") || t == "travail" || t == "boulot" || t == "taf"
+            let mine = CourseLibrary.fold(calendarName).filter { $0.isLetter }
+            return (!mine.isEmpty && t == mine)
+                || t.hasPrefix("macdo") || t.hasPrefix("mcdo") || t == "travail" || t == "boulot" || t == "taf"
         }
     }
 

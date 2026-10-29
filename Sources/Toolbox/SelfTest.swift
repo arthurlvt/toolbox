@@ -256,6 +256,8 @@ enum SelfTest {
         check("IA : réponse sans document refusée", LatexDocGenerator.extractDocument("Désolé, je ne peux pas.") == nil)
         check("IA : titre court", LatexDocGenerator.shortTitle("une fiche de révision sur les suites, deux colonnes, avec tableau") == "Une fiche de révision sur les suites",
               LatexDocGenerator.shortTitle("une fiche de révision sur les suites, deux colonnes, avec tableau"))
+        check("profil : « McDonald's Sénas » → calendrier Macdo", AppProfile.shortName("McDonald's Sénas") == "Macdo")
+        check("profil : « Carrefour Cavaillon » → Carrefour", AppProfile.shortName("Carrefour Cavaillon") == "Carrefour")
         check("échappement LaTeX", LatexDocTemplates.esc("50 % & C#") == "50 \\% \\& C\\#", LatexDocTemplates.esc("50 % & C#"))
     }
 }

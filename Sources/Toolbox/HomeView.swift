@@ -396,6 +396,7 @@ final class HomeStore: ObservableObject {
 
 struct HomeView: View {
     @ObservedObject var home: HomeStore
+    @ObservedObject private var profile = AppProfile.shared
     let openTool: (Tool) -> Void
     let openFile: (URL) -> Void
     let newLatex: () -> Void
@@ -447,7 +448,7 @@ struct HomeView: View {
     /// Widgets affichés, dans l'ordre choisi. La météo n'apparaît qu'avec une connexion internet.
     private var visibleSlots: [WidgetSlot] {
         home.layout.slots.filter { slot in
-            guard slot.visible else { return false }
+            guard slot.visible, profile.allows(slot.widget) else { return false }
             switch slot.widget {
             case .weather: return home.net.online
             case .recents: return !home.recents.isEmpty || home.layout.editing

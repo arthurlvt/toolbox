@@ -23,7 +23,7 @@ enum UserProfile {
 final class OnboardingState: ObservableObject {
     static let shared = OnboardingState()
 
-    enum Step: Int, CaseIterable { case name, courses, apps, permissions, done }
+    enum Step: Int, CaseIterable { case name, profile, courses, work, devices, tools, apps, permissions, done }
 
     @Published var shown = !UserDefaults.standard.bool(forKey: "onboarding.done")
     @Published var step: Step = .name
@@ -35,6 +35,30 @@ final class OnboardingState: ObservableObject {
     @Published var calendarOK = HomeStore.hasAccess
     @Published var notesStatus = ""
     @Published var partyAt: Date?
+    // profil
+    @Published var student = true
+    @Published var worker = false
+    @Published var workplace = ""
+    @Published var calendarName = ""
+    @Published var planningName = ""
+    @Published var createCalendar = true
+    @Published var loadMaquette = true
+    @Published var hasPhone = true
+    @Published var hasHeadphone = false
+    @Published var detectedHeadphone: String?
+
+    /// Les étapes utiles pour ce profil (pas de « cours » si on n'est pas étudiant, pas de « travail » sinon).
+    var steps: [Step] {
+        Step.allCases.filter { s in
+            switch s {
+            case .courses: return student
+            case .work: return worker
+            default: return true
+            }
+        }
+    }
+
+    var gradesEmpty: Bool { GradesStore.shared.current?.semesters.allSatisfy { $0.units.isEmpty } ?? true }
 
     /// Apps courantes proposées si elles sont installées (VS Code Insiders, iTerm2, Discord cochées d'office).
     static let known: [(String, String)] = AppShortcutsStore.suggested + [
@@ -49,6 +73,18 @@ final class OnboardingState: ObservableObject {
         name = UserProfile.firstName
         coursesRoot = CoursesStore.shared.root
         calendarOK = HomeStore.hasAccess
+        let p = AppProfile.shared, plan = PlanningStore.shared
+        let firstTime = !UserDefaults.standard.bool(forKey: "onboarding.done")
+        student = p.student
+        worker = firstTime ? (!plan.shifts.isEmpty || !p.workplace.isEmpty) : p.worker
+        workplace = p.workplace
+        calendarName = plan.calendarName
+        planningName = plan.nameOnPlanning
+        hasPhone = p.hasPhone
+        detectedHeadphone = AppProfile.pairedNothing
+        hasHeadphone = firstTime ? detectedHeadphone != nil : p.hasHeadphone
+        loadMaquette = gradesEmpty
+        DependencyStore.shared.refresh()
         let existing = AppShortcutsStore.shared.apps
         candidates = Self.known.compactMap { id, label in
             guard let u = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return nil }
@@ -72,11 +108,18 @@ final class OnboardingState: ObservableObject {
 
     func next() {
         apply(step)
-        if let s = Step(rawValue: step.rawValue + 1) { go(s) }
+        go(following(step))
+    }
+
+    func following(_ s: Step) -> Step {
+        let list = steps
+        guard let i = list.firstIndex(of: s), i + 1 < list.count else { return .done }
+        return list[i + 1]
     }
 
     func back() {
-        if let s = Step(rawValue: step.rawValue - 1) { go(s) }
+        let list = steps
+        if let i = list.firstIndex(of: step), i > 0 { go(list[i - 1]) }
     }
 
     /// Enregistre ce qui a été choisi à chaque étape.
@@ -85,8 +128,33 @@ final class OnboardingState: ObservableObject {
         case .name:
             UserProfile.firstName = name
             GeneralSettings.shared.firstName = UserProfile.firstName
+        case .profile:
+            AppProfile.shared.student = student
+            AppProfile.shared.worker = worker
+            if worker, calendarName.isEmpty || calendarName == "McDo" {
+                calendarName = AppProfile.shortName(workplace)
+            }
         case .courses:
             if let r = coursesRoot, r != CoursesStore.shared.root { CoursesStore.shared.root = r }
+            let g = GradesStore.shared
+            if loadMaquette, gradesEmpty, let i = g.index {
+                g.years[i].semesters = GradesStore.l1InfoAvignon()
+                g.years[i].rules.resit = false
+                g.years[i].rules.semesterCompensation = true
+                g.years[i].rules.yearCompensation = true
+            }
+        case .work:
+            let p = AppProfile.shared, plan = PlanningStore.shared
+            p.workplace = workplace.trimmingCharacters(in: .whitespaces)
+            let cal = calendarName.trimmingCharacters(in: .whitespaces).isEmpty ? AppProfile.shortName(workplace) : calendarName
+            plan.calendarName = cal
+            plan.eventTitle = "Travail " + cal
+            if !planningName.trimmingCharacters(in: .whitespaces).isEmpty { plan.nameOnPlanning = planningName }
+            plan.addToCalendar = createCalendar
+            if createCalendar, HomeStore.hasAccess { plan.createWorkCalendar() }
+        case .devices:
+            AppProfile.shared.hasPhone = hasPhone
+            AppProfile.shared.hasHeadphone = hasHeadphone
         case .apps:
             let store = AppShortcutsStore.shared
             // garde l'ordre actuel, ajoute les nouvelles cochées, retire les décochées parmi les proposées
@@ -103,6 +171,14 @@ final class OnboardingState: ObservableObject {
         UserDefaults.standard.set(true, forKey: "onboarding.done")
         withAnimation(.easeInOut(duration: 0.35)) { shown = false }
         ToastCenter.shared.show("Bienvenue \(UserProfile.firstName) ! Toolbox est prête 🎉", cheer: true, seconds: 4)
+    }
+
+    /// Passe par le magasin du Planning (qui se réinitialise une fois l'accès donné), pour pouvoir créer le calendrier tout de suite.
+    func requestCalendarForWork() {
+        PlanningStore.shared.requestAccess()
+        for delay in [1.0, 3.0, 6.0, 10.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { self.calendarOK = HomeStore.hasAccess }
+        }
     }
 
     func requestCalendar() {
@@ -144,7 +220,7 @@ struct OnboardingView: View {
                                 insertion: .move(edge: o.forward ? .trailing : .leading).combined(with: .opacity),
                                 removal: .move(edge: o.forward ? .leading : .trailing).combined(with: .opacity)))
                     }
-                    .frame(width: 520, height: 300)
+                    .frame(width: 540, height: 340)
                     .clipped()
                     dots
                     buttons
@@ -174,9 +250,69 @@ struct OnboardingView: View {
                     .multilineTextAlignment(.center)
                     .onSubmit { o.next() }
             }
+        case .profile:
+            VStack(spacing: 14) {
+                Text("Enchantée \(o.name.isEmpty ? "" : o.name) ! Parle-moi de toi").font(.system(size: 24, weight: .bold, design: .rounded))
+                Text("Je n'affiche que ce qui te sert : tu pourras tout changer dans les réglages.")
+                    .multilineTextAlignment(.center).foregroundStyle(.secondary)
+                choiceRow(icon: "graduationcap.fill", color: .blue, title: "Je suis étudiant",
+                          detail: "Mes cours, Révisions, Notes & ECTS, comptes à rebours des CC", isOn: $o.student)
+                choiceRow(icon: "briefcase.fill", color: .orange, title: "Je travaille à côté",
+                          detail: "Planning importé depuis une photo, calendrier dédié, prochain shift", isOn: $o.worker)
+                if o.worker {
+                    TextField("Où ? (ex. : McDonald's Sénas)", text: $o.workplace)
+                        .textFieldStyle(.roundedBorder).frame(width: 320)
+                }
+            }
+        case .work:
+            VStack(spacing: 12) {
+                Text("Ton travail\(o.workplace.isEmpty ? "" : " chez \(o.workplace)")").font(.system(size: 24, weight: .bold, design: .rounded))
+                Text("Prends ton planning en photo dans « Planning » : je lis tes horaires et je les mets dans ton calendrier.")
+                    .multilineTextAlignment(.center).foregroundStyle(.secondary)
+                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
+                    GridRow {
+                        Text("Ton nom sur le planning").foregroundStyle(.secondary)
+                        TextField("Ex. : Arthur L.", text: $o.planningName).textFieldStyle(.roundedBorder).frame(width: 220)
+                    }
+                    GridRow {
+                        Text("Nom du calendrier").foregroundStyle(.secondary)
+                        TextField("Macdo", text: $o.calendarName).textFieldStyle(.roundedBorder).frame(width: 220)
+                    }
+                }
+                Toggle("Créer ce calendrier (jaune) et y mettre mes shifts", isOn: $o.createCalendar)
+                if o.createCalendar && !o.calendarOK {
+                    permissionRow(icon: "calendar", color: .red, title: "Accès au Calendrier",
+                                  detail: "Nécessaire pour créer le calendrier « \(o.calendarName.isEmpty ? "Travail" : o.calendarName) »",
+                                  ok: o.calendarOK, label: "Autoriser") { o.requestCalendarForWork() }
+                }
+            }
+        case .devices:
+            VStack(spacing: 14) {
+                Text("Tes appareils").font(.system(size: 24, weight: .bold, design: .rounded))
+                Text("Pour afficher leur batterie et te prévenir quand il faut les recharger.")
+                    .multilineTextAlignment(.center).foregroundStyle(.secondary)
+                choiceRow(icon: "iphone", color: .indigo, title: "J'ai un iPhone",
+                          detail: "Widgets Prochain shift, Mon Mac, Ma journée (app Scriptable), batterie de l'iPhone sur le Mac",
+                          isOn: $o.hasPhone)
+                choiceRow(icon: "headphones", color: .gray, title: "J'ai un casque Nothing",
+                          detail: o.detectedHeadphone.map { "Trouvé : \($0) · batterie, réduction de bruit, mode cours" }
+                            ?? "Batterie, réduction de bruit, égaliseur, mode automatique en cours",
+                          isOn: $o.hasHeadphone)
+                if o.hasPhone {
+                    Text("Les widgets iPhone s'installent ensuite depuis Accueil → Personnaliser → Widgets sur l'iPhone.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        case .tools:
+            VStack(spacing: 10) {
+                Text("Les outils à installer").font(.system(size: 24, weight: .bold, design: .rounded))
+                Text("Facultatif : coche ce qui te manque, j'ouvre le Terminal et j'installe tout (ton mot de passe se tape là-bas).")
+                    .multilineTextAlignment(.center).foregroundStyle(.secondary).font(.callout)
+                DependenciesView(compact: true)
+            }
         case .courses:
             VStack(spacing: 14) {
-                Text("Enchantée \(o.name.isEmpty ? "" : o.name) ! Où sont tes cours ?").font(.system(size: 24, weight: .bold, design: .rounded))
+                Text("Où sont tes cours ?").font(.system(size: 24, weight: .bold, design: .rounded))
                 Text("Je les affiche par matière dans « Mes cours » (TD, TP, chapitres, annales), sans rien déplacer.")
                     .multilineTextAlignment(.center).foregroundStyle(.secondary)
                 HStack {
@@ -190,6 +326,9 @@ struct OnboardingView: View {
                 }
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.05)))
+                if o.gradesEmpty {
+                    Toggle("Préparer Notes & ECTS avec la maquette L1 Informatique (CERI, Avignon)", isOn: $o.loadMaquette)
+                }
                 Text("Pas de dossier de cours ? Passe cette étape, tu pourras le choisir plus tard.").font(.caption).foregroundStyle(.secondary)
             }
         case .apps:
@@ -268,6 +407,23 @@ struct OnboardingView: View {
         .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
     }
 
+    private func choiceRow(icon: String, color: Color, title: String, detail: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon).font(.title2).foregroundStyle(Color.white)
+                .frame(width: 40, height: 40).background(RoundedRectangle(cornerRadius: 10).fill(color.gradient))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline)
+                Text(detail).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+            }
+            Spacer()
+            Toggle("", isOn: isOn).labelsHidden().toggleStyle(.switch)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(isOn.wrappedValue ? color.opacity(0.1) : Color.primary.opacity(0.05)))
+        .contentShape(Rectangle())
+        .onTapGesture { withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { isOn.wrappedValue.toggle() } }
+    }
+
     private func tip(_ key: String, _ text: String) -> some View {
         HStack(spacing: 10) {
             Text(key).font(.callout.monospaced().bold())
@@ -280,7 +436,7 @@ struct OnboardingView: View {
 
     private var dots: some View {
         HStack(spacing: 8) {
-            ForEach(OnboardingState.Step.allCases, id: \.rawValue) { s in
+            ForEach(o.steps, id: \.rawValue) { s in
                 Capsule()
                     .fill(s == o.step ? Color.accentColor : Color.primary.opacity(0.18))
                     .frame(width: s == o.step ? 22 : 8, height: 8)
@@ -301,7 +457,7 @@ struct OnboardingView: View {
                     .keyboardShortcut(.defaultAction)
             } else {
                 if o.step != .name {
-                    Button("Passer") { o.go(OnboardingState.Step(rawValue: o.step.rawValue + 1) ?? .done) }
+                    Button("Passer") { o.go(o.following(o.step)) }
                         .buttonStyle(.borderless)
                 }
                 Button(o.step == .name ? "Commencer" : "Continuer") { o.next() }
@@ -310,6 +466,6 @@ struct OnboardingView: View {
                     .disabled(o.step == .name && o.name.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
-        .frame(width: 520)
+        .frame(width: 540)
     }
 }
