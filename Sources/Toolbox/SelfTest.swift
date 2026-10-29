@@ -258,6 +258,30 @@ enum SelfTest {
               LatexDocGenerator.shortTitle("une fiche de révision sur les suites, deux colonnes, avec tableau"))
         check("profil : « McDonald's Sénas » → calendrier Macdo", AppProfile.shortName("McDonald's Sénas") == "Macdo")
         check("profil : « Carrefour Cavaillon » → Carrefour", AppProfile.shortName("Carrefour Cavaillon") == "Carrefour")
+        // calculatrice scientifique (les réglages de l'utilisateur sont remis comme avant)
+        let saved = ["sci.deg", "prog.bits", "prog.signed", "prog.base"].map { ($0, UserDefaults.standard.object(forKey: $0)) }
+        defer { for (k, v) in saved { UserDefaults.standard.set(v, forKey: k) } }
+        let sci = SciCalc()
+        sci.degrees = true
+        check("scientifique : sin(30) = 0,5 en degrés", (try? sci.value(of: "sin(30")).map { near($0, 0.5) } ?? false)
+        sci.degrees = false
+        check("scientifique : 2,5×(3+1 = 10 (parenthèse fermée toute seule)", (try? sci.value(of: "2,5×(3+1")).map { near($0, 10) } ?? false)
+        check("scientifique : 50% = 0,5", (try? sci.value(of: "50%")).map { near($0, 0.5) } ?? false)
+        check("scientifique : 8^(1/3 = 2", (try? sci.value(of: "8^(1/3")).map { near($0, 2) } ?? false)
+        // calculatrice programmeur
+        let pc = ProgCalc()
+        pc.bits = 8; pc.signed = true
+        pc.value = 0xFF
+        check("programmeur : 0xFF signé sur 8 bits = −1", pc.text(pc.value, base: .dec) == "-1", pc.text(pc.value, base: .dec))
+        pc.value = 200; pc.op("+"); pc.value = 100; pc.equals()
+        check("programmeur : 200 + 100 sur 8 bits = 44 (débordement)", pc.value == 44, "\(pc.value)")
+        pc.bits = 32; pc.signed = false
+        pc.value = 0b1100; pc.op("XOR"); pc.value = 0b1010; pc.equals()
+        check("programmeur : 1100 XOR 1010 = 0110", pc.value == 0b0110, "\(pc.value)")
+        check("programmeur : affichage binaire groupé", pc.text(0xA5, base: .bin) == "1010 0101", pc.text(0xA5, base: .bin))
+        // archives
+        check("archive : nom de base de TP3.tar.gz", ArchiveTool.baseName(URL(fileURLWithPath: "/tmp/TP3.tar.gz")) == "TP3")
+        check("archive : motifs zip pour .git", ArchiveTool.zipPatterns([".git"]).contains("*/.git/*"))
         check("échappement LaTeX", LatexDocTemplates.esc("50 % & C#") == "50 \\% \\& C\\#", LatexDocTemplates.esc("50 % & C#"))
     }
 }

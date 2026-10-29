@@ -67,11 +67,28 @@ final class CompressStore: ObservableObject {
 
 struct CompressToolView: View {
     @StateObject private var s = CompressStore()
+    @ObservedObject private var archives = ArchiveStore.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             ToolHeader(tool: .compress)
+            Picker("", selection: $archives.tab) {
+                ForEach(ArchiveStore.Tab.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 520)
+            switch archives.tab {
+            case .pdf: pdfBody
+            case .create: ArchiveCreateView()
+            case .extract: ArchiveExtractView()
+            }
+        }
+        .padding(20)
+    }
 
+    @ViewBuilder
+    private var pdfBody: some View {
             HStack(alignment: .top, spacing: 24) {
                 Picker("Niveau", selection: $s.level) {
                     ForEach(CompressionLevel.allCases) { Text($0.title).tag($0) }
@@ -110,8 +127,6 @@ struct CompressToolView: View {
                 }
             }
             StatusBanner(message: s.status)
-        }
-        .padding(20)
     }
 
     @ViewBuilder

@@ -73,6 +73,9 @@ final class CalcStore: ObservableObject {
     @Published var studyX: Double?
     @Published var selectedID: UUID?
     @Published var tab: Tab = .values
+    @Published var mode = CalcMode(rawValue: UserDefaults.standard.string(forKey: "calc.mode") ?? "") ?? .graph {
+        didSet { UserDefaults.standard.set(mode.rawValue, forKey: "calc.mode") }
+    }
     @Published var tableStart = "-3"
     @Published var tableStep = "1"
     @Published var limitPoint = "0"
@@ -573,21 +576,37 @@ struct CalcToolView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ToolHeader(tool: .calc)
-            HSplitView {
-                sidePanel.frame(minWidth: 300, idealWidth: 340, maxWidth: 440)
-                VStack(spacing: 10) {
-                    graphToolbar
-                    graph
-                    bottomPanel.frame(height: 236)
+            HStack(alignment: .top) {
+                ToolHeader(tool: .calc)
+                Spacer()
+                Picker("Mode", selection: $s.mode) {
+                    ForEach(CalcMode.allCases) { m in Label(m.title, systemImage: m.icon).tag(m) }
                 }
-                .frame(minWidth: 480)
-                .padding(.leading, 10)
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 380)
+            }
+            switch s.mode {
+            case .graph:
+                HSplitView {
+                    sidePanel.frame(minWidth: 300, idealWidth: 340, maxWidth: 440)
+                    VStack(spacing: 10) {
+                        graphToolbar
+                        graph
+                        bottomPanel.frame(height: 236)
+                    }
+                    .frame(minWidth: 480)
+                    .padding(.leading, 10)
+                }
+                .onAppear { s.installMonitor() }
+                .onDisappear { s.removeMonitor() }
+            case .scientific:
+                ScrollView { ScientificCalcView().frame(maxWidth: .infinity) }
+            case .programmer:
+                ScrollView { ProgrammerCalcView().frame(maxWidth: .infinity) }
             }
         }
         .padding(20)
-        .onAppear { s.installMonitor() }
-        .onDisappear { s.removeMonitor() }
     }
 
     // MARK: Panneau de gauche

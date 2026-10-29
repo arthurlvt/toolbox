@@ -242,7 +242,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .merge: return "Fusionner"
         case .split: return "Diviser"
         case .layout: return "Mise en page"
-        case .compress: return "Compresser"
+        case .compress: return "Compresser & archiver"
         case .ocr: return "OCR"
         case .stamp: return "Numéroter & filigrane"
         case .security: return "Sécurité & infos"
@@ -259,7 +259,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .courses: return "Cours, TD, TP et annales rangés par matière"
         case .revisions: return "Tes CC du calendrier, avec une checklist reliée aux cours, TD et annales"
         case .grades: return "Moyennes, crédits ECTS, compensation et note qu'il te faut au prochain CC"
-        case .calc: return "Calculs, courbes, limites, dérivées et conversion en LaTeX"
+        case .calc: return "Graphique (courbes, limites, dérivées, LaTeX), scientifique et programmeur (bases, bits)"
         case .headphone: return "Batterie, réduction de bruit, égaliseur et mode automatique de ton casque Nothing"
         case .planning: return "Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC"
         case .compare: return "Voir ce qui a changé entre deux versions d'un PDF"
@@ -268,7 +268,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .merge: return "Assembler plusieurs PDF en un seul"
         case .split: return "Découper un PDF en plusieurs fichiers"
         case .layout: return "Rogner les marges, 2 ou 4 pages par feuille, livret"
-        case .compress: return "Réduire le poids de tes PDF"
+        case .compress: return "Réduire le poids de tes PDF, créer ou ouvrir des archives zip, tar.gz, 7z…"
         case .ocr: return "Rendre les scans cherchables et copiables (hors ligne)"
         case .stamp: return "Numéros de page, en-tête, pied de page, filigrane"
         case .security: return "Mot de passe, titre, auteur, mots-clés"
@@ -486,6 +486,20 @@ struct ContentView: View {
             list.append(PaletteCommand(title: "Nouveau document LaTeX", subtitle: "Éditeur intégré", icon: "square.and.pencil",
                                        color: .indigo, keywords: "tex creer nouveau") {
                 latex.newDocument(); nav.selection = .latex
+            })
+            for m in [CalcMode.scientific, .programmer] {
+                list.append(PaletteCommand(title: "Calculatrice \(m.title.lowercased())", subtitle: "Calculatrice", icon: m.icon, color: .teal,
+                                           keywords: "calcul calculatrice " + (m == .programmer ? "hex binaire bits xor" : "sin cos racine")) {
+                    CalcStore.shared.mode = m; nav.selection = .calc
+                })
+            }
+            list.append(PaletteCommand(title: "Créer une archive (zip, tar.gz…)", subtitle: "Compresser & archiver", icon: "archivebox",
+                                       color: .orange, keywords: "zip tar gz 7z archive compresser rendre tp") {
+                ArchiveStore.shared.tab = .create; nav.selection = .compress
+            })
+            list.append(PaletteCommand(title: "Extraire une archive", subtitle: "Compresser & archiver", icon: "arrow.up.bin",
+                                       color: .orange, keywords: "unzip decompresser extraire tar 7z rar") {
+                ArchiveStore.shared.tab = .extract; nav.selection = .compress
             })
             list.append(PaletteCommand(title: "Mes documents LaTeX", subtitle: "Rouvrir, modifier ou supprimer un TD, TP, cours, test…",
                                        icon: "doc.on.doc", color: .indigo, keywords: "tex documents ouvrir modifier supprimer corbeille td tp cours test") {

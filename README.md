@@ -158,6 +158,16 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
 
 ## Calculatrice
 
+Trois modes en haut de la page :
+- **Graphique** : tout ce qui suit.
+- **Scientifique** : comme la calculatrice du Mac en mode scientifique. Pavé complet (x², xʸ, eˣ, 10ˣ, √, ∛, ʸ√x, ln,
+  log, x!, sin/cos/tan et leurs réciproques avec *2nde*, sinh…, π, e, EE, Rand, mémoire mc/m+/m−/mr), degrés ou
+  radians, résultat en direct pendant la frappe, parenthèses fermées toutes seules, historique cliquable, `ans`.
+- **Programmeur** : bases HEX / DEC / OCT / BIN affichées ensemble (un clic change la base de saisie), 8 à 64 bits,
+  signé (complément à 2) ou non, AND, OR, XOR, NOR, NOT, décalages, rotations, inversion des octets, modulo, bits
+  cliquables, caractère Unicode correspondant, saisie au clavier (chiffres, A–F, & | ^ ~ < >).
+
+
 - **Calculs** comme sur papier : `2x`, `sin x`, `x²`, `√x`, `|x|`, `3!`, `ln(2)·3`, `ans`. Le résultat donne aussi
   sa forme exacte quand il la devine (`1/3`, `3π/4`, `√2/2`).
 - **Fonctions** : `f(x) = …` les trace, `f(2)` et `f'(1)` les évaluent. Une lettre inconnue (`a`, `k`…) devient un
@@ -216,7 +226,7 @@ toujours le justifier.
 | | **Fusionner** | Plusieurs PDF → un seul, ordre par glisser-déposer |
 | | **Diviser** | Une page par fichier, toutes les N pages, plages (`1-3, 5, 8-`), extraction |
 | | **Mise en page** | Rogner les marges (auto ou en mm, sans perte), 2 ou 4 pages par feuille, livret A5 |
-| Optimiser | **Compresser** | 3 niveaux, Ghostscript si installé, sinon PDFKit |
+| Optimiser | **Compresser & archiver** | PDF : 3 niveaux, Ghostscript si installé, sinon PDFKit. **Archives** : créer un .zip, .tar.gz, .tar.bz2, .tar.xz ou .7z (fichiers et dossiers, 3 niveaux, mot de passe en zip ou 7z AES, sans fichiers parasites, sans fichiers LaTeX, mode « prêt à rendre » pour un TP sans .git ni binaires) ; **extraire** en voyant le contenu avant, tout ou une sélection, avec mot de passe |
 | | **OCR** | Rend les scans cherchables et copiables (Vision d'Apple, hors ligne, français + anglais) |
 | Modifier | **Numéroter & filigrane** | Numéros de page, en-tête, pied de page, filigrane, avec aperçu en direct |
 | | **Sécurité & infos** | Ajouter / retirer un mot de passe, modifier titre, auteur, sujet, mots-clés |
