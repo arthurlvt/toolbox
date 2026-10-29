@@ -191,35 +191,29 @@ enum ToolSection: String, CaseIterable, Identifiable {
     case pages = "Pages"
     case optimize = "Optimiser"
     case edit = "Modifier"
-    case convert = "Convertir"
-    case annales = "Annales"
 
     var id: String { rawValue }
     var tools: [Tool] { Tool.allCases.filter { $0.section == self } }
 }
 
 enum Tool: String, CaseIterable, Identifiable {
-    case home, courses, revisions, grades, calc
+    case home, courses, revisions, grades, calc, annales
     case planning, headphone
-    case latex, organize, merge, split, layout
+    case latex, organize, merge, split, layout, convert
     case compress, ocr, batch, cleanup
     case stamp, security, compare, sign
-    case convert
-    case annales
 
     var id: String { rawValue }
 
     var section: ToolSection {
         switch self {
         case .home: return .home
-        case .courses, .revisions, .grades, .calc: return .study
+        case .courses, .revisions, .grades, .calc, .annales: return .study
         case .planning, .headphone: return .life
-        case .latex, .organize, .merge, .split, .layout: return .pages
+        case .latex, .organize, .merge, .split, .layout, .convert: return .pages
         case .compress, .ocr, .cleanup: return .optimize
         case .stamp, .security, .compare, .sign: return .edit
-        case .convert: return .convert
         case .batch: return .optimize
-        case .annales: return .annales
         }
     }
 
