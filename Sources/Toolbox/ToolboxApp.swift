@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         ClipboardStore.shared.start()
         WatchFolderStore.shared.start()
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { LatexDocsStore.shared.refresh() }
+        UpdateStore.shared.launchCheck()
         AppShortcutsStore.shared.start()
         DiscordPresence.shared.start()
         MacStatusStore.shared.start()
@@ -203,7 +204,7 @@ enum Tool: String, CaseIterable, Identifiable {
     case home, courses, revisions, grades, calc
     case planning, headphone
     case organize, merge, split, layout
-    case compress, ocr
+    case compress, ocr, cleanup
     case stamp, security, compare, sign
     case convert
     case batch
@@ -218,7 +219,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .courses, .revisions, .grades, .calc: return .study
         case .planning, .headphone: return .life
         case .organize, .merge, .split, .layout: return .pages
-        case .compress, .ocr: return .optimize
+        case .compress, .ocr, .cleanup: return .optimize
         case .stamp, .security, .compare, .sign: return .edit
         case .convert: return .convert
         case .batch: return .automate
@@ -244,6 +245,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .layout: return "Mise en page"
         case .compress: return "Compresser & archiver"
         case .ocr: return "OCR"
+        case .cleanup: return "Nettoyer le Mac"
         case .stamp: return "Numéroter & filigrane"
         case .security: return "Sécurité & infos"
         case .convert: return "Convertir"
@@ -270,6 +272,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .layout: return "Rogner les marges, 2 ou 4 pages par feuille, livret"
         case .compress: return "Réduire le poids de tes PDF, créer ou ouvrir des archives zip, tar.gz, 7z…"
         case .ocr: return "Rendre les scans cherchables et copiables (hors ligne)"
+        case .cleanup: return "Caches, dossiers de compilation, corbeille, gros fichiers, doublons : de la place en un clic"
         case .stamp: return "Numéros de page, en-tête, pied de page, filigrane"
         case .security: return "Mot de passe, titre, auteur, mots-clés"
         case .convert: return "Images ↔ PDF, PDF → texte, export pour RAG"
@@ -296,6 +299,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .layout: return "rectangle.split.2x1"
         case .compress: return "arrow.down.right.and.arrow.up.left"
         case .ocr: return "text.viewfinder"
+        case .cleanup: return "sparkles"
         case .stamp: return "number"
         case .security: return "lock.doc"
         case .convert: return "arrow.triangle.2.circlepath"
@@ -322,6 +326,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .layout: return .brown
         case .compress: return .green
         case .ocr: return .mint
+        case .cleanup: return .purple
         case .stamp: return .pink
         case .security: return .gray
         case .convert: return .teal
@@ -459,6 +464,7 @@ struct ContentView: View {
         case .security: SecurityToolView()
         case .convert: ConvertToolView(s: convert)
         case .batch: BatchToolView()
+        case .cleanup: CleanupToolView()
         case .annales: AnnalesToolView(s: annales)
         case .latex: LatexToolView(model: latex)
         }
@@ -515,6 +521,11 @@ struct ContentView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { TourStore.shared.startMini(current) }
                 })
             }
+            list.append(PaletteCommand(title: "Mettre à jour Toolbox", subtitle: "git pull, compilation, réinstallation", icon: "arrow.down.circle",
+                                       color: .blue, keywords: "update mise a jour recompiler build git pull") {
+                UpdateStore.openSettings()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { UpdateStore.shared.update() }
+            })
             list.append(PaletteCommand(title: "Visite guidée", subtitle: "La Feuille te montre l'app avec sa loupe", icon: "magnifyingglass",
                                        color: .green, keywords: "visite guide aide tutoriel decouvrir") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { TourStore.shared.start() }

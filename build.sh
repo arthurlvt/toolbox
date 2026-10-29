@@ -21,6 +21,9 @@ SCRATCH="$HOME/Library/Caches/fr.arthur.toolbox/build"
 mkdir -p "$SCRATCH"
 rm -rf .build    # ancien dossier de compilation dans le projet, plus utilisé
 
+# Pour le bouton « Mettre à jour Toolbox » : l'appli sait où est son code.
+defaults write fr.arthur.toolbox build.sourceDir "$(pwd)" >/dev/null 2>&1 || true
+
 echo "→ Compilation (release)…"
 swift build -c release --scratch-path "$SCRATCH"
 BIN="$(swift build -c release --scratch-path "$SCRATCH" --show-bin-path)"

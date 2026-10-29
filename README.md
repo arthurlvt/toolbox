@@ -244,6 +244,7 @@ toujours le justifier.
 | | **Diviser** | Une page par fichier, toutes les N pages, plages (`1-3, 5, 8-`), extraction |
 | | **Mise en page** | Rogner les marges (auto ou en mm, sans perte), 2 ou 4 pages par feuille, livret A5 |
 | Optimiser | **Compresser & archiver** | PDF : 3 niveaux, Ghostscript si installé, sinon PDFKit. **Archives** : créer un .zip, .tar.gz, .tar.bz2, .tar.xz ou .7z (fichiers et dossiers, 3 niveaux, mot de passe en zip ou 7z AES, sans fichiers parasites, sans fichiers LaTeX, mode « prêt à rendre » pour un TP sans .git ni binaires) ; **extraire** en voyant le contenu avant, tout ou une sélection, avec mot de passe |
+| Optimiser | **Nettoyer le Mac** | Caches, compilation, LaTeX auxiliaires, corbeille, vieux téléchargements, gros fichiers, doublons, modèles IA (voir plus bas) |
 | | **OCR** | Rend les scans cherchables et copiables (Vision d'Apple, hors ligne, français + anglais) |
 | Modifier | **Numéroter & filigrane** | Numéros de page, en-tête, pied de page, filigrane, avec aperçu en direct |
 | | **Sécurité & infos** | Ajouter / retirer un mot de passe, modifier titre, auteur, sujet, mots-clés |
@@ -255,6 +256,29 @@ toujours le justifier.
 **Capture d'écran → texte** (⇧⌘T, ⌘K, barre des menus) : tu sélectionnes une zone de l'écran, le texte est lu hors ligne et copié.
 
 ---
+
+## Nettoyer le Mac
+
+Une analyse de ce qui prend de la place, rangée par catégorie, avec la taille de chacune et une barre du disque
+(qui montre en vert ce que la sélection va libérer) :
+- **sans risque**, cochés d'office et supprimés directement car ils se recréent tout seuls : caches des apps, caches
+  de développement (Xcode DerivedData, Homebrew, npm, pip, Swift, compilation de Toolbox), dossiers de compilation
+  des projets (`node_modules`, `.build`, `__pycache__`, `venv`, `build` CMake…), fichiers auxiliaires LaTeX
+  (`.aux`, `.log`, `.synctex.gz`… seulement à côté d'un `.tex`) ;
+- **à vérifier**, mis à la corbeille : téléchargements pas ouverts depuis 60 jours, fichiers de plus de 300 Mo,
+  PDF en double (même contenu exact, le plus ancien est gardé) ;
+- la **corbeille** (vidée définitivement) et les **modèles Ollama** (désinstallés avec `ollama rm`).
+Chaque élément a sa case, un aperçu de son dossier et un bouton pour l'afficher dans le Finder. Rien ne part sans
+confirmation, et le résultat dit combien de Go ont été libérés.
+
+## Mise à jour de Toolbox
+
+Réglages → Général → *Mise à jour* (ou ⌘K → « Mettre à jour Toolbox ») : `git pull` (s'il n'y a pas de
+modifications en cours), `./build.sh --no-install` avec le journal en direct et les tests, puis un petit script
+remplace l'appli dans `~/Applications`, met `pdftool` à jour et relance Toolbox. Au lancement, l'appli vérifie
+discrètement s'il y a des nouveautés sur GitHub ou si le code a changé depuis la dernière compilation, et le dit.
+Le dossier du code est noté par `build.sh` (sinon : bouton *Choisir…*). Journal de l'installation :
+`~/Library/Logs/Toolbox-update.log`.
 
 ## IA locale (Ollama)
 
@@ -493,6 +517,7 @@ Sources/
 Resources/    Info.plist (types de fichiers, Services, autorisations) + icône
 build.sh      compile hors du dossier (Nextcloud), assemble le .app, l'enregistre auprès de macOS
 make-dmg.sh   fabrique le .dmg à partir de build/Toolbox.app
+              (nettoyage du disque : Cleanup.swift ; mise à jour intégrée : Updater.swift)
 ```
 
 - **Tests** : `build.sh` lance `Toolbox --selftest` après chaque compilation : calculatrices (graphique,
