@@ -192,9 +192,7 @@ enum ToolSection: String, CaseIterable, Identifiable {
     case optimize = "Optimiser"
     case edit = "Modifier"
     case convert = "Convertir"
-    case automate = "Automatiser"
     case annales = "Annales"
-    case latex = "LaTeX"
 
     var id: String { rawValue }
     var tools: [Tool] { Tool.allCases.filter { $0.section == self } }
@@ -203,13 +201,11 @@ enum ToolSection: String, CaseIterable, Identifiable {
 enum Tool: String, CaseIterable, Identifiable {
     case home, courses, revisions, grades, calc
     case planning, headphone
-    case organize, merge, split, layout
-    case compress, ocr, cleanup
+    case latex, organize, merge, split, layout
+    case compress, ocr, batch, cleanup
     case stamp, security, compare, sign
     case convert
-    case batch
     case annales
-    case latex
 
     var id: String { rawValue }
 
@@ -218,13 +214,12 @@ enum Tool: String, CaseIterable, Identifiable {
         case .home: return .home
         case .courses, .revisions, .grades, .calc: return .study
         case .planning, .headphone: return .life
-        case .organize, .merge, .split, .layout: return .pages
+        case .latex, .organize, .merge, .split, .layout: return .pages
         case .compress, .ocr, .cleanup: return .optimize
         case .stamp, .security, .compare, .sign: return .edit
         case .convert: return .convert
-        case .batch: return .automate
+        case .batch: return .optimize
         case .annales: return .annales
-        case .latex: return .latex
         }
     }
 
