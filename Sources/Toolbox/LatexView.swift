@@ -353,8 +353,13 @@ final class LatexModel: ObservableObject {
         }
     }
 
-    /// Document vierge dans ~/Documents/Toolbox LaTeX/Sans titre N/main.tex
+    /// « Nouveau document » : demande le type (TD, TP, cours, rapport, autre) puis crée un modèle pré-rempli.
     func newDocument() {
+        NewLatexDocForm.shared.present()
+    }
+
+    /// Document vierge dans ~/Documents/Toolbox LaTeX/Sans titre N/main.tex (sans rien demander)
+    func newBlankDocument() {
         let fm = FileManager.default
         do {
             try fm.createDirectory(at: Self.draftsFolder, withIntermediateDirectories: true)
@@ -628,12 +633,12 @@ struct LatexToolView: View {
                 }
                 HStack(spacing: 16) {
                     Button { model.newDocument() } label: {
-                        Label("Nouveau document", systemImage: "square.and.pencil")
+                        Label("Nouveau document…", systemImage: "square.and.pencil")
                     }
                     .controlSize(.large)
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut("n", modifiers: [.command, .shift])
-                    .help("Crée un document vierge dans Documents/Toolbox LaTeX et l'ouvre dans l'éditeur (⇧⌘N)")
+                    .help("Choisis TD, TP, cours, rapport ou autre : un modèle pré-rempli est créé et ouvert (⇧⌘N)")
                     Button { model.showNewProject = true } label: {
                         Label("Depuis un modèle…", systemImage: "doc.badge.plus")
                     }
@@ -647,6 +652,7 @@ struct LatexToolView: View {
         }
         .padding(20)
         .sheet(isPresented: $model.showNewProject) { NewProjectSheet(model: model) }
+        .background(NewDocSheetHost(model: model))
     }
 
     // MARK: Barre de contrôle
@@ -718,7 +724,7 @@ struct LatexToolView: View {
                 Divider()
                 Button("Nettoyer les fichiers auxiliaires") { model.clean() }
                 Divider()
-                Button("Nouveau document") { model.newDocument() }
+                Button("Nouveau document…") { model.newDocument() }
                 Button("Nouveau projet depuis un modèle…") { model.showNewProject = true }
                 Button("Choisir un autre .tex…") {
                     if let u = Panels.open([.tex]).first { model.open(u) }

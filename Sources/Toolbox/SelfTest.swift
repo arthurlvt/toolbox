@@ -18,6 +18,7 @@ enum SelfTest {
         grades()
         planning()
         headphone()
+        latexTemplates()
         print("Toolbox --selftest : \(passed) réussi\(passed > 1 ? "s" : ""), \(failed.count) échec\(failed.count > 1 ? "s" : "")")
         for f in failed { print("  ✗ " + f) }
         return failed.isEmpty ? 0 : 1
@@ -181,5 +182,22 @@ enum SelfTest {
     private static func headphone() {
         let crc = HeadphoneStore.crc16([0x55, 0x60, 0x01, 0x07, 0xC0, 0x00, 0x00, 0x01])
         check("CRC de la demande de batterie (ac df)", crc == 0xDFAC, String(format: "%04x", crc))
+    }
+
+    // MARK: Modèles LaTeX
+
+    private static func latexTemplates() {
+        for kind in LatexDocKind.allCases {
+            let v = LatexDocTemplates.Values(kind: kind, matiere: "Analyse 1", number: 4, theme: "Limites & continuité",
+                                             fullTitle: "\(kind.title) 4 -- Limites", author: "Arthur", formation: "Licence 1 Informatique",
+                                             enseignant: "", objectif: "50 % du cours", annee: "2026--2027", corrige: true, language: "C")
+            let t = LatexDocTemplates.document(v)
+            let open = t.filter { $0 == "{" }.count - t.components(separatedBy: "\\{").count + 1
+            let close = t.filter { $0 == "}" }.count - t.components(separatedBy: "\\}").count + 1
+            check("modèle \(kind.title) : document complet", t.contains("\\begin{document}") && t.hasSuffix("\\end{document}"))
+            check("modèle \(kind.title) : accolades équilibrées", open == close, "\(open) { pour \(close) }")
+            check("modèle \(kind.title) : pas d'interpolation oubliée", !t.contains("\\#("))
+        }
+        check("échappement LaTeX", LatexDocTemplates.esc("50 % & C#") == "50 \\% \\& C\\#", LatexDocTemplates.esc("50 % & C#"))
     }
 }

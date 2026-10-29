@@ -382,7 +382,7 @@ struct ContentView: View {
             guard let text = text else { return }
             DispatchQueue.main.async {
                 AppRouter.shared.latexInsert = nil
-                if latex.texURL == nil { latex.newDocument() }
+                if latex.texURL == nil { latex.newBlankDocument() }
                 nav.selection = .latex
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { latex.send(.insert(text)) }
                 ToastCenter.shared.show("Inséré dans le document LaTeX ✓")
