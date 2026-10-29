@@ -185,23 +185,22 @@ struct ToolboxApp: App {
 }
 
 enum ToolSection: String, CaseIterable, Identifiable {
-    case home = "Toolbox"
-    case study = "Études"
+    case home = "Toolbox"          // sans titre : l'Accueil tout en haut
     case life = "Quotidien"
+    case study = "Études"
     case pages = "Pages"
     case optimize = "Optimiser"
-    case edit = "Modifier"
 
     var id: String { rawValue }
     var tools: [Tool] { Tool.allCases.filter { $0.section == self } }
 }
 
 enum Tool: String, CaseIterable, Identifiable {
-    case home, courses, revisions, grades, calc, annales
+    case home
     case planning, headphone
-    case latex, organize, merge, split, layout, convert
+    case courses, revisions, grades, calc, annales
+    case latex, organize, merge, split, layout, convert, stamp, security, compare, sign
     case compress, ocr, batch, cleanup
-    case stamp, security, compare, sign
 
     var id: String { rawValue }
 
@@ -210,9 +209,8 @@ enum Tool: String, CaseIterable, Identifiable {
         case .home: return .home
         case .courses, .revisions, .grades, .calc, .annales: return .study
         case .planning, .headphone: return .life
-        case .latex, .organize, .merge, .split, .layout, .convert: return .pages
+        case .latex, .organize, .merge, .split, .layout, .convert, .stamp, .security, .compare, .sign: return .pages
         case .compress, .ocr, .cleanup: return .optimize
-        case .stamp, .security, .compare, .sign: return .edit
         case .batch: return .optimize
         }
     }
@@ -362,21 +360,14 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             List(selection: $nav.selection) {
-                ForEach(ToolSection.allCases) { section in
+                // l'Accueil seul, tout en haut, sans titre de section
+                sidebarRow(.home)
+                ForEach(ToolSection.allCases.filter { $0 != .home }) { section in
                     let tools = section.tools.filter { profile.shows($0) }
                     if !tools.isEmpty {
-                    Section(section.rawValue) {
-                        ForEach(tools) { tool in
-                            NavigationLink(value: tool) {
-                                Label {
-                                    Text(tool.title)
-                                } icon: {
-                                    Image(systemName: tool.icon).foregroundStyle(tool.color)
-                                }
-                                .tourTarget("tool." + tool.rawValue)
-                            }
+                        Section(section.rawValue) {
+                            ForEach(tools) { tool in sidebarRow(tool) }
                         }
-                    }
                     }
                 }
             }
@@ -435,6 +426,17 @@ struct ContentView: View {
                 AppRouter.shared.incoming = []
                 route(urls)
             }
+        }
+    }
+
+    private func sidebarRow(_ tool: Tool) -> some View {
+        NavigationLink(value: tool) {
+            Label {
+                Text(tool.title)
+            } icon: {
+                Image(systemName: tool.icon).foregroundStyle(tool.color)
+            }
+            .tourTarget("tool." + tool.rawValue)
         }
     }
 

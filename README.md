@@ -253,15 +253,15 @@ toujours le justifier.
 | | **Fusionner** | Plusieurs PDF → un seul, ordre par glisser-déposer |
 | | **Diviser** | Une page par fichier, toutes les N pages, plages (`1-3, 5, 8-`), extraction |
 | | **Mise en page** | Rogner les marges (auto ou en mm, sans perte), 2 ou 4 pages par feuille, livret A5 |
-| Optimiser | **Compresser & archiver** | PDF : 3 niveaux, Ghostscript si installé, sinon PDFKit. **Archives** : créer un .zip, .tar.gz, .tar.bz2, .tar.xz ou .7z (fichiers et dossiers, 3 niveaux, mot de passe en zip ou 7z AES, sans fichiers parasites, sans fichiers LaTeX, mode « prêt à rendre » pour un TP sans .git ni binaires) ; **extraire** en voyant le contenu avant, tout ou une sélection, avec mot de passe |
-| Optimiser | **Nettoyer le Mac** | Caches, compilation, LaTeX auxiliaires, corbeille, vieux téléchargements, gros fichiers, doublons, modèles IA (voir plus bas) |
-| | **OCR** | Rend les scans cherchables et copiables (Vision d'Apple, hors ligne, français + anglais) |
-| Modifier | **Numéroter & filigrane** | Numéros de page, en-tête, pied de page, filigrane, avec aperçu en direct |
+| | **Convertir** | Images → PDF, PDF → PNG/JPEG, PDF → texte, **export RAG** (Markdown ou JSONL, une entrée par page) |
+| | **Numéroter & filigrane** | Numéros de page, en-tête, pied de page, filigrane, avec aperçu en direct |
 | | **Sécurité & infos** | Ajouter / retirer un mot de passe, modifier titre, auteur, sujet, mots-clés |
 | | **Comparer** | Deux versions d'un PDF : pages appariées même si on en a ajouté ou retiré, superposition (rouge = supprimé, vert = ajouté), côte à côte, différences de texte, rapport PDF |
 | | **Signer** | Signature dessinée au trackpad ou importée (fond blanc retiré), posée, déplacée et redimensionnée sur la page, PDF signé (texte toujours sélectionnable) |
-| Pages | **Convertir** | Images → PDF, PDF → PNG/JPEG, PDF → texte, **export RAG** (Markdown ou JSONL, une entrée par page) |
-| Optimiser | **Traitement par lots** | OCR → numérotation/filigrane → auteur → compression → renommage, sur tout un dossier |
+| Optimiser | **Compresser & archiver** | PDF : 3 niveaux, Ghostscript si installé, sinon PDFKit. **Archives** : créer un .zip, .tar.gz, .tar.bz2, .tar.xz ou .7z (fichiers et dossiers, 3 niveaux, mot de passe en zip ou 7z AES, sans fichiers parasites, sans fichiers LaTeX, mode « prêt à rendre » pour un TP sans .git ni binaires) ; **extraire** en voyant le contenu avant, tout ou une sélection, avec mot de passe |
+| | **OCR** | Rend les scans cherchables et copiables (Vision d'Apple, hors ligne, français + anglais) |
+| | **Traitement par lots** | OCR → numérotation/filigrane → auteur → compression → renommage, sur tout un dossier |
+| | **Nettoyer le Mac** | Caches, compilation, LaTeX auxiliaires, corbeille, vieux téléchargements, gros fichiers, doublons, modèles IA (voir plus bas) |
 
 **Capture d'écran → texte** (⇧⌘T, ⌘K, barre des menus) : tu sélectionnes une zone de l'écran, le texte est lu hors ligne et copié.
 
