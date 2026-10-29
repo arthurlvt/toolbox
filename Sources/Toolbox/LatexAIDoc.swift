@@ -18,11 +18,24 @@ final class LatexDocGenerator: ObservableObject {
     static let maxAttempts = 3
     private var task: Task<Void, Never>?
 
+    /// Mémoire : contexte limité à 8 k jetons (au lieu de 16 k) et modèle déchargé dès la fin.
+    static let contextTokens = 8192
+    private var loadedModel: String?
+
     func cancel() {
         task?.cancel()
         task = nil
         running = false
         phase = ""
+        releaseMemory()
+    }
+
+    /// Décharge le modèle tout de suite : la RAM est rendue au Mac dès la fin de la génération.
+    func releaseMemory() {
+        guard let m = loadedModel else { return }
+        loadedModel = nil
+        let client = OllamaService.shared.client
+        Task { await client.unload(m) }
     }
 
     func generate(form: NewLatexDocForm, model: LatexModel) {
@@ -50,6 +63,7 @@ final class LatexDocGenerator: ObservableObject {
     }
 
     private func fail(_ message: String) {
+        releaseMemory()
         running = false
         phase = ""
         error = message
@@ -59,7 +73,11 @@ final class LatexDocGenerator: ObservableObject {
         let url = form.destination()
         var ref = form.values
         ref.kind = .cours
-        let reference = LatexDocTemplates.cours(ref)
+        // référence courte (préambule + encadrés) : moins de jetons = moins de mémoire
+        let reference = LatexDocTemplates.preamble(cours: true, fancy: true, v: ref, lang: nil)
+            + "\n\n" + LatexDocTemplates.courseBoxes
+            + "\n\n\\begin{document}\n\\section{Titre}\n\\begin{definition}[nom]\n\\dots\n\\end{definition}\n\\end{document}"
+        self.loadedModel = modelName
         let v = form.values
         let client = OllamaService.shared.client
         let system = Self.systemPrompt
@@ -94,7 +112,8 @@ final class LatexDocGenerator: ObservableObject {
                 let answer: String
                 do {
                     answer = try await client.chat(model: modelName, messages: messages,
-                                                   options: ["temperature": 0.3, "num_ctx": 16384]) { piece in
+                                                   options: ["temperature": 0.3, "num_ctx": Self.contextTokens],
+                                                   keepAlive: "1m") { piece in
                         DispatchQueue.main.async {
                             self.chars += piece.count
                             self.tail = String((self.tail + piece).suffix(160))
@@ -107,8 +126,8 @@ final class LatexDocGenerator: ObservableObject {
                 }
                 if Task.isCancelled { return }
                 guard let tex = Self.extractDocument(answer) else {
-                    messages.append(OllamaMessage(role: "assistant", content: answer))
-                    messages.append(OllamaMessage(role: "user", content: "Je n'ai pas trouvé de document complet. Renvoie UNIQUEMENT le document entier, de \\documentclass à \\end{document}, dans un seul bloc ```latex."))
+                    messages = [OllamaMessage(role: "system", content: system),
+                                OllamaMessage(role: "user", content: user + "\n\nIMPORTANT : renvoie UNIQUEMENT le document entier, de \\documentclass à \\end{document}, dans un seul bloc ```latex.")]
                     continue
                 }
                 do {
@@ -130,16 +149,21 @@ final class LatexDocGenerator: ObservableObject {
                 let report = errors.isEmpty
                     ? String(lastLog.suffix(1500))
                     : errors.map { "- \($0.location.isEmpty ? "" : $0.location + " : ")\($0.message)" }.joined(separator: "\n")
-                messages.append(OllamaMessage(role: "assistant", content: "```latex\n\(tex)\n```"))
-                messages.append(OllamaMessage(role: "user", content: """
-                Ce document ne compile pas avec \(engine.rawValue). Erreurs :
+                // on repart d'une conversation courte (document + erreurs) pour ne pas faire gonfler le contexte
+                messages = [OllamaMessage(role: "system", content: system), OllamaMessage(role: "user", content: """
+                Ce document LaTeX ne compile pas avec \(engine.rawValue).
+                ```latex
+                \(tex)
+                ```
+                Erreurs :
                 \(report)
 
                 Corrige-les (n'utilise que des paquets standards de TeX Live) et renvoie le document COMPLET corrigé, dans un seul bloc ```latex, sans explication.
-                """))
+                """)]
             }
             let ok = compiled, written = wrote
             await MainActor.run {
+                self.releaseMemory()
                 self.running = false
                 self.phase = ""
                 guard written else {
@@ -200,6 +224,18 @@ struct AIDocFields: View {
     @ObservedObject var ai: LatexAI
     @ObservedObject var ollama = OllamaService.shared
 
+    /// Un modèle qui occupe plus de ~45 % de la RAM fait ramer tout le Mac.
+    private var memoryWarning: String? {
+        guard let m = ai.models.first(where: { $0.name == ai.model }), m.size > 0 else { return nil }
+        let ram = Double(ProcessInfo.processInfo.physicalMemory)
+        let need = Double(m.size) * 1.25 + 0.6e9       // poids + contexte 8 k
+        guard need > ram * 0.45 else { return nil }
+        let gb: (Double) -> String = { String(format: "%.1f Go", $0 / 1e9) }
+        let lighter = ai.models.filter { Double($0.size) * 1.25 + 0.6e9 <= ram * 0.45 }.min { $0.size < $1.size }
+        return "\(m.name) demande environ \(gb(need)) sur \(gb(ram)) de RAM : ton Mac va ramer. "
+            + (lighter.map { "Prends plutôt \($0.name)." } ?? "Installe un modèle plus léger : ollama pull qwen2.5-coder:3b (≈ 2 Go).")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Décris ce que tu veux (facultatif) : l'IA locale prépare un modèle sur mesure", systemImage: "sparkles")
@@ -218,6 +254,10 @@ struct AIDocFields: View {
                         .padding(.horizontal, 9).padding(.vertical, 8)
                         .allowsHitTesting(false)
                 }
+            }
+            if let warn = memoryWarning {
+                Label(warn, systemImage: "memorychip")
+                    .font(.caption).foregroundStyle(Color.orange).fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: 8) {
                 Circle().fill(ollama.state.ok ? Color.green : Color.secondary).frame(width: 7, height: 7)

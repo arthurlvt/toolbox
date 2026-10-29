@@ -122,14 +122,19 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
 
 ## Notes & ECTS
 
-- **Années → semestres → UE → épreuves**, avec coefficients et crédits ECTS. « Importer mes matières » crée une UE
-  par matière de *Mes cours*.
+- **Années → semestres → UE → matières (EC) → épreuves**, comme sur la maquette : chaque UE a son code, son nom et
+  ses crédits ECTS, chaque matière son code, son coefficient et ses épreuves (CC1, CC2…). Une UE peut aussi rester
+  simple (épreuves directement). « Importer mes matières » crée une UE par matière de *Mes cours*.
+- **Maquette L1 Informatique (CERI)** en un clic (menu *Année*) : les 3 UE de chaque semestre avec leurs matières et
+  leurs codes, plus UE d'ouverture, sport, PIX et renforcement **hors moyenne**. Il reste à saisir les ECTS et
+  coefficients. Elle règle aussi : pas de rattrapage, compensation entre UE et entre S1 et S2.
+- **UE hors moyenne** (ouverture, sport, PIX…) : notées à part, sans peser sur la moyenne ni être compensées.
 - **Moyennes** de chaque UE, de chaque semestre (pondérées par les ECTS) et de l'année, provisoires tant que tout
   n'est pas noté.
 - **La note qu'il te faut** sur les épreuves restantes pour valider l'UE, le semestre et l'année.
   Si ce n'est plus atteignable, il te le dit et compte sur la compensation.
 - **Crédits acquis** : UE ≥ 10, ou compensée si le semestre (ou l'année) est validé. Règles réglables : compensation
-  semestrielle et annuelle, note plancher, rattrapage (meilleure des deux notes ou remplacement).
+  semestrielle et annuelle, note plancher, rattrapage ou pas (colonne *Ratt.* masquée s'il n'y en a pas).
 - **Simulation** : tape des notes imaginaires (en violet) pour voir ce que ça donnerait.
 - **Nouvelle année** : même maquette, avec les UE validées reportées (*Acquise l'an dernier*) pour un redoublement.
 

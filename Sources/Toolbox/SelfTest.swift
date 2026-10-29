@@ -126,6 +126,39 @@ enum SelfTest {
         let y3 = GradeCalc.year(GradeYear(name: "L1", semesters: [s2]), simulate: false)
         check("note nécessaire pour valider le semestre", y3.semesters[s2.id]?.needed.map { near($0, 8) } ?? false,
               "\(String(describing: y3.semesters[s2.id]?.needed))")
+
+        // UE à matières (EC) : moyenne des matières pondérée par leur coefficient
+        let groupe = GradeUnit(name: "UE", credits: "6", subjects: [
+            GradeSubject(name: "A", weight: "2", items: [GradeItem(name: "CC1", note: "12"), GradeItem(name: "CC2", note: "12")]),
+            GradeSubject(name: "B", weight: "1", items: [GradeItem(name: "CC1", note: "6")])])
+        check("UE à matières : (2×12 + 1×6) / 3 = 10", GradeCalc.unit(groupe, rules: rules, simulate: false).average.map { near($0, 10) } ?? false)
+        var groupe2 = groupe
+        groupe2.subjects[1].items = [GradeItem(name: "CC1")]
+        check("UE à matières : il faut 6 en B", GradeCalc.unit(groupe2, rules: rules, simulate: false).needed.map { near($0, 6) } ?? false,
+              "\(String(describing: GradeCalc.unit(groupe2, rules: rules, simulate: false).needed))")
+
+        // UE hors moyenne (ouverture, sport, PIX)
+        let horsMoyenne = GradeUnit(name: "UEO", credits: "0", items: [GradeItem(name: "Note", note: "2")], inAverage: false)
+        let s3 = GradeSemester(name: "S1", units: [unit("A", "12"), horsMoyenne])
+        let y4 = GradeCalc.year(GradeYear(name: "L1", semesters: [s3]), simulate: false)
+        check("UE hors moyenne ignorée", y4.semesters[s3.id]?.average.map { near($0, 12) } ?? false && y4.semesters[s3.id]?.validated == true)
+
+        // pas de rattrapage
+        var sansRatt = GradeRules()
+        sansRatt.resit = false
+        check("sans rattrapage, la note de session 2 est ignorée", GradeCalc.unit(rattrapage, rules: sansRatt, simulate: false).average.map { near($0, 7) } ?? false)
+
+        // compensation entre semestres
+        let sa = GradeSemester(name: "S1", units: [unit("A", "8")]), sb = GradeSemester(name: "S2", units: [unit("B", "12")])
+        let y5 = GradeCalc.year(GradeYear(name: "L1", semesters: [sa, sb]), simulate: false)
+        check("S1 à 8 compensé par S2 à 12", y5.validated && y5.semesters[sa.id]?.units[sa.units[0].id]?.status == .compensated)
+
+        // anciens fichiers (sans code ni matières) relus sans perte
+        let old = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","name":"Algo","credits":"6","items":[],"carried":false}"#
+        let decoded = try? JSONDecoder().decode(GradeUnit.self, from: Data(old.utf8))
+        check("ancien format de notes relu", decoded?.name == "Algo" && decoded?.inAverage == true && decoded?.subjects.isEmpty == true)
+        check("maquette L1 : 3 UE à matières par semestre",
+              GradesStore.l1InfoAvignon().allSatisfy { $0.units.filter { !$0.subjects.isEmpty }.count == 3 })
     }
 
     // MARK: Planning

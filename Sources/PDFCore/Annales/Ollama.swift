@@ -88,6 +88,21 @@ public final class OllamaClient {
         }.sorted { $0.name < $1.name }
     }
 
+    /// Modèles actuellement chargés en mémoire (nom, octets occupés).
+    public func loaded() async -> [(name: String, size: Int64)] {
+        guard let r = try? request("api/ps", body: nil, timeout: 5), let json = try? await send(r) else { return [] }
+        return (json["models"] as? [[String: Any]] ?? []).compactMap { m in
+            guard let name = m["name"] as? String else { return nil }
+            return (name, (m["size"] as? NSNumber)?.int64Value ?? 0)
+        }
+    }
+
+    /// Décharge un modèle de la mémoire tout de suite.
+    public func unload(_ model: String) async {
+        guard let r = try? request("api/generate", body: ["model": model, "keep_alive": 0], timeout: 15) else { return }
+        _ = try? await send(r)
+    }
+
     /// Capacités d'un modèle (« vision » s'il sait lire les images).
     public func capabilities(_ model: String) async -> Set<String> {
         guard let r = try? request("api/show", body: ["model": model], timeout: 10),
@@ -99,13 +114,15 @@ public final class OllamaClient {
     }
 
     /// Conversation ; la réponse arrive au fil de l'eau dans `onToken`.
+    /// `keepAlive` : combien de temps le modèle reste en mémoire après la réponse (« 0 » = libéré tout de suite).
     public func chat(model: String, messages: [OllamaMessage], options: [String: Any] = [:],
-                     format: String? = nil, onToken: ((String) -> Void)? = nil) async throws -> String {
+                     format: String? = nil, keepAlive: String = "2m",
+                     onToken: ((String) -> Void)? = nil) async throws -> String {
         var body: [String: Any] = [
             "model": model,
             "messages": messages.map { $0.json },
             "stream": true,
-            "keep_alive": "15m",
+            "keep_alive": keepAlive,
         ]
         if !options.isEmpty { body["options"] = options }
         if let format = format { body["format"] = format }

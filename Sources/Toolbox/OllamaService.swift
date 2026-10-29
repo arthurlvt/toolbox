@@ -160,6 +160,21 @@ final class OllamaService: ObservableObject {
         startedBy = nil
     }
 
+    /// Décharge tous les modèles chargés (la RAM est rendue tout de suite).
+    @Published private(set) var freeMessage = ""
+    func freeMemory() {
+        let c = client
+        Task {
+            let list = await c.loaded()
+            for m in list { await c.unload(m.name) }
+            let total = list.reduce(Int64(0)) { $0 + $1.size }
+            await MainActor.run {
+                self.freeMessage = list.isEmpty ? "Aucun modèle en mémoire."
+                    : "\(list.count) modèle\(list.count > 1 ? "s" : "") déchargé\(list.count > 1 ? "s" : "") · \(FileUtils.formatBytes(total)) libérés"
+            }
+        }
+    }
+
     func restartCheck() {
         busy = false
         ensureRunning()
@@ -186,6 +201,12 @@ struct OllamaSettings: View {
                 if o.state == .starting || o.state == .checking { ProgressView().controlSize(.small) }
                 Spacer()
                 Button(o.state.ok ? "Vérifier" : "Démarrer") { o.restartCheck() }
+            }
+            if o.state.ok {
+                HStack {
+                    Button("Libérer la mémoire maintenant") { o.freeMemory() }
+                    if !o.freeMessage.isEmpty { Text(o.freeMessage).font(.caption).foregroundStyle(.secondary) }
+                }
             }
             if o.state == .notInstalled {
                 HStack {
