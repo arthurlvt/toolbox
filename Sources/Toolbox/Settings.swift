@@ -74,6 +74,10 @@ struct GeneralTab: View {
                 }
             }
             Button("Relancer la configuration de bienvenue") { OnboardingState.shared.restart() }
+            Button("Lancer la visite guidée") {
+                NSApp.keyWindow?.close()          // la fenêtre des réglages
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { TourStore.shared.start() }
+            }
             ProfileSettings()
             MacAlertSettings()
             NightlySettings()

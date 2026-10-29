@@ -78,6 +78,7 @@ struct CompressToolView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .frame(maxWidth: 520)
+            .tourTarget("compress.tabs")
             switch archives.tab {
             case .pdf: pdfBody
             case .create: ArchiveCreateView()

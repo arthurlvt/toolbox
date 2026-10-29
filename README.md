@@ -29,6 +29,14 @@ La Feuille pose quelques questions (relançables dans Réglages → Général) :
 
 Tout se rechange ensuite dans **Réglages → Général → Mon profil / Outils à installer**.
 
+## Visite guidée
+
+Juste après la configuration (puis via ⌘K → « Visite guidée » ou Réglages → Général), la Feuille fait le tour de
+l'app avec **sa loupe** : l'écran s'assombrit sauf l'endroit présenté, la loupe s'y pose et le **grossit pour de
+vrai** (capture de la fenêtre), une bulle explique. Barre latérale, accueil et Personnaliser, ⌘K, Mes cours,
+Révisions, Notes & ECTS, Planning, LaTeX (nouveau document, symboles), calculatrices, archives, casque : seulement
+ce qui correspond à ton profil. Entrée / clic pour avancer, ← pour revenir, Échap pour arrêter.
+
 ## Accueil
 
 La page d'ouverture : une mascotte animée (la Feuille) et des widgets à disposer comme on veut.

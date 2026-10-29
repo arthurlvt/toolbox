@@ -585,6 +585,7 @@ struct CalcToolView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .frame(width: 380)
+                .tourTarget("calc.modes")
             }
             switch s.mode {
             case .graph:

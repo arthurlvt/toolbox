@@ -282,6 +282,14 @@ enum SelfTest {
         // archives
         check("archive : nom de base de TP3.tar.gz", ArchiveTool.baseName(URL(fileURLWithPath: "/tmp/TP3.tar.gz")) == "TP3")
         check("archive : motifs zip pour .git", ArchiveTool.zipPatterns([".git"]).contains("*/.git/*"))
+        // visite guidée : la bulle reste dans la fenêtre, même pour un bouton collé au bord
+        let win = CGSize(width: 1200, height: 780)
+        for r in [CGRect(x: 1150, y: 10, width: 40, height: 24), CGRect(x: 10, y: 740, width: 60, height: 30), CGRect(x: 0, y: 0, width: 220, height: 780)] {
+            let g = TourOverlay.place(lens: TourOverlay.lens(for: r), size: win)
+            check("visite : bulle dans la fenêtre pour \(Int(r.minX)),\(Int(r.minY))",
+                  g.origin.x >= 0 && g.origin.y >= 0 && g.origin.x + TourOverlay.groupSize.width <= win.width && g.origin.y + TourOverlay.groupSize.height <= win.height)
+        }
+        check("visite : commence et finit au centre", TourStore.buildSteps().first?.target == nil && TourStore.buildSteps().last?.target == nil)
         check("échappement LaTeX", LatexDocTemplates.esc("50 % & C#") == "50 \\% \\& C\\#", LatexDocTemplates.esc("50 % & C#"))
     }
 }

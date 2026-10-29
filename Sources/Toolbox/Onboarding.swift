@@ -171,6 +171,10 @@ final class OnboardingState: ObservableObject {
         UserDefaults.standard.set(true, forKey: "onboarding.done")
         withAnimation(.easeInOut(duration: 0.35)) { shown = false }
         ToastCenter.shared.show("Bienvenue \(UserProfile.firstName) ! Toolbox est prête 🎉", cheer: true, seconds: 4)
+        // première fois : la Feuille fait visiter
+        if !UserDefaults.standard.bool(forKey: "tour.done") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { TourStore.shared.start() }
+        }
     }
 
     /// Passe par le magasin du Planning (qui se réinitialise une fois l'accès donné), pour pouvoir créer le calendrier tout de suite.

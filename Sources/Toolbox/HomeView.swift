@@ -433,6 +433,7 @@ struct HomeView: View {
                                 .modifier(EditableWidget(widget: slot.widget, layout: home.layout))
                         }
                     }
+                    .tourTarget("home.widgets")
                 }
                 .padding(28)
                 .frame(maxWidth: 1100, alignment: .leading)
@@ -521,6 +522,7 @@ struct HomeView: View {
                 } label: {
                     Label("Personnaliser", systemImage: "slider.horizontal.3")
                 }
+                .tourTarget("home.customize")
                 .help("Ajouter, retirer et redimensionner les widgets (pour les déplacer : leur poignée en haut)")
             }
         }

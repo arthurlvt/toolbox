@@ -363,12 +363,14 @@ struct ContentView: View {
                                 } icon: {
                                     Image(systemName: tool.icon).foregroundStyle(tool.color)
                                 }
+                                .tourTarget("tool." + tool.rawValue)
                             }
                         }
                     }
                     }
                 }
             }
+            .tourTarget("sidebar")
             .navigationSplitViewColumnWidth(min: 190, ideal: 215, max: 280)
             .safeAreaInset(edge: .bottom) {
                 Text("100 % local · rien ne quitte ton Mac")
@@ -382,6 +384,7 @@ struct ContentView: View {
         .overlay(alignment: .bottomTrailing) { ToastView() }
         .overlay { PaletteView() }
         .overlay { OnboardingView() }
+        .overlay { TourOverlay() }
         .onAppear(perform: installPalette)
         .onChange(of: nav.selection) { _ in DiscordPresence.shared.refresh() }
         .onChange(of: profile.student) { _ in leaveHiddenTool() }
@@ -500,6 +503,10 @@ struct ContentView: View {
             list.append(PaletteCommand(title: "Extraire une archive", subtitle: "Compresser & archiver", icon: "arrow.up.bin",
                                        color: .orange, keywords: "unzip decompresser extraire tar 7z rar") {
                 ArchiveStore.shared.tab = .extract; nav.selection = .compress
+            })
+            list.append(PaletteCommand(title: "Visite guidée", subtitle: "La Feuille te montre l'app avec sa loupe", icon: "magnifyingglass",
+                                       color: .green, keywords: "visite guide aide tutoriel decouvrir") {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { TourStore.shared.start() }
             })
             list.append(PaletteCommand(title: "Mes documents LaTeX", subtitle: "Rouvrir, modifier ou supprimer un TD, TP, cours, test…",
                                        icon: "doc.on.doc", color: .indigo, keywords: "tex documents ouvrir modifier supprimer corbeille td tp cours test") {

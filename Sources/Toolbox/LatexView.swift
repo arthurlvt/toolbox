@@ -643,6 +643,7 @@ struct LatexToolView: View {
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut("n", modifiers: [.command, .shift])
                     .help("Choisis TD, TP, cours, rapport ou autre : un modèle pré-rempli est créé et ouvert (⇧⌘N)")
+                    .tourTarget("latex.new")
                     Button { model.showNewProject = true } label: {
                         Label("Depuis un modèle…", systemImage: "doc.badge.plus")
                     }
@@ -689,6 +690,7 @@ struct LatexToolView: View {
         .keyboardShortcut("m", modifiers: [.command, .shift])
         .help("Bibliothèque de symboles et formules LaTeX : ensembles, logique, limites, dérivées… (⇧⌘M)")
         .popover(isPresented: $lib.show, arrowEdge: .bottom) { LatexLibraryView(model: model) }
+        .tourTarget("latex.symbols")
     }
 
     // MARK: Barre de contrôle
