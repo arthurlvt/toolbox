@@ -224,11 +224,13 @@ Un petit Overleaf hors ligne : le code à gauche, le PDF à droite.
 **Le reste**
 - **Historique** : une version gardée à chaque compilation, comparaison et restauration.
 - **Formule depuis une photo** : image ou capture → code LaTeX (modèle de vision Ollama) → aperçu → insertion.
-- **Nouveau document** (⇧⌘N, ⌘K ou l'accueil) : Toolbox demande le type, **TD, TP, Cours, Rapport ou Autre**, et crée un
+- **Nouveau document** (⇧⌘N, ⌘K ou l'accueil) : Toolbox demande le type, **TD, TP, Cours, Test hebdo, Rapport ou Autre**, et crée un
   modèle pré-rempli dans le style des modèles d'Annalyse (`annales.cls`, cahier de projet), autonome (pas de classe à copier) :
   - *TD* : en-tête « TD n – thème », objectif, exercices et questions numérotés tout seuls, corrections masquables (`\corrigefalse`) ;
   - *TP* : encadré « À rendre », compilation, réponses encadrées, code coloré dans le langage choisi (C, C++, Python, Java…) ;
   - *Cours* : page de titre, sommaire, encadrés définition / théorème / propriété / méthode / exemple / attention ;
+  - *Test hebdo* : le « Test de connaissances » de la semaine en gros caractères (14 pt), I / Restituer et II / Calculer,
+    blancs pour répondre, « Note : / 5 » ; nombre de questions, barème et semaine réglables, version corrigée en un interrupteur ;
   - *Rapport* : page de titre façon cahier de projet, encadrés objectif / livrable, tableau ; *Autre* : document simple.
   La matière vient de « Mes cours » (celle du cours en cours par défaut), le numéro suivant est proposé, et le fichier est
   rangé dans le bon dossier (`Analyse 1/TDs/TD4/TD4.tex`) ou dans `Documents/Toolbox LaTeX`.

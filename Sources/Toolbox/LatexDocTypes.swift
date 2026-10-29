@@ -8,7 +8,7 @@ import PDFCore
 /// reprenant la mise en page des modèles d'Annalyse (annales.cls, exemples, cahier de projet),
 /// mais autonome : pas besoin de la classe à côté du fichier, et pas de fiche de provenance.
 enum LatexDocKind: String, CaseIterable, Identifiable {
-    case td, tp, cours, rapport, autre
+    case td, tp, cours, test, rapport, autre
     var id: String { rawValue }
 
     var title: String {
@@ -16,6 +16,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .td: return "TD"
         case .tp: return "TP"
         case .cours: return "Cours"
+        case .test: return "Test hebdo"
         case .rapport: return "Rapport"
         case .autre: return "Autre"
         }
@@ -25,6 +26,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .td: return "pencil.and.list.clipboard"
         case .tp: return "chevron.left.forwardslash.chevron.right"
         case .cours: return "book.closed"
+        case .test: return "checklist"
         case .rapport: return "doc.richtext"
         case .autre: return "doc"
         }
@@ -34,6 +36,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .td: return .blue
         case .tp: return .green
         case .cours: return .indigo
+        case .test: return .pink
         case .rapport: return .orange
         case .autre: return .gray
         }
@@ -43,6 +46,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .td: return "En-tête TD n° – thème, objectif, exercices et questions numérotés automatiquement, corrections masquables."
         case .tp: return "Objectifs, code en couleur (listings), réponses encadrées, section rendu et compilation."
         case .cours: return "Page de titre, sommaire, encadrés colorés : définition, théorème, propriété, méthode, exemple…"
+        case .test: return "Test de connaissances de la semaine, en gros caractères : Restituer / Calculer, espace pour répondre, note sur 5."
         case .rapport: return "Page de titre façon cahier de projet, sommaire, sections, encadrés objectif / livrable, tableau."
         case .autre: return "Document simple avec le même préambule (maths, couleurs, code)."
         }
@@ -53,7 +57,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .td: return .td
         case .tp: return .tp
         case .cours: return .cours
-        case .rapport, .autre: return .autre
+        case .test, .rapport, .autre: return .autre
         }
     }
     var numbered: Bool { self == .td || self == .tp || self == .cours }
@@ -63,6 +67,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .td: return "Ex. : Limites et continuité"
         case .tp: return "Ex. : Pointeurs et tableaux"
         case .cours: return "Ex. : Les nombres réels"
+        case .test: return ""
         case .rapport: return "Ex. : Projet Annalyse"
         case .autre: return "Titre du document"
         }
@@ -94,6 +99,17 @@ final class NewLatexDocForm: ObservableObject {
     @Published var language = UserDefaults.standard.string(forKey: "latexdoc.lang") ?? "C" {
         didSet { d.set(language, forKey: "latexdoc.lang") }
     }
+    @Published var week = Date()
+    @Published var testCorrige = false
+    @Published var restituer = UserDefaults.standard.object(forKey: "latexdoc.test.r") as? Int ?? 2 {
+        didSet { d.set(restituer, forKey: "latexdoc.test.r") }
+    }
+    @Published var calculer = UserDefaults.standard.object(forKey: "latexdoc.test.c") as? Int ?? 3 {
+        didSet { d.set(calculer, forKey: "latexdoc.test.c") }
+    }
+    @Published var bareme = UserDefaults.standard.object(forKey: "latexdoc.test.b") as? Int ?? 5 {
+        didSet { d.set(bareme, forKey: "latexdoc.test.b") }
+    }
     @Published var inCourseFolder = UserDefaults.standard.object(forKey: "latexdoc.incourse") as? Bool ?? true {
         didSet { d.set(inCourseFolder, forKey: "latexdoc.incourse") }
     }
@@ -116,12 +132,34 @@ final class NewLatexDocForm: ObservableObject {
         } else if !store.courses.contains(where: { $0.id == courseID }) {
             courseID = ""
         }
+        week = Self.defaultWeek()
         refreshNumber()
         show = true
     }
 
     func refreshNumber() {
         if let c = course, kind.numbered { number = c.nextNumber(kind.courseKind) } else if number < 1 { number = 1 }
+    }
+
+    /// Lundi de la semaine (celle qui vient si on est le week-end).
+    static func monday(of date: Date) -> Date {
+        var cal = Calendar(identifier: .gregorian)
+        cal.firstWeekday = 2
+        return cal.dateInterval(of: .weekOfYear, for: date)?.start ?? date
+    }
+
+    static func defaultWeek() -> Date {
+        let cal = Calendar(identifier: .gregorian)
+        let wd = cal.component(.weekday, from: Date())          // 1 = dimanche, 7 = samedi
+        let base = (wd == 1 || wd == 7) ? cal.date(byAdding: .day, value: 2, to: Date()) ?? Date() : Date()
+        return monday(of: base)
+    }
+
+    static func weekLabel(_ d: Date, format: String = "dd/MM") -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "fr_FR")
+        f.dateFormat = format
+        return f.string(from: monday(of: d))
     }
 
     static var academicYear: String {
@@ -133,6 +171,7 @@ final class NewLatexDocForm: ObservableObject {
     /// Titre affiché : « TD 4 -- Limites et continuité »
     var fullTitle: String {
         let t = title.trimmingCharacters(in: .whitespaces)
+        if kind == .test { return "Test de connaissances" }
         guard kind.numbered else { return t.isEmpty ? (kind == .rapport ? "Rapport" : "Sans titre") : t }
         let head = kind == .cours ? "Chapitre \(number)" : "\(kind.title) \(number)"
         return t.isEmpty ? head : head + " -- " + t
@@ -142,7 +181,14 @@ final class NewLatexDocForm: ObservableObject {
     func destination() -> URL {
         let base: URL
         let name: String
-        if inCourseFolder, let c = course {
+        if kind == .test {
+            name = "Test-" + Self.weekLabel(week, format: "yyyy-MM-dd")
+            if inCourseFolder, let c = course {
+                base = c.url.appendingPathComponent("Tests", isDirectory: true)
+            } else {
+                base = LatexModel.draftsFolder.appendingPathComponent("Tests hebdo", isDirectory: true)
+            }
+        } else if inCourseFolder, let c = course {
             let kindDir = c.folder(for: kind.courseKind)
             if kind.numbered {
                 name = "\(kind.courseKind.sessionPrefix)\(number)"
@@ -177,7 +223,8 @@ final class NewLatexDocForm: ObservableObject {
     var values: LatexDocTemplates.Values {
         LatexDocTemplates.Values(kind: kind, matiere: courseName, number: number, theme: title, fullTitle: fullTitle,
                                  author: author, formation: formation, enseignant: enseignant, objectif: objectif,
-                                 annee: Self.academicYear, corrige: corrige, language: language)
+                                 annee: Self.academicYear, corrige: kind == .test ? testCorrige : corrige, language: language,
+                                 week: Self.weekLabel(week), restituer: restituer, calculer: calculer, bareme: bareme)
     }
 }
 
@@ -197,6 +244,10 @@ enum LatexDocTemplates {
         var annee: String
         var corrige: Bool
         var language: String
+        var week: String = ""
+        var restituer: Int = 2
+        var calculer: Int = 3
+        var bareme: Int = 5
     }
 
     /// Échappe le texte saisi (& % # _ $ …) pour LaTeX.
@@ -435,6 +486,7 @@ enum LatexDocTemplates {
         case .tp: return tp(v)
         case .cours: return cours(v)
         case .rapport: return rapport(v)
+        case .test: return test(v)
         case .autre: return autre(v)
         }
     }
@@ -796,6 +848,102 @@ enum LatexDocTemplates {
         """#
     }
 
+    // MARK: Test hebdo (d'après tes « Test de connaissances » T1 / T3)
+
+    static let restituerExemples = [
+        "Donnez la définition EXACTE de \\dots{} :",
+        "Rappelez \\dots{} :",
+        "Énoncez le théorème \\dots{} :",
+        "Donnez la formule générale de \\dots{} :",
+    ]
+    static let calculerExemples = [
+        "Calculez la limite suivante : $\\displaystyle\\lim_{x\\to 0}\\frac{e^{3x+2}-e^{2}}{x}$",
+        "Déterminez par le calcul la dérivée de l'application suivante : $g : x \\mapsto \\dfrac{2}{5(2x-1)^{4}}$",
+        "Résolvez l'équation / inéquation suivante : $\\dots$",
+        "Démontrez \\dots{} :",
+        "En langage mathématique, donnez la négation de la proposition suivante : \\[ P \\Rightarrow (Q \\wedge R) \\]",
+    ]
+
+    static func questions(_ list: [String], count: Int, space: String) -> String {
+        guard count > 0 else { return "" }
+        let items = (0..<count).map { i -> String in
+            "  \\item " + list[i % list.count] + "\n  \\reponse[\(space)]{Réponse attendue.}"
+        }
+        return "\\begin{enumerate}\n" + items.joined(separator: "\n\n") + "\n\\end{enumerate}"
+    }
+
+    static func test(_ v: Values) -> String {
+        let mat = esc(v.matiere)
+        let subtitle = mat.isEmpty ? "Semaine du \\semaine" : "\\matiere\\ -- Semaine du \\semaine"
+        let total = max(1, v.restituer + v.calculer)
+        let space = total <= 4 ? "4cm" : total <= 5 ? "3cm" : "2.2cm"
+        var parts: [String] = []
+        if v.restituer > 0 {
+            parts.append("\\partie{I / Restituer}\n" + questions(restituerExemples, count: v.restituer, space: space))
+        }
+        if v.calculer > 0 {
+            let num = v.restituer > 0 ? "II" : "I"
+            parts.append("\\partie{\(num) / Calculer}\n" + questions(calculerExemples, count: v.calculer, space: space))
+        }
+        return #"""
+        \#(meta(v))
+        % !TEX program = pdflatex
+        % Test de connaissances hebdomadaire (modèle Toolbox, d'après T1 / T3)
+        \documentclass[a4paper,12pt]{article}
+
+        \usepackage{iftex}
+        \ifPDFTeX
+          \usepackage[utf8]{inputenc}
+          \usepackage[T1]{fontenc}
+          \usepackage{lmodern}               % maths nettes à toutes les tailles
+          \usepackage[scaled=0.95]{helvet}   % proche de l'Helvetica Neue des tests faits avec Pages
+        \else
+          \usepackage{fontspec}
+          \IfFontExistsTF{Helvetica Neue}{\setsansfont{Helvetica Neue}}{}
+        \fi
+        \renewcommand{\familydefault}{\sfdefault}
+        \usepackage[french]{babel}
+        \usepackage{amsmath,amssymb}
+        \usepackage[a4paper,margin=1.8cm]{geometry}
+        \usepackage{enumitem}
+        \usepackage{xcolor}
+        \pagestyle{empty}
+
+        % ---------- À modifier chaque semaine ----------
+        \newcommand{\semaine}{\#(v.week)}
+        \newcommand{\matiere}{\#(mat.isEmpty ? "" : mat)}
+        \newcommand{\bareme}{\#(v.bareme)}
+
+        % \corrigetrue : les réponses s'affichent en bleu à la place des blancs
+        \newif\ifcorrige
+        \#(v.corrige ? "\\corrigetrue" : "\\corrigefalse")
+
+        % ---------- Mise en page (gros caractères) ----------
+        \AtBeginDocument{\fontsize{14}{19}\selectfont}
+        \setlist[enumerate]{label=\arabic*., leftmargin=1.6em, itemsep=0.6em}
+        \newcommand{\partie}[1]{\par\bigskip{\fontsize{18}{22}\selectfont\bfseries\itshape\underline{#1 :}}\par\medskip}
+        % \reponse[espace]{corrigé}
+        \newcommand{\reponse}[2][3.5cm]{%
+          \ifcorrige\par{\color{blue!60!black}#2}\par\medskip\else\par\vspace{#1}\fi}
+
+        \begin{document}
+
+        \noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\centering
+          \vspace{0.4em}
+          {\fontsize{28}{32}\selectfont\bfseries\itshape Test de connaissances\par}
+          \vspace{0.3em}
+          {\fontsize{17}{20}\selectfont\itshape \#(subtitle)\par}
+          \vspace{0.4em}}}
+
+        \#(parts.joined(separator: "\n\n"))
+
+        \vfill
+        \hfill{\fontsize{18}{22}\selectfont Note : \hspace{1.5cm}/ \bareme}
+
+        \end{document}
+        """#
+    }
+
     static func autre(_ v: Values) -> String {
         let pre = preamble(cours: false, fancy: false, v: v, lang: nil)
         return #"""
@@ -831,7 +979,7 @@ extension LatexModel {
             form.show = false
             open(url)
             let lines = text.components(separatedBy: "\n")
-            let target = lines.firstIndex { $0.hasPrefix("\\begin{exercice}") || $0.hasPrefix("\\section{") || $0.hasPrefix("Ton texte") }
+            let target = lines.firstIndex { $0.hasPrefix("\\begin{exercice}") || $0.hasPrefix("\\partie") || $0.hasPrefix("\\section{") || $0.hasPrefix("Ton texte") }
                 ?? lines.firstIndex { $0.hasPrefix("\\begin{document}") } ?? 0
             send(.goTo(line: target + 1))
             compile()
@@ -875,7 +1023,16 @@ struct NewLatexDocSheet: View {
                         Text("\(f.kind.numberLabel) \(f.number)").monospacedDigit()
                     }
                 }
-                TextField(f.kind.numbered ? "Thème" : "Titre", text: $f.title, prompt: Text(f.kind.titlePrompt))
+                if f.kind == .test {
+                    DatePicker("Semaine du", selection: $f.week, displayedComponents: .date)
+                    Text("Lundi \(NewLatexDocForm.weekLabel(f.week, format: "d MMMM"))").font(.caption).foregroundStyle(.secondary)
+                    Stepper(value: $f.restituer, in: 0...6) { Text("I / Restituer : \(f.restituer) question\(f.restituer > 1 ? "s" : "")") }
+                    Stepper(value: $f.calculer, in: 0...6) { Text("II / Calculer : \(f.calculer) question\(f.calculer > 1 ? "s" : "")") }
+                    Stepper(value: $f.bareme, in: 1...40) { Text("Noté sur \(f.bareme)") }
+                    Toggle("Version corrigée (réponses à la place des blancs)", isOn: $f.testCorrige)
+                } else {
+                    TextField(f.kind.numbered ? "Thème" : "Titre", text: $f.title, prompt: Text(f.kind.titlePrompt))
+                }
                 if f.kind == .td || f.kind == .tp {
                     TextField("Objectif", text: $f.objectif, prompt: Text("Facultatif : une phrase sous le titre"))
                 }
@@ -890,8 +1047,8 @@ struct NewLatexDocSheet: View {
                 if f.kind == .td || f.kind == .tp {
                     Toggle("Afficher les corrections (\\corrigetrue)", isOn: $f.corrige)
                 }
-                TextField("Auteur", text: $f.author)
-                if f.kind != .autre {
+                if f.kind != .test { TextField("Auteur", text: $f.author) }
+                if f.kind != .autre && f.kind != .test {
                     TextField("Formation", text: $f.formation)
                     if f.kind == .cours || f.kind == .rapport {
                         TextField(f.kind == .rapport ? "Encadrant" : "Enseignant", text: $f.enseignant, prompt: Text("Facultatif"))
