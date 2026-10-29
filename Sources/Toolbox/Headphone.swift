@@ -487,8 +487,16 @@ struct HeadphonePanel: View {
 /// Ligne compacte dans la barre des menus : batterie + mode de réduction de bruit en un clic.
 struct MenuHeadphoneStrip: View {
     @ObservedObject var h = HeadphoneStore.shared
+    @ObservedObject var cm = ClassMode.shared
 
     var body: some View {
+        Button { cm.toggle() } label: {
+            Label(cm.active ? "Mode cours activé : désactiver" : "Mode cours (iPhone en silence + casque)",
+                  systemImage: cm.active ? "bell.slash.fill" : "graduationcap.fill")
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.bordered)
+        .tint(cm.active ? .red : nil)
         if h.connected, let r = h.last {
             HStack(spacing: 8) {
                 Image(systemName: "headphones").foregroundStyle(Color.cyan)

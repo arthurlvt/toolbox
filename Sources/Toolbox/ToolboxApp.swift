@@ -37,6 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         HeadphoneStore.shared.start()
         HeadphoneAuto.shared.start()
         MorningCheck.shared.start()
+        ClassMode.shared.start()
         PhoneStatusStore.shared.start()
         // Notifications de début de cours (boutons « Ouvrir le dernier TD/TP », « Nouveau TP »…)
         UNUserNotificationCenter.current().delegate = self
@@ -485,6 +486,10 @@ struct ContentView: View {
                     RevisionsStore.shared.selectedID = p.id; nav.selection = .revisions
                 })
             }
+            let cm = ClassMode.shared
+            list.append(PaletteCommand(title: cm.active ? "Désactiver le mode cours" : "Mode cours (iPhone en silence + casque)",
+                                       subtitle: "Concentration sur le Mac et l'iPhone", icon: cm.active ? "bell.fill" : "bell.slash.fill",
+                                       color: .red, keywords: "cours silence vibreur concentration focus ne pas deranger") { cm.toggle() })
             let hp = HeadphoneStore.shared
             if hp.connected {
                 for (code, name) in [(UInt8(0x04), "réduction de bruit"), (HeadphoneStore.ancTransparency, "transparence"), (HeadphoneStore.ancOff, "désactiver la réduction de bruit")] {

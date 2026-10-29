@@ -121,6 +121,7 @@ struct HeadphoneToolView: View {
                     }
                     .frame(minWidth: 360, maxWidth: 460)
                     VStack(alignment: .leading, spacing: 14) {
+                        card { ClassModeSettings() }
                         card { autoSettings }
                     }
                     .frame(minWidth: 320, maxWidth: 440)

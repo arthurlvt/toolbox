@@ -99,6 +99,10 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
 
 - Batterie (gauche / droite / boîtier pour des écouteurs), réduction de bruit, égaliseur, renfort des basses, faible
   latence, faire sonner, firmware, et un bouton « Rechercher le casque ».
+- **Mode cours** (page Casque, barre des menus, ⌘K) : active un mode de concentration sur le Mac, donc sur l'iPhone
+  (« Partager entre les appareils »), et déconnecte le casque (ou transparence / réduction coupée). Automatique au
+  début et à la fin des cours si tu veux. La concentration passe par deux raccourcis de l'app Raccourcis
+  (« Toolbox Concentration On / Off », action « Définir la concentration »).
 - **Mode automatique** : transparence pendant un cours (repéré dans le calendrier comme dans Mes cours), mode habituel
   le reste du temps, faible latence quand un jeu est au premier plan.
 
