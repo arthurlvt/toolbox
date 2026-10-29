@@ -313,7 +313,7 @@ struct OnboardingView: View {
                 Text("Les outils à installer").font(.system(size: 24, weight: .bold, design: .rounded))
                 Text("Facultatif : coche ce qui te manque, j'ouvre le Terminal et j'installe tout (ton mot de passe se tape là-bas).")
                     .multilineTextAlignment(.center).foregroundStyle(.secondary).font(.callout)
-                DependenciesView(compact: true)
+                ScrollView { DependenciesView(compact: true).padding(.trailing, 6) }
             }
         case .courses:
             VStack(spacing: 14) {

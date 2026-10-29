@@ -256,6 +256,7 @@ final class DiscordPresence: ObservableObject {
             return ("Révise", "Coche des cases ✅")
         case .grades: return ("Calcule sa moyenne", "Compte sur la compensation 🙏")
         case .calc: return ("Trace des courbes", "f(x) = tout va bien 📈")
+        case .testbench: return ("Teste son TP", "Segmentation fault (core dumped) 💥")
         case .planning: return ("Regarde son planning", "Calcule ses heures 🍟")
         case .headphone: return ("Règle son casque", "Réduction de bruit au max 🎧")
         case .compare: return ("Joue au jeu des 7 différences", "Entre deux PDF 🔍")

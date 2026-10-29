@@ -36,7 +36,7 @@ final class AppProfile: ObservableObject {
 
     func shows(_ t: Tool) -> Bool {
         switch t {
-        case .courses, .revisions, .grades: return student
+        case .courses, .revisions, .grades, .testbench: return student
         case .planning: return worker
         case .headphone: return hasHeadphone
         default: return true
@@ -121,6 +121,7 @@ final class DependencyStore: ObservableObject {
     }
 
     func refresh() {
+        GitHubLogin.shared.check()
         let model = Self.suggestedModel
         let latexPackages = "latexmk tcolorbox pgf environ trimspaces needspace comment lastpage titlesec enumitem csquotes babel-french fancyhdr booktabs lm helvetic texcount"
         items = [
@@ -135,6 +136,9 @@ final class DependencyStore: ObservableObject {
             Dependency(id: "gs", name: "Ghostscript", why: "Compression des PDF bien plus efficace", icon: "arrow.down.right.and.arrow.up.left",
                        size: 120_000_000, installed: Compressor.ghostscriptPath != nil,
                        script: "brew install ghostscript"),
+            Dependency(id: "gh", name: "GitHub CLI (gh)", why: "Dépôts privés dans le widget GitHub, cloner sans mot de passe", icon: "chevron.left.forwardslash.chevron.right",
+                       size: 40_000_000, installed: GitHub.ghPath != nil,
+                       script: "brew install gh"),
             Dependency(id: "7z", name: "7-Zip", why: "Archives .7z (chiffrement AES) et .rar", icon: "archivebox",
                        size: 8_000_000, installed: ArchiveTool.sevenZip != nil,
                        script: "brew install sevenzip"),
@@ -228,6 +232,8 @@ struct DependenciesView: View {
             if !s.message.isEmpty {
                 Text(s.message).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }
+            Divider()
+            GitHubLoginRow()
         }
         .onAppear { s.refresh() }
     }

@@ -634,7 +634,7 @@ struct HomeView: View {
                     Text(home.githubStatus).font(.caption).foregroundStyle(.secondary)
                 }
                 if GitHub.ghPath == nil {
-                    Text("Astuce : avec « brew install gh » puis « gh auth login », tes dépôts privés apparaissent aussi.")
+                    Text("Astuce : connecte ton compte GitHub dans Réglages → Général → Outils à installer pour voir aussi tes dépôts privés.")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             } else {

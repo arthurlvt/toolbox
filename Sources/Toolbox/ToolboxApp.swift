@@ -201,7 +201,7 @@ enum ToolSection: String, CaseIterable, Identifiable {
 }
 
 enum Tool: String, CaseIterable, Identifiable {
-    case home, courses, revisions, grades, calc
+    case home, courses, revisions, grades, calc, testbench
     case planning, headphone
     case organize, merge, split, layout
     case compress, ocr, cleanup
@@ -216,7 +216,7 @@ enum Tool: String, CaseIterable, Identifiable {
     var section: ToolSection {
         switch self {
         case .home: return .home
-        case .courses, .revisions, .grades, .calc: return .study
+        case .courses, .revisions, .grades, .calc, .testbench: return .study
         case .planning, .headphone: return .life
         case .organize, .merge, .split, .layout: return .pages
         case .compress, .ocr, .cleanup: return .optimize
@@ -235,6 +235,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .revisions: return "Révisions"
         case .grades: return "Notes & ECTS"
         case .calc: return "Calculatrice"
+        case .testbench: return "Banc de test"
         case .planning: return "Planning"
         case .headphone: return "Casque"
         case .compare: return "Comparer"
@@ -262,6 +263,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .revisions: return "Tes CC du calendrier, avec une checklist reliée aux cours, TD et annales"
         case .grades: return "Moyennes, crédits ECTS, compensation et note qu'il te faut au prochain CC"
         case .calc: return "Graphique (courbes, limites, dérivées, LaTeX), scientifique et programmeur (bases, bits)"
+        case .testbench: return "Compiler un TP en C, C++ ou Python, le tester (entrée → sortie attendue), traquer les erreurs mémoire"
         case .headphone: return "Batterie, réduction de bruit, égaliseur et mode automatique de ton casque Nothing"
         case .planning: return "Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC"
         case .compare: return "Voir ce qui a changé entre deux versions d'un PDF"
@@ -294,6 +296,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .latex: return "tex document td tp cours rapport"
         case .courses: return "cours matieres td tp annales"
         case .revisions: return "cc examen partiel checklist"
+        case .testbench: return "tp test c cpp python compiler gcc clang valgrind fuite memoire segfault"
         default: return ""
         }
     }
@@ -305,6 +308,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .revisions: return "checklist"
         case .grades: return "chart.bar.doc.horizontal"
         case .calc: return "x.squareroot"
+        case .testbench: return "checkmark.seal"
         case .planning: return "fork.knife"
         case .headphone: return "headphones"
         case .compare: return "plus.forwardslash.minus"
@@ -332,6 +336,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .revisions: return .mint
         case .grades: return .green
         case .calc: return .blue
+        case .testbench: return .orange
         case .planning: return .yellow
         case .headphone: return .cyan
         case .compare: return .orange
@@ -467,6 +472,7 @@ struct ContentView: View {
         case .revisions: RevisionsToolView(r: RevisionsStore.shared)
         case .grades: GradesToolView(g: GradesStore.shared)
         case .calc: CalcToolView(s: CalcStore.shared)
+        case .testbench: TestBenchView()
         case .planning: PlanningToolView(p: PlanningStore.shared)
         case .headphone: HeadphoneToolView()
         case .sign: SignToolView(s: sign)

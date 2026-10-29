@@ -49,7 +49,7 @@ enum ArchiveTool {
                             "*.bcf", "*.run.xml", "*.nav", "*.snm", "*.lof", "*.lot"]
     /// Pour rendre un TP : pas de binaires, de caches ni de dossiers d'éditeur.
     static let tpJunk = [".git", ".vscode", ".idea", "__pycache__", "*.pyc", "*.o", "*.obj", "*.class", "a.out", "*.exe",
-                         "*.dSYM", "build", "cmake-build-debug", "cmake-build-release", "node_modules", ".venv", "venv", ".pytest_cache"]
+                         "*.dSYM", "build", "cmake-build-debug", "cmake-build-release", "node_modules", ".venv", "venv", ".pytest_cache", ".toolbox-tests.json"]
 
     static var sevenZip: String? { Shell.which("7zz") ?? Shell.which("7z") }
 

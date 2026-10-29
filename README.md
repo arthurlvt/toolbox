@@ -1,15 +1,12 @@
 # Toolbox
 
-Un « iLovePDF » qui tourne entièrement sur ton Mac, plus un éditeur LaTeX, un gestionnaire de cours,
-une banque d'annales, des calculatrices, un outil d'archives et un tableau de bord. Aucun document n'est envoyé
-où que ce soit.
+Toolbox est un logiciel regroupant un ensembles d'outils que j'utilisais au quotidien. Seulement, la problématique était la suivante; Je voulais parfois utiliser ces outils mais sans connection ce n'était pas possible. De plus, devoir aller à droite à gauche à chaque fois que je voulais utiliser un autre outil créeait une perte de temps considérable ce qui m'a amené à créer cette application grâce à laquelle aucun document ne sort de l'ordinateur et tout tourne 100% localement
+
+Mon idée de départ était de publier un répo pour chaque mini-projets de cette app mais cela serait vite devenu le bazar ce qui m'a amené à tout rassembler en un seul répo tout comme le fait l'application.
+
+**Cette application n'est malheureusement disponible que sur MacOS pour le moment mais sera peut être bientôt étendue à d'autre OS si la motivation me vient**
 
 Appli native (Swift, SwiftUI, PDFKit, Vision) et commande terminal `pdftool`, qui partagent le même moteur.
-
-- **100 % local** : PDF, cours, notes et index de recherche restent sur le Mac. L'IA (Annalyse, explications
-  LaTeX, formules, modèles LaTeX sur mesure) tourne avec [Ollama](https://ollama.com), sur la machine.
-- **Seules exceptions**, si tu les utilises : la météo (Open-Meteo, sans compte) et la liste de tes dépôts GitHub.
-
 ---
 
 ## Premier lancement
@@ -22,8 +19,10 @@ La Feuille pose quelques questions (relançables dans Réglages → Général) :
   (« Macdo » pour un McDonald's) qui est créé tout de suite. Si non : Planning et ses widgets sont masqués ;
 - **tes appareils** : iPhone (widgets Scriptable, batterie de l'iPhone) et casque Nothing (détecté s'il est
   appairé). Sans eux, les pages, lignes et réglages correspondants disparaissent ;
-- **les outils à installer** : Homebrew, LaTeX (BasicTeX + les paquets des modèles), Ghostscript, Ollama et un
-  modèle IA choisi selon la RAM du Mac (3B jusqu'à 12 Go, 7B au-delà). Ce qui est déjà là est coché « Installé », la
+- **les outils à installer** : Homebrew, LaTeX (BasicTeX + les paquets des modèles), Ghostscript, 7-Zip, GitHub CLI,
+  Ollama et un modèle IA choisi selon la RAM du Mac (3B jusqu'à 12 Go, 7B au-delà). Le **compte GitHub** se connecte
+  ensuite d'un bouton : le code à usage unique s'affiche (et est copié), la page GitHub s'ouvre, rien à taper dans
+  le Terminal. Ce qui est déjà là est coché « Installé », la
   place nécessaire est comparée à l'espace libre, et l'installation se fait dans le Terminal (mot de passe tapé
   là-bas, jamais dans Toolbox) ;
 - tes apps favorites et deux permissions (Calendrier, Notes).
@@ -32,15 +31,9 @@ Tout se rechange ensuite dans **Réglages → Général → Mon profil / Outils 
 
 ## Visite guidée
 
-Juste après la configuration (puis via ⌘K → « Visite guidée » ou Réglages → Général), la Feuille fait le tour de
-l'app avec **sa loupe** : l'écran s'assombrit sauf l'endroit présenté, la loupe s'y pose et le **grossit pour de
-vrai** (capture de la fenêtre), une bulle explique. Barre latérale, accueil et Personnaliser, ⌘K, Mes cours,
-Révisions, Notes & ECTS, Planning, LaTeX (nouveau document, symboles), calculatrices, archives, casque : seulement
-ce qui correspond à ton profil. Entrée / clic pour avancer, ← pour revenir, Échap pour arrêter.
+Juste après la configuration (puis via ⌘K → « Visite guidée » ou Réglages → Général), la Feuille fait le tour de l'app avec **sa loupe** : l'écran s'assombrit sauf l'endroit présenté, la loupe s'y pose et le **grossit pour de vrai** (capture de la fenêtre), une bulle explique. Barre latérale, accueil et Personnaliser, ⌘K, Mes cours, Révisions, Notes & ECTS, Planning, LaTeX (nouveau document, symboles), calculatrices, archives, casque : seulement ce qui correspond à ton profil. Entrée / clic pour avancer, ← pour revenir, Échap pour arrêter.
 
-**Petites visites par outil** : la première fois que tu ouvres Mes cours, Révisions, Notes & ECTS, Planning, LaTeX,
-la Calculatrice, Compresser & archiver ou Casque, la Feuille montre 2 à 4 endroits clés de la page. Relançables
-avec ⌘K → « Visite de cet outil », désactivables (et remises à zéro) dans Réglages → Général.
+**Petites visites par outil** : la première fois que tu ouvres Mes cours, Révisions, Notes & ECTS, Planning, LaTeX, la Calculatrice, Compresser & archiver ou Casque, la Feuille montre 2 à 4 endroits clés de la page. Relançables avec ⌘K → « Visite de cet outil », désactivables (et remises à zéro) dans Réglages → Général.
 
 ## Accueil
 
@@ -202,6 +195,21 @@ Trois modes en haut de la page :
 
 Les limites et les points remarquables sont des estimations numériques : elles donnent le résultat, la copie doit
 toujours le justifier.
+
+## Banc de test (TP en C, C++, Python)
+
+Dépose le dossier d'un TP (ou choisis un des derniers TP de *Mes cours*) :
+- **Compilation** avec clang, AddressSanitizer et UBSan (options modifiables, fichiers à cocher). Les erreurs et
+  avertissements sont listés et s'ouvrent à la bonne ligne dans VS Code. En Python : vérification de la syntaxe.
+- **Tests** : arguments (`argv`), entrée clavier (stdin) et sortie attendue, comparée au caractère près, sans les
+  espaces de fin, ou « contient ». ⌘R compile et lance tout. Les lignes qui diffèrent sont en rouge (l'attendu au
+  survol). Un essai sans sortie attendue montre simplement ce qu'affiche le programme, et « Utiliser comme sortie
+  attendue » en fait un test.
+- **Erreurs mémoire expliquées en français** : dépassement de tableau, utilisation après `free`, double `free`,
+  pointeur NULL, comportement indéfini, erreur de segmentation, division par zéro, boucle infinie (délai réglable).
+- **Fuites mémoire** : une seconde compilation sans sanitizer est lancée sous `leaks` (outil d'Apple) pour chaque test.
+- Les tests sont gardés dans le dossier du TP (`.toolbox-tests.json`, exclu de l'archive « prêt à rendre »).
+- Quand tout est vert : **« Préparer le .zip à rendre »** ouvre Compresser & archiver avec le dossier et le mode TP.
 
 ## Planning
 
@@ -416,6 +424,26 @@ par un compte développeur Apple : la première fois, **clic droit sur Toolbox �
 Confidentialité et sécurité → « Ouvrir quand même »). Pour l'éviter, il faut un certificat *Developer ID* et la
 notarisation d'Apple (`notarytool`).
 
+### Dépendances
+
+| Outil | À quoi il sert dans Toolbox | Obligatoire | Comment l'avoir |
+|---|---|---|---|
+| macOS 13 (Ventura) ou plus récent | — | oui | — |
+| Outils de ligne de commande Apple : `swift`, `clang`, `git`, `python3`, `make`, `leaks` | compiler Toolbox, mise à jour intégrée, banc de test (C, C++, Python, fuites mémoire) | oui pour compiler | `xcode-select --install` |
+| [Homebrew](https://brew.sh) | installer les outils ci-dessous | non | setup ou Réglages → *Outils à installer* |
+| Ghostscript (`gs`) | compression des PDF bien plus efficace (sinon PDFKit) | non | setup (`brew install ghostscript`) |
+| BasicTeX + paquets (`pdflatex`, `xelatex`, `latexmk`, `synctex`, `texcount`, `tcolorbox`…) | éditeur LaTeX, modèles, symboles, Annalyse | non (onglet LaTeX) | setup (`brew install --cask basictex` + `tlmgr`) |
+| [Ollama](https://ollama.com) + un modèle (`qwen2.5-coder:3b`, ou `:7b` avec 16 Go de RAM) | IA locale : erreurs LaTeX, formule depuis une photo, modèles sur mesure, Annalyse | non | setup (`brew install ollama`, `ollama pull …`) |
+| 7-Zip (`7zz`) | créer et ouvrir des .7z, ouvrir des .rar protégés | non | setup (`brew install sevenzip`) |
+| GitHub CLI (`gh`) + connexion | dépôts privés dans le widget GitHub, cloner sans mot de passe | non | setup, puis **Se connecter** dans l'app (code à usage unique, sans Terminal) |
+| VS Code Insiders (ou VS Code) | ouvrir les TD/TP, projets, erreurs à la bonne ligne | non | [code.visualstudio.com/insiders](https://code.visualstudio.com/insiders) |
+| Sur l'iPhone : [Scriptable](https://scriptable.app) | widgets Prochain shift, Mon Mac, Ma journée | non | App Store |
+| Raccourcis (Mac) : « Toolbox Concentration On / Off » | Mode cours (concentration sur le Mac et l'iPhone) | non | à créer une fois (expliqué dans la page Casque) |
+
+Outils déjà présents dans macOS et utilisés tels quels : `hdiutil` (le .dmg), `zip` / `unzip` / `tar` (archives),
+`shortcuts` (Mode cours), `pmset` (réveil programmé), `osascript` (Notes, mot de passe administrateur),
+`lsregister` (« Ouvrir avec »), Vision (OCR) et PDFKit.
+
 ### Outils complémentaires
 
 Le **premier lancement** (et Réglages → Général → *Outils à installer*) détecte ce qui manque et l'installe dans le
@@ -429,8 +457,30 @@ sudo tlmgr install latexmk tcolorbox pgf environ trimspaces needspace comment la
 brew install ollama                   # IA locale
 ollama pull qwen2.5-coder:3b          # modèle léger (7b si 16 Go de RAM ou plus)
 brew install sevenzip                 # archives .7z et .rar
-brew install gh && gh auth login      # dépôts GitHub privés dans le widget GitHub
+brew install gh && gh auth login      # dépôts privés GitHub (ou « Se connecter » dans l'app)
 ```
+
+## Autorisations demandées
+
+Toutes sont facultatives : macOS les demande au moment où la fonction sert pour la première fois, et l'app marche
+sans (la fonction concernée est simplement désactivée). Elles se gèrent dans Réglages Système → Confidentialité et
+sécurité.
+
+| Autorisation | Pour quoi | Quand c'est demandé |
+|---|---|---|
+| **Calendriers** (accès complet) | événements du jour, « cours en ce moment », prochains CC (Révisions, comptes à rebours), calendrier dédié au travail et shifts du planning | setup, ou première ouverture de l'accueil / du Planning |
+| **Rappels** | alerte « Recharge ton Mac » qui sonne sur l'iPhone, rappel du soir (Mac et casque à charger) | quand tu actives ces alertes |
+| **Notifications** | début de cours, batterie de l'iPhone basse, check du matin | au premier envoi |
+| **Bluetooth** | batterie et réglages du casque Nothing, Mode cours (déconnexion du casque) | première lecture du casque |
+| **Automatisation → Notes** (Apple Events) | pense-bête, note épinglée sur l'accueil | setup, ou premier pense-bête |
+| **Enregistrement de l'écran** | « Capture d'écran → texte », import du planning par capture | première capture |
+| **Dossiers Bureau, Documents, Téléchargements** | cours et documents LaTeX, *Nettoyer le Mac* (vieux téléchargements, gros fichiers) | à la première lecture de ces dossiers |
+| **Mot de passe administrateur** (une fois) | réveil programmé du Mac pour le check du matin (`pmset`) | quand tu actives le réveil |
+| **Mot de passe dans le Terminal** | installation des outils (Homebrew, paquets LaTeX) : tapé dans le Terminal, jamais vu par Toolbox | quand tu cliques « Installer » |
+| **Connexion GitHub** (code à usage unique) | dépôts privés : la page github.com/login/device s'ouvre, tu colles le code | quand tu cliques « Se connecter » |
+
+Pas d'autorisation système pour : iCloud Drive (dossier `Toolbox/` partagé avec l'iPhone), Ollama (sur la machine,
+`127.0.0.1`), la météo (Open-Meteo, sans compte), les Services du Finder et ⌥Espace.
 
 ---
 
@@ -509,7 +559,7 @@ Sources/
   PDFCore/    moteur partagé : pages, dessin, compression, OCR, comparaison, signature, LaTeX,
               Annalyse (Annales/), bibliothèque et index des cours, GitHub, VS Code
   Toolbox/    appli SwiftUI : une vue par outil, accueil et widgets, Mes cours, éditeur LaTeX,
-              notes et ECTS, calculatrices (MathEngine.swift, ClassicCalc.swift), planning, casque, archives
+              notes et ECTS, calculatrices (MathEngine.swift, ClassicCalc.swift), banc de test (TestBench.swift), planning, casque, archives
               (ArchiveTool.swift), modèles LaTeX (LatexDocTypes.swift), bibliothèque de symboles
               (LatexLibrary.swift), IA locale (OllamaService.swift, LatexAIDoc.swift), profil et outils à installer
               (Profile.swift), visite guidée (Tour.swift), palette ⌘K, barre des menus
@@ -517,7 +567,8 @@ Sources/
 Resources/    Info.plist (types de fichiers, Services, autorisations) + icône
 build.sh      compile hors du dossier (Nextcloud), assemble le .app, l'enregistre auprès de macOS
 make-dmg.sh   fabrique le .dmg à partir de build/Toolbox.app
-              (nettoyage du disque : Cleanup.swift ; mise à jour intégrée : Updater.swift)
+              (nettoyage du disque : Cleanup.swift ; mise à jour intégrée : Updater.swift ;
+              connexion GitHub : GitHubLogin.swift)
 ```
 
 - **Tests** : `build.sh` lance `Toolbox --selftest` après chaque compilation : calculatrices (graphique,
