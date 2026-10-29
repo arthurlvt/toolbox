@@ -380,13 +380,18 @@ struct ContentView: View {
             }
         } detail: {
             detail(nav.selection ?? .home)
+                .tourTarget("detail")
         }
         .overlay(alignment: .bottomTrailing) { ToastView() }
         .overlay { PaletteView() }
         .overlay { OnboardingView() }
         .overlay { TourOverlay() }
         .onAppear(perform: installPalette)
-        .onChange(of: nav.selection) { _ in DiscordPresence.shared.refresh() }
+        .onChange(of: nav.selection) { t in
+            DiscordPresence.shared.refresh()
+            AppRouterSelection.current = t
+            if let t = t { TourStore.shared.toolOpened(t) }
+        }
         .onChange(of: profile.student) { _ in leaveHiddenTool() }
         .onChange(of: profile.worker) { _ in leaveHiddenTool() }
         .onChange(of: profile.hasHeadphone) { _ in leaveHiddenTool() }
@@ -504,6 +509,12 @@ struct ContentView: View {
                                        color: .orange, keywords: "unzip decompresser extraire tar 7z rar") {
                 ArchiveStore.shared.tab = .extract; nav.selection = .compress
             })
+            if let current = nav.selection, TourStore.miniSteps(current) != nil {
+                list.append(PaletteCommand(title: "Visite de cet outil", subtitle: current.title, icon: "magnifyingglass.circle",
+                                           color: .green, keywords: "visite aide outil tutoriel") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { TourStore.shared.startMini(current) }
+                })
+            }
             list.append(PaletteCommand(title: "Visite guidée", subtitle: "La Feuille te montre l'app avec sa loupe", icon: "magnifyingglass",
                                        color: .green, keywords: "visite guide aide tutoriel decouvrir") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { TourStore.shared.start() }

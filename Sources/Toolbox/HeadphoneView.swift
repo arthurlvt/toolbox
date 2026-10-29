@@ -114,14 +114,14 @@ struct HeadphoneToolView: View {
                 HStack(alignment: .top, spacing: 16) {
                     VStack(alignment: .leading, spacing: 14) {
                         if h.connected || h.last != nil {
-                            card { HeadphonePanel() }
+                            card { HeadphonePanel() }.tourTarget("headphone.panel")
                             if let r = h.last { card { details(r) } }
                         }
                         if !h.connected { notFound }
                     }
                     .frame(minWidth: 360, maxWidth: 460)
                     VStack(alignment: .leading, spacing: 14) {
-                        card { ClassModeSettings() }
+                        card { ClassModeSettings() }.tourTarget("headphone.classmode")
                         card { autoSettings }
                     }
                     .frame(minWidth: 320, maxWidth: 440)

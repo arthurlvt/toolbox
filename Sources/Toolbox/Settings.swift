@@ -78,6 +78,7 @@ struct GeneralTab: View {
                 NSApp.keyWindow?.close()          // la fenêtre des réglages
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { TourStore.shared.start() }
             }
+            TourMiniSettings()
             ProfileSettings()
             MacAlertSettings()
             NightlySettings()

@@ -593,7 +593,7 @@ struct CalcToolView: View {
                     sidePanel.frame(minWidth: 300, idealWidth: 340, maxWidth: 440)
                     VStack(spacing: 10) {
                         graphToolbar
-                        graph
+                        graph.tourTarget("calc.content")
                         bottomPanel.frame(height: 236)
                     }
                     .frame(minWidth: 480)
@@ -602,9 +602,9 @@ struct CalcToolView: View {
                 .onAppear { s.installMonitor() }
                 .onDisappear { s.removeMonitor() }
             case .scientific:
-                ScrollView { ScientificCalcView().frame(maxWidth: .infinity) }
+                ScrollView { ScientificCalcView().frame(maxWidth: .infinity) }.tourTarget("calc.content")
             case .programmer:
-                ScrollView { ProgrammerCalcView().frame(maxWidth: .infinity) }
+                ScrollView { ProgrammerCalcView().frame(maxWidth: .infinity) }.tourTarget("calc.content")
             }
         }
         .padding(20)

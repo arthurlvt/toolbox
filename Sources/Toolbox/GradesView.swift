@@ -68,10 +68,11 @@ struct GradeRules: Codable, Equatable {
     var floor = ""          // note plancher pour pouvoir compenser (vide = aucune)
     var resit = true        // une session de rattrapage existe
     var resitBest = true    // rattrapage : meilleure des deux notes (sinon il remplace)
+    var subjectCredits = false  // une matière ≥ 10 rapporte ses crédits (= son coef) même si l'UE n'est pas validée
 
     init() {}
 
-    enum CodingKeys: String, CodingKey { case pass, semesterCompensation, yearCompensation, floor, resit, resitBest }
+    enum CodingKeys: String, CodingKey { case pass, semesterCompensation, yearCompensation, floor, resit, resitBest, subjectCredits }
 
     init(from d: Decoder) throws {
         let c = try d.container(keyedBy: CodingKeys.self)
@@ -81,6 +82,7 @@ struct GradeRules: Codable, Equatable {
         floor = try c.decodeIfPresent(String.self, forKey: .floor) ?? ""
         resit = try c.decodeIfPresent(Bool.self, forKey: .resit) ?? true
         resitBest = try c.decodeIfPresent(Bool.self, forKey: .resitBest) ?? true
+        subjectCredits = try c.decodeIfPresent(Bool.self, forKey: .subjectCredits) ?? false
     }
 }
 
@@ -166,8 +168,16 @@ enum GradeCalc {
 
     static func fmt(_ v: Double) -> String { MathFormat.fr((v * 100).rounded() / 100) }
 
+    /// « obt. », « validé », « acquis » (UE de sport, PIX…) comptent comme réussies ; « ajourné » comme ratées.
+    static func mention(_ s: String) -> Double? {
+        let t = CourseLibrary.fold(s.trimmingCharacters(in: .whitespaces))
+        if t.hasPrefix("obt") || t.hasPrefix("valid") || t.hasPrefix("acq") || t == "ok" { return 20 }
+        if t.hasPrefix("aj") || t.hasPrefix("non") || t == "nv" { return 0 }
+        return nil
+    }
+
     static func grade(_ i: GradeItem, rules: GradeRules, simulate: Bool) -> Double? {
-        var g = num(i.note)
+        var g = num(i.note) ?? mention(i.note)
         if rules.resit, let r = num(i.resit) {
             if let first = g, rules.resitBest { g = max(first, r) } else { g = r }
         }
@@ -288,7 +298,16 @@ enum GradeCalc {
                 } else {
                     r.status = .pending
                 }
-                if r.status.counts { acquired += r.credits }
+                if r.status.counts {
+                    acquired += r.credits
+                } else if rules.subjectCredits {
+                    // UE pas validée : chaque matière à 10 ou plus garde ses crédits (son coefficient)
+                    for sub in u.subjects {
+                        if let sr = r.subjects[sub.id], sr.complete, let avg = sr.average, avg >= rules.pass - 1e-9 {
+                            acquired += max(0, num(sub.weight) ?? 0)
+                        }
+                    }
+                }
                 sr.units[u.id] = r
             }
             sr.acquired = acquired
@@ -404,61 +423,105 @@ final class GradesStore: ObservableObject {
     // MARK: Maquette L1 Informatique (CERI, Avignon Université)
 
     static func l1InfoAvignon() -> [GradeSemester] {
-        func ue(_ code: String, _ name: String, _ subs: [(String, String)]) -> GradeUnit {
-            GradeUnit(code: code, name: name, credits: "", subjects: subs.map { GradeSubject(code: $0.0, name: $0.1) })
+        // crédits de l'UE = somme des matières ; coefficient d'une matière = ses crédits
+        func ue(_ code: String, _ name: String, _ subs: [(String, String, Int)]) -> GradeUnit {
+            GradeUnit(code: code, name: name, credits: "\(subs.reduce(0) { $0 + $1.2 })",
+                      subjects: subs.map { GradeSubject(code: $0.0, name: $0.1, weight: "\($0.2)") })
         }
-        func extra(_ code: String, _ name: String) -> GradeUnit {
-            GradeUnit(code: code, name: name, credits: "0", items: [GradeItem(name: "Note")], inAverage: false)
+        func extra(_ code: String, _ name: String, _ credits: Int) -> GradeUnit {
+            GradeUnit(code: code, name: name, credits: "\(credits)", items: [GradeItem(name: "Résultat")], inAverage: false)
         }
         let s1 = GradeSemester(name: "S1", units: [
             ue("S-U06-0151", "Mener un raisonnement logique", [
-                ("S-E02-6502", "Bases de mathématiques"),
-                ("S-E02-6504", "Bases de la programmation, support Python"),
-                ("S-E06-6508", "Fondement de l'informatique")]),
+                ("S-E02-6502", "Bases de mathématiques", 4),
+                ("S-E02-6504", "Bases de la programmation, support Python", 4),
+                ("S-E06-6508", "Fondement de l'informatique", 3)]),
             ue("S-U06-0152", "Analyser et structurer un processus algorithmique", [
-                ("S-E06-0151", "Bases de la programmation, support C/C++"),
-                ("S-E06-6506", "Analyse 1"),
-                ("S-E02-6508", "AMS Analyse et programmation")]),
+                ("S-E06-0151", "Bases de la programmation, support C/C++", 5),
+                ("S-E06-6506", "Analyse 1", 6),
+                ("S-E02-6508", "AMS Analyse et programmation", 2)]),
             ue("S-U06-0153", "Maîtriser son environnement d'apprentissage en informatique", [
-                ("S-E06-0152", "Anglais"),
-                ("S-E06-0153", "Méthodologie de travail pour l'informatique")]),
-            extra("S-L02-0101", "UE d'ouverture"),
-            extra("T-U13-9201", "UEO SUAPS : sport"),
-            extra("S-L02-0003", "UE de renforcement"),
+                ("S-E06-0152", "Anglais", 2),
+                ("S-E06-0153", "Méthodologie de travail pour l'informatique", 2)]),
+            extra("S-L02-0101", "UE d'ouverture", 0),
+            extra("T-U13-9201", "UEO SUAPS : sport", 2),
+            extra("S-L02-0003", "UE de renforcement", 0),
         ])
         let s2 = GradeSemester(name: "S2", units: [
             ue("S-U06-0154", "Modéliser les objets et les systèmes pour la réalisation des tâches", [
-                ("S-E06-0154", "Algèbre et programmation"),
-                ("S-E06-0155", "Initiation à la programmation orientée objet"),
-                ("S-E06-0156", "AMS Programmation orientée objet")]),
+                ("S-E06-0154", "Algèbre et programmation", 4),
+                ("S-E06-0155", "Initiation à la programmation orientée objet", 5),
+                ("S-E06-0156", "AMS Programmation orientée objet", 2)]),
             ue("S-U06-0155", "Maîtriser les outils pour comprendre le fonctionnement des ordinateurs", [
-                ("S-E06-0157", "Mathématiques discrètes"),
-                ("S-E06-6517", "Structure des ordinateurs")]),
+                ("S-E06-0157", "Mathématiques discrètes", 4),
+                ("S-E06-6517", "Structure des ordinateurs", 4)]),
             ue("S-U06-0156", "Évoluer dans un environnement client-serveur", [
-                ("S-E06-0158", "Conception web"),
-                ("S-E06-0159", "Introduction aux systèmes d'exploitation"),
-                ("S-E06-0160", "Anglais")]),
-            extra("S-L06-0002", "UE d'ouverture"),
-            extra("T-U12-9254", "UEO PIX 2"),
-            extra("T-U12-9252", "UEO PIX 1"),
-            extra("S-L02-0004", "UE de renforcement"),
+                ("S-E06-0158", "Conception web", 4),
+                ("S-E06-0159", "Introduction aux systèmes d'exploitation", 3),
+                ("S-E06-0160", "Anglais", 2)]),
+            extra("S-L06-0002", "UE d'ouverture", 0),
+            extra("T-U12-9254", "UEO PIX 2", 2),
+            extra("T-U12-9252", "UEO PIX 1", 2),
+            extra("S-L02-0004", "UE de renforcement", 0),
         ])
         return [s1, s2]
     }
 
     func loadL1Template() {
         guard let i = index else { return }
-        let hasData = years[i].semesters.contains { !$0.units.isEmpty }
-        if hasData, !confirmDestructive("Remplacer les UE de « \(years[i].name) » ?",
-                                        "Les UE et les notes déjà saisies dans cette année seront remplacées par la maquette de la L1 Informatique (CERI).",
-                                        button: "Remplacer") { return }
-        withAnimation {
-            years[i].semesters = Self.l1InfoAvignon()
-            years[i].rules.resit = false
-            years[i].rules.semesterCompensation = true
-            years[i].rules.yearCompensation = true
+        let template = Self.l1InfoAvignon()
+        let codes = Set(template.flatMap { $0.units.map { $0.code } })
+        let matches = years[i].semesters.flatMap { $0.units }.filter { codes.contains($0.code) }.count
+        let others = years[i].semesters.flatMap { $0.units }.filter { !codes.contains($0.code) }.count
+        if matches > 0 {
+            // déjà la maquette : on met à jour crédits et coefficients en gardant les notes
+            withAnimation { years[i].semesters = Self.merge(years[i].semesters, with: template) }
+            ToastCenter.shared.show("Maquette L1 mise à jour : crédits et coefficients, tes notes sont gardées ✓", seconds: 4)
+        } else {
+            if others > 0, !confirmDestructive("Remplacer les UE de « \(years[i].name) » ?",
+                                               "Les UE et les notes déjà saisies dans cette année seront remplacées par la maquette de la L1 Informatique (CERI).",
+                                               button: "Remplacer") { return }
+            withAnimation { years[i].semesters = template }
+            ToastCenter.shared.show("Maquette L1 chargée ✓", seconds: 3)
         }
-        ToastCenter.shared.show("Maquette L1 chargée : renseigne les crédits (ECTS) des UE et les coefficients des matières ✓", seconds: 5)
+        years[i].rules.resit = false
+        years[i].rules.semesterCompensation = true
+        years[i].rules.yearCompensation = true
+        years[i].rules.subjectCredits = true
+    }
+
+    /// Maquette à jour (codes, crédits, coefficients) + notes déjà saisies, retrouvées par code.
+    static func merge(_ current: [GradeSemester], with template: [GradeSemester]) -> [GradeSemester] {
+        let oldUnits = current.flatMap { $0.units }
+        let oldSubjects = oldUnits.flatMap { $0.subjects }
+        var out: [GradeSemester] = []
+        for ts in template {
+            var s = current.first { $0.name == ts.name } ?? GradeSemester(name: ts.name)
+            var units: [GradeUnit] = []
+            for tu in ts.units {
+                var u = tu
+                if let old = oldUnits.first(where: { $0.code == tu.code }) {
+                    u.id = old.id
+                    u.carried = old.carried
+                    if !old.items.isEmpty { u.items = old.items }
+                }
+                u.subjects = tu.subjects.map { tsub in
+                    var sub = tsub
+                    if let old = oldSubjects.first(where: { $0.code == tsub.code && !tsub.code.isEmpty }) {
+                        sub.id = old.id
+                        sub.items = old.items
+                    }
+                    return sub
+                }
+                units.append(u)
+            }
+            // UE ajoutées à la main (sans code de la maquette) : gardées à la fin
+            let tplCodes = Set(template.flatMap { $0.units.map { $0.code } })
+            units += s.units.filter { !tplCodes.contains($0.code) }
+            s.units = units
+            out.append(s)
+        }
+        return out
     }
 
     func importCourses(into semester: UUID) {
@@ -487,8 +550,8 @@ struct GradesToolView: View {
             if let yi = g.index {
                 let year = $g.years[yi]
                 let result = GradeCalc.year(g.years[yi], simulate: g.simulate)
-                toolbar(year)
-                summary(result, rules: g.years[yi].rules)
+                toolbar(year).tourTarget("grades.toolbar")
+                summary(result, rules: g.years[yi].rules).tourTarget("grades.summary")
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         ForEach(year.semesters) { $sem in
@@ -533,6 +596,7 @@ struct GradesToolView: View {
                 .fixedSize()
                 .help("Crée une UE par matière de « Mes cours »")
             Toggle(isOn: $g.simulate) { Label("Simulation", systemImage: "wand.and.stars") }
+                .tourTarget("grades.simulate")
                 .toggleStyle(.button)
                 .help("Imagine tes prochaines notes pour voir le résultat")
             Button { g.showRules.toggle() } label: { Label("Règles", systemImage: "slider.horizontal.3") }
@@ -610,6 +674,7 @@ struct RulesPopover: View {
             Text("Règles de validation").font(.headline)
             Toggle("Compensation entre les UE d'un semestre", isOn: $rules.semesterCompensation)
             Toggle("Compensation entre S1 et S2 (à l'année)", isOn: $rules.yearCompensation)
+            Toggle("Une matière à 10 garde ses crédits même si l'UE n'est pas validée", isOn: $rules.subjectCredits)
             Toggle("Il existe une session de rattrapage", isOn: $rules.resit)
             if rules.resit {
                 Toggle("Rattrapage : garder la meilleure note", isOn: $rules.resitBest)
@@ -739,6 +804,9 @@ struct UnitCard: View {
             }
             if u.subjects.isEmpty {
                 ItemsGrid(g: g, items: $u.items, rules: rules).disabled(u.carried)
+                if !u.inAverage {
+                    Text("Une note, ou « obt. » si elle est validée (sport, PIX…)").font(.caption2).foregroundStyle(.secondary)
+                }
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 10, alignment: .top)], spacing: 10) {
                     ForEach($u.subjects) { $sub in
@@ -807,6 +875,13 @@ struct SubjectBox: View {
                 }
                 Text("coef").font(.caption2).foregroundStyle(.secondary)
                 TextField("1", text: $sub.weight).textFieldStyle(.roundedBorder).frame(width: 36).multilineTextAlignment(.trailing)
+                if rules.subjectCredits, let r = result, r.complete, let avg = r.average, avg >= rules.pass - 1e-9 {
+                    Text("\(sub.weight) ECTS").font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 5).padding(.vertical, 1)
+                        .background(Capsule().fill(Color.green.opacity(0.15)))
+                        .foregroundStyle(Color.green)
+                        .help("Matière validée : ses crédits sont acquis")
+                }
                 Text(result?.average.map { GradeCalc.fmt($0) } ?? "—")
                     .font(.system(size: 16, weight: .bold, design: .rounded)).monospacedDigit()
                     .foregroundStyle(GradeCalc.color(result?.average, pass: rules.pass))

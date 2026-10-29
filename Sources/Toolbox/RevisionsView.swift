@@ -345,7 +345,7 @@ struct RevisionsToolView: View {
                       systemImage: "calendar.badge.exclamationmark")
                     .foregroundStyle(Color.orange)
             }
-            if let n = r.next { PinnedExam(r: r, p: n) }
+            if let n = r.next { PinnedExam(r: r, p: n).tourTarget("revisions.next") }
             HSplitView {
                 sidebar.frame(minWidth: 230, idealWidth: 260, maxWidth: 340)
                 Group {

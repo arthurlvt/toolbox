@@ -654,6 +654,7 @@ struct LatexToolView: View {
                     toolsInfo
                 }
                 LatexDocsList(model: model)
+                    .tourTarget("latex.docs")
                     .padding(14)
                     .background(RoundedRectangle(cornerRadius: 16).fill(.regularMaterial))
             }
@@ -670,6 +671,7 @@ struct LatexToolView: View {
         Button { LatexDocsStore.shared.showPopover.toggle() } label: { Image(systemName: "doc.on.doc") }
             .keyboardShortcut("o", modifiers: [.command, .shift])
             .help("Mes documents LaTeX : rouvrir, modifier ou supprimer (⇧⌘O)")
+            .tourTarget("latex.docs")
             .popover(isPresented: $docs.showPopover, arrowEdge: .bottom) {
                 LatexDocsList(model: model, compact: true)
                     .padding(14)
@@ -737,6 +739,7 @@ struct LatexToolView: View {
             Button { model.compile() } label: {
                 Label("Compiler", systemImage: "play.fill")
             }
+            .tourTarget("latex.compile")
             .buttonStyle(.borderedProminent)
             .keyboardShortcut("b")
             .help("Compiler (⌘B ou ⌘↩)")

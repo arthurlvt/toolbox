@@ -960,6 +960,7 @@ struct PlanningToolView: View {
                 if let u = Panels.open([.image, .pdf]).first { p.importFile(u) }
             }
             .fixedSize()
+            .tourTarget("planning.import")
             Button { p.newShift() } label: { Label("Ajouter un shift", systemImage: "plus") }
             Spacer()
             Button { p.copyRecap() } label: { Label("Récap du mois", systemImage: "doc.on.clipboard") }

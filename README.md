@@ -1,12 +1,13 @@
 # Toolbox
 
 Un « iLovePDF » qui tourne entièrement sur ton Mac, plus un éditeur LaTeX, un gestionnaire de cours,
-une banque d'annales et un tableau de bord. Aucun document n'est envoyé où que ce soit.
+une banque d'annales, des calculatrices, un outil d'archives et un tableau de bord. Aucun document n'est envoyé
+où que ce soit.
 
 Appli native (Swift, SwiftUI, PDFKit, Vision) et commande terminal `pdftool`, qui partagent le même moteur.
 
 - **100 % local** : PDF, cours, notes et index de recherche restent sur le Mac. L'IA (Annalyse, explications
-  LaTeX, formules) tourne avec [Ollama](https://ollama.com), sur la machine.
+  LaTeX, formules, modèles LaTeX sur mesure) tourne avec [Ollama](https://ollama.com), sur la machine.
 - **Seules exceptions**, si tu les utilises : la météo (Open-Meteo, sans compte) et la liste de tes dépôts GitHub.
 
 ---
@@ -36,6 +37,10 @@ l'app avec **sa loupe** : l'écran s'assombrit sauf l'endroit présenté, la lou
 vrai** (capture de la fenêtre), une bulle explique. Barre latérale, accueil et Personnaliser, ⌘K, Mes cours,
 Révisions, Notes & ECTS, Planning, LaTeX (nouveau document, symboles), calculatrices, archives, casque : seulement
 ce qui correspond à ton profil. Entrée / clic pour avancer, ← pour revenir, Échap pour arrêter.
+
+**Petites visites par outil** : la première fois que tu ouvres Mes cours, Révisions, Notes & ECTS, Planning, LaTeX,
+la Calculatrice, Compresser & archiver ou Casque, la Feuille montre 2 à 4 endroits clés de la page. Relançables
+avec ⌘K → « Visite de cet outil », désactivables (et remises à zéro) dans Réglages → Général.
 
 ## Accueil
 
@@ -152,9 +157,13 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
   ses crédits ECTS, chaque matière son code, son coefficient et ses épreuves (CC1, CC2…). Une UE peut aussi rester
   simple (épreuves directement). « Importer mes matières » crée une UE par matière de *Mes cours*.
 - **Maquette L1 Informatique (CERI)** en un clic (menu *Année*) : les 3 UE de chaque semestre avec leurs matières et
-  leurs codes, plus UE d'ouverture, sport, PIX et renforcement **hors moyenne**. Il reste à saisir les ECTS et
-  coefficients. Elle règle aussi : pas de rattrapage, compensation entre UE et entre S1 et S2.
-- **UE hors moyenne** (ouverture, sport, PIX…) : notées à part, sans peser sur la moyenne ni être compensées.
+  leurs codes, plus UE d'ouverture, sport, PIX et renforcement **hors moyenne**. Elle règle aussi : pas de rattrapage, compensation entre UE et entre S1 et S2.
+- **UE hors moyenne** (ouverture, sport, PIX…) : notées à part, sans peser sur la moyenne ni être compensées ;
+  « obt. » (ou « validé ») suffit comme note.
+- **Crédits par matière** (règle du CERI, activée par la maquette) : si l'UE n'est pas validée, chaque matière à 10
+  ou plus garde ses crédits (badge vert « 5 ECTS »). Maquette L1 : coefficients = crédits (UE de 11, 13 et 4 ECTS
+  au S1 ; 11, 8 et 9 au S2), sport et PIX à 2 ECTS. Recharger la maquette met à jour crédits et coefficients sans
+  effacer tes notes.
 - **Moyennes** de chaque UE, de chaque semestre (pondérées par les ECTS) et de l'année, provisoires tant que tout
   n'est pas noté.
 - **La note qu'il te faut** sur les épreuves restantes pour valider l'UE, le semestre et l'année.
@@ -360,6 +369,8 @@ presse-papiers et apps. Fermer la fenêtre laisse Toolbox dans la barre des menu
 
 ## Installation
 
+### Depuis le code
+
 Prérequis : macOS 13 ou plus récent et les outils de développement Apple (`xcode-select --install`).
 Xcode complet n'est pas nécessaire.
 
@@ -370,11 +381,30 @@ Xcode complet n'est pas nécessaire.
 - L'appli s'installe dans `~/Applications/Toolbox.app`, la commande dans `~/.local/bin/pdftool`.
 - Ajoute `export PATH="$HOME/.local/bin:$PATH"` à `~/.zshrc` pour utiliser `pdftool` partout.
 
-Optionnel, mais recommandé :
+### Depuis un .dmg (pour un autre Mac)
 
 ```bash
-brew install ghostscript              # compression bien plus efficace
-brew install --cask mactex-no-gui     # LaTeX (latexmk, synctex, texcount)
+./build.sh && ./make-dmg.sh       # crée build/Toolbox-<version>.dmg
+```
+
+Le .dmg contient l'appli et un raccourci vers Applications : on glisse l'une sur l'autre. L'appli n'est pas signée
+par un compte développeur Apple : la première fois, **clic droit sur Toolbox → Ouvrir** (ou Réglages Système →
+Confidentialité et sécurité → « Ouvrir quand même »). Pour l'éviter, il faut un certificat *Developer ID* et la
+notarisation d'Apple (`notarytool`).
+
+### Outils complémentaires
+
+Le **premier lancement** (et Réglages → Général → *Outils à installer*) détecte ce qui manque et l'installe dans le
+Terminal en un clic. À la main :
+
+```bash
+brew install ghostscript              # compression des PDF bien plus efficace
+brew install --cask basictex          # LaTeX léger (ou mactex-no-gui, complet mais ~5 Go)
+sudo tlmgr install latexmk tcolorbox pgf environ trimspaces needspace comment lastpage titlesec enumitem \
+     csquotes babel-french fancyhdr booktabs lm helvetic texcount   # paquets des modèles
+brew install ollama                   # IA locale
+ollama pull qwen2.5-coder:3b          # modèle léger (7b si 16 Go de RAM ou plus)
+brew install sevenzip                 # archives .7z et .rar
 brew install gh && gh auth login      # dépôts GitHub privés dans le widget GitHub
 ```
 
@@ -432,7 +462,10 @@ Plages de pages : `1-3, 5, 8-` (`8-` = jusqu'à la fin, `-3` = depuis le début)
 | Notes et crédits | `~/Library/Application Support/Toolbox/Notes.json` |
 | Planning | `~/Library/Application Support/Toolbox/Planning.json` |
 | Révisions | `~/Library/Application Support/Toolbox/Revisions.json` |
-| Nouveaux documents LaTeX | `~/Documents/Toolbox LaTeX/` |
+| Nouveaux documents LaTeX | `~/Documents/Toolbox LaTeX/` (ou le dossier de la matière : `TDs/TD4/`, `Tests/`…) |
+| Liste « Mes documents », profil, visites vues | préférences de l'app |
+| Calculatrice (fonctions, historique) | préférences de l'app |
+| Données partagées avec l'iPhone | iCloud Drive → `Toolbox/` (ToolboxMac.json, ToolboxDay.json, scripts Scriptable) |
 | Banque d'annales | le dossier choisi dans Annalyse → Réglages |
 
 Rien n'est écrit dans ton dossier de cours, sauf ce que tu crées toi-même (nouveau TD/TP, notes, photos, fichiers déposés).
@@ -452,17 +485,26 @@ Sources/
   PDFCore/    moteur partagé : pages, dessin, compression, OCR, comparaison, signature, LaTeX,
               Annalyse (Annales/), bibliothèque et index des cours, GitHub, VS Code
   Toolbox/    appli SwiftUI : une vue par outil, accueil et widgets, Mes cours, éditeur LaTeX,
-              notes et ECTS, calculatrice (MathEngine.swift), planning, palette ⌘K, barre des menus
+              notes et ECTS, calculatrices (MathEngine.swift, ClassicCalc.swift), planning, casque, archives
+              (ArchiveTool.swift), modèles LaTeX (LatexDocTypes.swift), bibliothèque de symboles
+              (LatexLibrary.swift), IA locale (OllamaService.swift, LatexAIDoc.swift), profil et outils à installer
+              (Profile.swift), visite guidée (Tour.swift), palette ⌘K, barre des menus
   pdftool/    commande terminal
 Resources/    Info.plist (types de fichiers, Services, autorisations) + icône
 build.sh      compile hors du dossier (Nextcloud), assemble le .app, l'enregistre auprès de macOS
+make-dmg.sh   fabrique le .dmg à partir de build/Toolbox.app
 ```
 
-- **Tests** : `build.sh` lance `Toolbox --selftest` après chaque compilation (calculatrice, limites, notes et ECTS,
-  lecture du planning et pauses, CRC du casque). Code dans `SelfTest.swift` ; à relancer à la main :
+- **Tests** : `build.sh` lance `Toolbox --selftest` après chaque compilation : calculatrices (graphique,
+  scientifique, programmeur), limites, notes et ECTS (dont le vrai relevé du S1), lecture du planning et pauses,
+  CRC du casque, modèles LaTeX, bibliothèque de symboles, extraction des réponses de l'IA, suppression des
+  documents, archives, placement de la visite guidée. Code dans `SelfTest.swift` ; à relancer à la main :
   `~/Applications/Toolbox.app/Contents/MacOS/Toolbox --selftest`.
 - Les vues n'utilisent pas `@State`, une macro absente des Command Line Tools sur les SDK récents :
   chaque outil a un petit `ObservableObject`.
 - Ajouter un outil : une fonction dans `PDFCore`, un cas dans l'enum `Tool`, une vue dans `Toolbox`,
   une sous-commande dans `pdftool/main.swift`.
 - Ajouter un widget : un cas dans `HomeWidget` (`HomeWidgets.swift`) et sa vue dans `HomeView.widget(_:)`.
+- Montrer quelque chose dans la visite guidée : `.tourTarget("id")` sur la vue, puis une étape dans
+  `TourStore.buildSteps()` ou `TourStore.miniSteps(_:)` (`Tour.swift`).
+- Masquer un outil selon le profil : `AppProfile.shows(_:)` / `allows(_:)` (`Profile.swift`).

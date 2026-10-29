@@ -22,6 +22,12 @@ final class TourStore: ObservableObject {
     @Published private(set) var tick = 0                // un repère a bougé
     @Published private(set) var startedAt = Date()
     private(set) var steps: [TourStep] = []
+    /// mini-visite d'un outil en cours (nil = grande visite)
+    @Published private(set) var mini: Tool?
+    @Published var miniEnabled = UserDefaults.standard.object(forKey: "tour.mini") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(miniEnabled, forKey: "tour.mini") }
+    }
+    private var seen = Set(UserDefaults.standard.stringArray(forKey: "tour.mini.seen") ?? [])
     private(set) var frames: [String: CGRect] = [:]
     private var captureToken = 0
 
@@ -99,6 +105,7 @@ final class TourStore: ObservableObject {
     }
 
     func start() {
+        mini = nil
         steps = Self.buildSteps()
         index = 0
         startedAt = Date()
@@ -123,10 +130,79 @@ final class TourStore: ObservableObject {
     }
 
     func stop() {
-        UserDefaults.standard.set(true, forKey: "tour.done")
+        if mini == nil {
+            UserDefaults.standard.set(true, forKey: "tour.done")
+            if isLast { ToastCenter.shared.show("Bonne découverte ! 🍃", cheer: true) }
+        }
         withAnimation(.easeInOut(duration: 0.3)) { active = false }
         snapshot = nil
-        if isLast { ToastCenter.shared.show("Bonne découverte ! 🍃", cheer: true) }
+        mini = nil
+    }
+
+    // MARK: Mini-visites (la première fois qu'on ouvre un outil)
+
+    func toolOpened(_ tool: Tool) {
+        guard miniEnabled, !active, !seen.contains(tool.rawValue), Self.miniSteps(tool) != nil,
+              UserDefaults.standard.bool(forKey: "onboarding.done"), !OnboardingState.shared.shown else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
+            guard let self = self, !self.active, AppRouterSelection.current == tool else { return }
+            self.startMini(tool)
+        }
+    }
+
+    func startMini(_ tool: Tool) {
+        guard let list = Self.miniSteps(tool) else { return }
+        seen.insert(tool.rawValue)
+        UserDefaults.standard.set(Array(seen), forKey: "tour.mini.seen")
+        mini = tool
+        steps = list
+        index = 0
+        startedAt = Date()
+        withAnimation(.easeInOut(duration: 0.3)) { active = true }
+        show()
+    }
+
+    func resetMini() {
+        seen = []
+        UserDefaults.standard.set([String](), forKey: "tour.mini.seen")
+    }
+
+    static func miniSteps(_ tool: Tool) -> [TourStep]? {
+        func st(_ target: String, _ title: String, _ text: String, fallback: String? = "detail") -> TourStep {
+            TourStep(target: target, tool: nil, title: title, text: text, fallback: fallback)
+        }
+        switch tool {
+        case .courses:
+            return [st("courses.subjects", "Tes matières", "Une ligne par dossier de cours, rangées par domaine. Clic droit : nom, couleur, autres noms pour le calendrier."),
+                    st("courses.search", "Chercher partout", "Dans les noms ET le contenu des PDF. ⌥Espace fait la même chose depuis n'importe quelle app."),
+                    st("courses.middle", "Séances", "Chaque TD, TP et chapitre, avec « Nouveau TP » qui crée le dossier suivant et l'ouvre dans VS Code."),
+                    st("courses.preview", "Aperçu", "Le fichier choisi s'affiche ici, sans quitter l'app.")]
+        case .revisions:
+            return [st("revisions.next", "Le prochain CC", "Repris de ton calendrier (catégorie CCs/Soutenance), avec le rythme à tenir pour être prêt."),
+                    st("detail", "La checklist", "Coche les cours, TD et annales revus : la barre de progression avance.", fallback: nil)]
+        case .grades:
+            return [st("grades.toolbar", "Années et maquette", "Menu « Année » : nouvelle année, report des UE validées, maquette L1 Informatique. « Règles » : compensation, rattrapage."),
+                    st("grades.summary", "Le bilan", "Moyennes, anneau des crédits ECTS et la note qu'il te faut sur ce qui reste."),
+                    st("grades.simulate", "Simulation", "Tape des notes imaginaires (en violet) pour voir ce que ça donnerait, sans toucher aux vraies.")]
+        case .planning:
+            return [st("planning.import", "Importer le planning", "Photo, capture d'écran ou collage : je lis tes horaires et tes pauses, puis je les mets dans ton calendrier."),
+                    st("detail", "Ta semaine", "Heures payées, pauses, et une alerte si un shift tombe sur un cours ou un CC.", fallback: nil)]
+        case .latex:
+            return [st("latex.new", "Nouveau document", "TD, TP, cours, test hebdo, rapport… ou « Autre » pour que l'IA prépare un modèle sur mesure.", fallback: "latex.compile"),
+                    st("latex.docs", "Mes documents", "Tout ce que tu as créé : double-clic pour reprendre, corbeille pour supprimer (⇧⌘O)."),
+                    st("latex.symbols", "Symboles & formules", "Ensembles, logique, limites, dérivées… un clic les insère au curseur (⇧⌘M).")]
+        case .calc:
+            return [st("calc.modes", "Trois calculatrices", "Graphique pour les fonctions, scientifique comme sur le Mac, programmeur pour les bases et les bits."),
+                    st("calc.content", "À toi", "En graphique : tape f(x) = …, le bouton TeX convertit en LaTeX. En scientifique : tape directement, Entrée calcule.")]
+        case .compress:
+            return [st("compress.tabs", "Trois onglets", "Compresser des PDF, créer une archive (« Prêt à rendre » pour un TP), ou ouvrir et extraire une archive."),
+                    st("detail", "Glisse tes fichiers", "Les originaux ne sont jamais modifiés : le résultat est créé à côté.", fallback: nil)]
+        case .headphone:
+            return [st("headphone.panel", "Ton casque", "Batterie, réduction de bruit, égaliseur, basses, faible latence et « Faire sonner »."),
+                    st("headphone.classmode", "Mode cours", "Concentration sur le Mac et l'iPhone + casque coupé, tout seul au début de chaque cours si tu veux.")]
+        default:
+            return nil
+        }
     }
 
     private func show() {
@@ -313,7 +389,8 @@ struct TourOverlay: View {
     }
 
     private func bubbleGroup(_ s: TourStep, group: Group) -> some View {
-        let mascotView = FeuilleMascot(mood: t.isLast ? .party : .normal, poke: t.isLast ? t.startedAt : nil)
+        let party = t.isLast && t.mini == nil
+        let mascotView = FeuilleMascot(mood: party ? .party : .normal, poke: party ? t.startedAt : nil)
             .frame(width: 120, height: 106)
         return HStack(alignment: .center, spacing: 6) {
             if group.mascotFirst { mascotView }
@@ -357,7 +434,7 @@ struct TourOverlay: View {
                     Button { t.back() } label: { Image(systemName: "chevron.left") }
                         .keyboardShortcut(.leftArrow, modifiers: [])
                 }
-                Button(t.isLast ? "Terminer" : (t.index == 0 ? "C'est parti" : "Suivant")) { t.next() }
+                Button(t.isLast ? (t.mini == nil ? "Terminer" : "Compris") : (t.index == 0 && t.mini == nil ? "C'est parti" : "Suivant")) { t.next() }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }
@@ -367,5 +444,22 @@ struct TourOverlay: View {
         .background(RoundedRectangle(cornerRadius: 16).fill(.regularMaterial))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.1)))
         .shadow(color: .black.opacity(0.3), radius: 18, y: 8)
+    }
+}
+
+/// Outil affiché en ce moment (pour ne pas lancer une mini-visite si on a déjà changé de page).
+enum AppRouterSelection {
+    static var current: Tool?
+}
+
+struct TourMiniSettings: View {
+    @ObservedObject var t = TourStore.shared
+
+    var body: some View {
+        Toggle("Petite visite la première fois que j'ouvre un outil", isOn: $t.miniEnabled)
+        Button("Revoir les petites visites des outils") {
+            t.resetMini()
+            ToastCenter.shared.show("Les petites visites se relanceront à l'ouverture de chaque outil ✓")
+        }
     }
 }

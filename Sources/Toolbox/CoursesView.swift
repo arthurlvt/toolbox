@@ -403,9 +403,9 @@ struct CoursesToolView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 HSplitView {
-                    sidebar.frame(minWidth: 210, idealWidth: 240, maxWidth: 320)
-                    middle.frame(minWidth: 420, idealWidth: 560)
-                    preview.frame(minWidth: 280, idealWidth: 380)
+                    sidebar.frame(minWidth: 210, idealWidth: 240, maxWidth: 320).tourTarget("courses.subjects")
+                    middle.frame(minWidth: 420, idealWidth: 560).tourTarget("courses.middle")
+                    preview.frame(minWidth: 280, idealWidth: 380).tourTarget("courses.preview")
                 }
             }
             StatusBanner(message: s.status)
@@ -428,6 +428,7 @@ struct CoursesToolView: View {
             }
             .padding(8)
             .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
+            .tourTarget("courses.search")
 
             List(selection: Binding(get: { s.selectedID }, set: { if let id = $0 { s.selectedID = id; s.query = "" } })) {
                 ForEach(s.domains, id: \.0) { entry in

@@ -90,6 +90,7 @@ struct ToolHeader: View {
             }
             Spacer()
         }
+        .tourTarget("header")
     }
 }
 

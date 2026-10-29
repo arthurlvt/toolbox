@@ -142,6 +142,7 @@ final class OnboardingState: ObservableObject {
                 g.years[i].rules.resit = false
                 g.years[i].rules.semesterCompensation = true
                 g.years[i].rules.yearCompensation = true
+                g.years[i].rules.subjectCredits = true
             }
         case .work:
             let p = AppProfile.shared, plan = PlanningStore.shared

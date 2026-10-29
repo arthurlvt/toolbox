@@ -157,6 +157,25 @@ enum SelfTest {
         let old = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","name":"Algo","credits":"6","items":[],"carried":false}"#
         let decoded = try? JSONDecoder().decode(GradeUnit.self, from: Data(old.utf8))
         check("ancien format de notes relu", decoded?.name == "Algo" && decoded?.inAverage == true && decoded?.subjects.isEmpty == true)
+        // relevé de notes réel du S1 (CERI) : moyenne 7,93 et 11 crédits (C/C++ 5 + UE 0153 4 + sport 2)
+        var l1 = GradeYear(name: "L1", semesters: GradesStore.l1InfoAvignon())
+        l1.rules.resit = false
+        l1.rules.subjectCredits = true
+        let notesS1 = ["S-E02-6502": "6.90", "S-E02-6504": "4.75", "S-E06-6508": "1", "S-E06-0151": "12.61", "S-E06-6506": "5.83",
+                       "S-E02-6508": "9.47", "S-E06-0152": "12.50", "S-E06-0153": "15.22"]
+        for ui in l1.semesters[0].units.indices {
+            for si in l1.semesters[0].units[ui].subjects.indices {
+                let code = l1.semesters[0].units[ui].subjects[si].code
+                l1.semesters[0].units[ui].subjects[si].items = [GradeItem(name: "Note", note: notesS1[code] ?? "")]
+            }
+            if l1.semesters[0].units[ui].code == "T-U13-9201" { l1.semesters[0].units[ui].items = [GradeItem(name: "Résultat", note: "obt.")] }
+        }
+        l1.semesters.removeLast()
+        let rl1 = GradeCalc.year(l1, simulate: false)
+        let s1r = rl1.semesters[l1.semesters[0].id]
+        check("relevé S1 : moyenne 7,93", s1r?.average.map { near($0, 7.93, 0.01) } ?? false, "\(String(describing: s1r?.average))")
+        check("relevé S1 : 11 crédits obtenus", s1r.map { near($0.acquired, 11) } ?? false, "\(String(describing: s1r?.acquired))")
+        check("maquette : 28 crédits d'UE + 2 de sport au S1", s1r.map { near($0.credits, 30) } ?? false)
         check("maquette L1 : 3 UE à matières par semestre",
               GradesStore.l1InfoAvignon().allSatisfy { $0.units.filter { !$0.subjects.isEmpty }.count == 3 })
     }
