@@ -282,6 +282,22 @@ enum Tool: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Mots qu'on peut taper dans ⌘K pour trouver l'outil (en plus du titre et de la section).
+    var synonyms: String {
+        switch self {
+        case .cleanup: return "optimiser nettoyer menage espace disque place stockage liberer cache plein vider corbeille"
+        case .compress: return "zip tar archive alleger reduire poids taille extraire decompresser"
+        case .calc: return "calcul scientifique programmeur hexadecimal binaire graphe courbe fonction"
+        case .grades: return "moyenne note ects credits ue semestre"
+        case .planning: return "travail shift horaires macdo boulot"
+        case .headphone: return "nothing ecouteurs bluetooth batterie anc"
+        case .latex: return "tex document td tp cours rapport"
+        case .courses: return "cours matieres td tp annales"
+        case .revisions: return "cc examen partiel checklist"
+        default: return ""
+        }
+    }
+
     var icon: String {
         switch self {
         case .home: return "house.fill"
@@ -600,7 +616,9 @@ struct ContentView: View {
             })
             for tool in Tool.allCases where AppProfile.shared.shows(tool) {
                 list.append(PaletteCommand(title: tool.title, subtitle: tool.subtitle, icon: tool.icon, color: tool.color,
-                                           keywords: "outil " + tool.rawValue) { nav.selection = tool })
+                                           keywords: "outil " + tool.rawValue + " " + tool.section.rawValue + " " + tool.synonyms) {
+                    nav.selection = tool
+                })
             }
             let cs = CoursesStore.shared
             for c in cs.courses {

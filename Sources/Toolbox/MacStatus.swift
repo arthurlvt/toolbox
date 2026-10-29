@@ -272,6 +272,14 @@ struct MacStatusWidget: View {
                      m.memoryTotal > 0 ? m.memoryUsed / m.memoryTotal : 0)
                 stat("internaldrive", "Disque", "\(MacStatusStore.bytes(m.diskFree)) libres",
                      m.diskTotal > 0 ? 1 - m.diskFree / m.diskTotal : 0)
+                    .overlay(alignment: .topTrailing) {
+                        if m.diskFree < 10_000_000_000 {
+                            Text("Libérer →").font(.caption2.weight(.semibold)).foregroundStyle(Color.red).padding(8)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { AppRouter.shared.show = .cleanup }
+                    .help("Ouvrir « Nettoyer le Mac »")
                 if let h = m.health.percent {
                     stat("heart.fill", "Santé batterie", "\(h) %" + (m.health.cycles.map { " · \($0) cycles" } ?? ""), nil)
                 } else {
