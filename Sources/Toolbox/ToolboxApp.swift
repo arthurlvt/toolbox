@@ -40,6 +40,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         MorningCheck.shared.start()
         ClassMode.shared.start()
         PhoneStatusStore.shared.start()
+        // IA locale : Ollama démarré en arrière-plan s'il ne tourne pas (réglable)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { OllamaService.shared.startIfNeeded() }
         // Notifications de début de cours (boutons « Ouvrir le dernier TD/TP », « Nouveau TP »…)
         UNUserNotificationCenter.current().delegate = self
         CourseAlerts.setup()
@@ -70,6 +72,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     /// Fenêtre fermée : Toolbox reste disponible dans la barre des menus.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        OllamaService.shared.stopIfOwned()
+    }
 }
 
 // MARK: - Services du Finder (clic droit → Services)

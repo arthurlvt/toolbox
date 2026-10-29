@@ -77,6 +77,7 @@ struct GeneralTab: View {
             MacAlertSettings()
             NightlySettings()
             MorningSettings()
+            OllamaSettings()
         }
         .formStyle(.grouped)
     }

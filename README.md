@@ -206,6 +206,13 @@ toujours le justifier.
 
 ---
 
+## IA locale (Ollama)
+
+Toolbox **démarre Ollama tout seul** au lancement s'il ne tourne pas (Réglages → Général → IA locale) : il ouvre l'app
+Ollama si elle est installée, sinon lance `ollama serve` en arrière-plan (et l'arrête en quittant). Le serveur seul ne
+prend presque pas de mémoire : un modèle n'est chargé qu'au moment d'une demande. Modèle conseillé sur un MacBook Air :
+`ollama pull qwen2.5-coder:7b`.
+
 ## LaTeX
 
 Un petit Overleaf hors ligne : le code à gauche, le PDF à droite.
@@ -243,6 +250,9 @@ Un petit Overleaf hors ligne : le code à gauche, le PDF à droite.
   - *Cours* : page de titre, sommaire, encadrés définition / théorème / propriété / méthode / exemple / attention ;
   - *Test hebdo* : le « Test de connaissances » de la semaine en gros caractères (14 pt), I / Restituer et II / Calculer,
     blancs pour répondre, « Note : / 5 » ; nombre de questions, barème et semaine réglables, version corrigée en un interrupteur ;
+  - *Autre* + une description (« une fiche de révision recto-verso sur les suites en deux colonnes… ») : l'**IA locale**
+    (Ollama) rédige un modèle sur mesure dans le même style ; Toolbox le compile et lui renvoie les erreurs
+    (3 essais au plus) avant de l'ouvrir ;
   - *Rapport* : page de titre façon cahier de projet, encadrés objectif / livrable, tableau ; *Autre* : document simple.
   La matière vient de « Mes cours » (celle du cours en cours par défaut), le numéro suivant est proposé, et le fichier est
   rangé dans le bon dossier (`Analyse 1/TDs/TD4/TD4.tex`) ou dans `Documents/Toolbox LaTeX`.

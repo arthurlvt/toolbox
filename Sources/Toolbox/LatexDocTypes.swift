@@ -48,7 +48,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .cours: return "Page de titre, sommaire, encadrés colorés : définition, théorème, propriété, méthode, exemple…"
         case .test: return "Test de connaissances de la semaine, en gros caractères : Restituer / Calculer, espace pour répondre, note sur 5."
         case .rapport: return "Page de titre façon cahier de projet, sommaire, sections, encadrés objectif / livrable, tableau."
-        case .autre: return "Document simple avec le même préambule (maths, couleurs, code)."
+        case .autre: return "Document simple avec le même préambule, ou modèle sur mesure préparé par l'IA locale (Ollama) d'après ta description."
         }
     }
     /// Type du dossier « Mes cours » où ranger le document.
@@ -101,6 +101,8 @@ final class NewLatexDocForm: ObservableObject {
     }
     @Published var week = Date()
     @Published var testCorrige = false
+    /// « Autre » : ce que l'IA doit préparer (vide = document simple)
+    @Published var aiPrompt = ""
     @Published var restituer = UserDefaults.standard.object(forKey: "latexdoc.test.r") as? Int ?? 2 {
         didSet { d.set(restituer, forKey: "latexdoc.test.r") }
     }
@@ -1000,12 +1002,16 @@ struct NewLatexDocSheet: View {
     @ObservedObject var model: LatexModel
     @ObservedObject var f = NewLatexDocForm.shared
     @ObservedObject var courses = CoursesStore.shared
+    @ObservedObject var gen = LatexDocGenerator.shared
+
+    private var useAI: Bool { f.kind == .autre && !f.aiPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Nouveau document LaTeX").font(.title2.bold())
             HStack(spacing: 10) {
                 ForEach(LatexDocKind.allCases) { k in kindButton(k) }
+                    .disabled(gen.running)
             }
             Text(f.kind.summary).font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1062,7 +1068,18 @@ struct NewLatexDocSheet: View {
                 }
             }
             .formStyle(.grouped)
-            .frame(minHeight: 260)
+            .frame(minHeight: f.kind == .autre ? 150 : 260)
+            .disabled(gen.running)
+
+            if f.kind == .autre {
+                AIDocFields(ai: model.ai).disabled(gen.running)
+            }
+            if gen.running {
+                AIDocProgress()
+            } else if let e = gen.error {
+                Label(e, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption).foregroundStyle(Color.orange).fixedSize(horizontal: false, vertical: true)
+            }
 
             HStack(spacing: 6) {
                 Image(systemName: "folder").foregroundStyle(.secondary)
@@ -1073,11 +1090,21 @@ struct NewLatexDocSheet: View {
                 Button("Projet depuis un ancien modèle…") { f.show = false; model.showNewProject = true }
                     .buttonStyle(.link)
                 Spacer()
-                Button("Annuler") { f.show = false }
-                    .keyboardShortcut(.cancelAction)
-                Button("Créer") { model.createTypedDocument(f) }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
+                Button(gen.running ? "Arrêter" : "Annuler") {
+                    if gen.running { gen.cancel() } else { gen.error = nil; f.show = false }
+                }
+                .keyboardShortcut(.cancelAction)
+                if useAI {
+                    Button { gen.generate(form: f, model: model) } label: { Label("Générer avec l'IA", systemImage: "sparkles") }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.purple)
+                        .disabled(gen.running)
+                } else {
+                    Button("Créer") { model.createTypedDocument(f) }
+                        .buttonStyle(.borderedProminent)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(gen.running)
+                }
             }
         }
         .padding(24)

@@ -217,6 +217,12 @@ enum SelfTest {
         check("suppression : le sujet PDF est gardé", !t2.wholeFolder && t2.items.count == 3 && !t2.items.contains { $0.lastPathComponent == "sujet.pdf" },
               t2.items.map { $0.lastPathComponent }.joined(separator: ", "))
         try? fm.removeItem(at: dir.deletingLastPathComponent())
+        let answer = "Voici :\n```latex\n\\documentclass{article}\n\\begin{document}\nx\n\\end{document}\n```\nBonne journée"
+        check("IA : document extrait du bloc ```latex", LatexDocGenerator.extractDocument(answer) == "\\documentclass{article}\n\\begin{document}\nx\n\\end{document}\n",
+              LatexDocGenerator.extractDocument(answer) ?? "nil")
+        check("IA : réponse sans document refusée", LatexDocGenerator.extractDocument("Désolé, je ne peux pas.") == nil)
+        check("IA : titre court", LatexDocGenerator.shortTitle("une fiche de révision sur les suites, deux colonnes, avec tableau") == "Une fiche de révision sur les suites",
+              LatexDocGenerator.shortTitle("une fiche de révision sur les suites, deux colonnes, avec tableau"))
         check("échappement LaTeX", LatexDocTemplates.esc("50 % & C#") == "50 \\% \\& C\\#", LatexDocTemplates.esc("50 % & C#"))
     }
 }
