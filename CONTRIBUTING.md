@@ -35,9 +35,10 @@ A few project rules:
   `ObservableObject` (often `static let shared`).
 - **100% local**: no user data leaves the computer. The only network connections allowed are
   explicit and optional (weather, GitHub, downloading tools).
-- **Language**: the interface is in French for now (short sentences, informal “tu”). New strings should be in
-  French until the app is localized; if you'd like to work on localization, open an issue first. Code comments are
-  mostly French; English is fine for new code.
+- **Language**: texts are written in French in the code (short sentences, informal “tu”) and translated in
+  `Resources/en.lproj/Localizable.strings` (key = the French text). Literals in `Text("…")`, `Button("…")`,
+  `.help("…")`… are translated automatically by SwiftUI; for a text passed as a variable, use `L(text)`.
+  When you add a visible text, add its English line too. Code comments are mostly French; English is fine for new code.
 - A feature tied to specific hardware or a specific situation must be **optional**: hidden through
   `AppProfile` (`Profile.swift`) when the user doesn't need it.
 
@@ -51,6 +52,9 @@ A few project rules:
   device by its Bluetooth name.
 - **Add a degree curriculum**: follow `GradesStore.l1InfoAvignon()` (teaching units, subjects, codes,
   credits = coefficients), then add an entry to the *Year* menu.
+- **Translate**: copy `Resources/en.lproj` to `Resources/xx.lproj`, translate the values, add `xx` to
+  `CFBundleLocalizations` in `Resources/Info.plist`. Missing keys simply stay in French. `--selftest` checks that the
+  `%@` / `%lld` placeholders match between key and translation.
 - **Show a spot in the guided tour**: `.tourTarget("id")` on the view, then a step in
   `TourStore.buildSteps()` or `TourStore.miniSteps(_:)` (`Tour.swift`).
 

@@ -218,57 +218,57 @@ enum Tool: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .home: return "Accueil"
-        case .courses: return "Mes cours"
-        case .revisions: return "Révisions"
-        case .grades: return "Notes & ECTS"
-        case .calc: return "Calculatrice"
-        case .planning: return "Planning"
-        case .headphone: return "Casque"
-        case .compare: return "Comparer"
-        case .sign: return "Signer"
-        case .edit: return "Éditer"
-        case .organize: return "Organiser"
-        case .merge: return "Fusionner"
-        case .split: return "Diviser"
-        case .layout: return "Mise en page"
-        case .compress: return "Compresser & archiver"
-        case .ocr: return "OCR"
-        case .cleanup: return "Nettoyer le Mac"
-        case .stamp: return "Numéroter & filigrane"
-        case .security: return "Sécurité & infos"
-        case .convert: return "Convertir"
-        case .batch: return "Traitement par lots"
-        case .annales: return "Annalyse"
-        case .latex: return "LaTeX"
+        case .home: return L("Accueil")
+        case .courses: return L("Mes cours")
+        case .revisions: return L("Révisions")
+        case .grades: return L("Notes & ECTS")
+        case .calc: return L("Calculatrice")
+        case .planning: return L("Planning")
+        case .headphone: return L("Casque")
+        case .compare: return L("Comparer")
+        case .sign: return L("Signer")
+        case .edit: return L("Éditer")
+        case .organize: return L("Organiser")
+        case .merge: return L("Fusionner")
+        case .split: return L("Diviser")
+        case .layout: return L("Mise en page")
+        case .compress: return L("Compresser & archiver")
+        case .ocr: return L("OCR")
+        case .cleanup: return L("Nettoyer le Mac")
+        case .stamp: return L("Numéroter & filigrane")
+        case .security: return L("Sécurité & infos")
+        case .convert: return L("Convertir")
+        case .batch: return L("Traitement par lots")
+        case .annales: return L("Annalyse")
+        case .latex: return L("LaTeX")
         }
     }
 
     var subtitle: String {
         switch self {
-        case .home: return "Raccourcis, projets, agenda du jour"
-        case .courses: return "Cours, TD, TP et annales rangés par matière"
-        case .revisions: return "Tes CC du calendrier, avec une checklist reliée aux cours, TD et annales"
-        case .grades: return "Moyennes, crédits ECTS, compensation et note qu'il te faut au prochain CC"
-        case .calc: return "Graphique (courbes, limites, dérivées, LaTeX), scientifique et programmeur (bases, bits)"
-        case .headphone: return "Batterie, réduction de bruit, égaliseur et mode automatique de ton casque Nothing"
-        case .planning: return "Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC"
-        case .compare: return "Voir ce qui a changé entre deux versions d'un PDF"
-        case .sign: return "Dessiner ou importer ta signature et la poser sur un PDF"
-        case .edit: return "Ajouter ou modifier du texte, surligner, dessiner, poser une image, cacher une zone"
-        case .organize: return "Réordonner, pivoter, supprimer et extraire des pages"
-        case .merge: return "Assembler plusieurs PDF en un seul"
-        case .split: return "Découper un PDF en plusieurs fichiers"
-        case .layout: return "Rogner les marges, 2 ou 4 pages par feuille, livret"
-        case .compress: return "Réduire le poids de tes PDF, créer ou ouvrir des archives zip, tar.gz, 7z…"
-        case .ocr: return "Rendre les scans cherchables et copiables (hors ligne)"
-        case .cleanup: return "Caches, dossiers de compilation, corbeille, gros fichiers, doublons : de la place en un clic"
-        case .stamp: return "Numéros de page, en-tête, pied de page, filigrane"
-        case .security: return "Mot de passe, titre, auteur, mots-clés"
-        case .convert: return "Images ↔ PDF, PDF → texte, export pour RAG"
-        case .batch: return "Appliquer plusieurs opérations à tout un lot de PDF"
-        case .annales: return "N'importe quel dépôt → sujet LaTeX propre, vérifié, tagué et rangé (IA locale)"
-        case .latex: return "Compiler, prévisualiser, naviguer et démarrer des projets .tex"
+        case .home: return L("Raccourcis, projets, agenda du jour")
+        case .courses: return L("Cours, TD, TP et annales rangés par matière")
+        case .revisions: return L("Tes CC du calendrier, avec une checklist reliée aux cours, TD et annales")
+        case .grades: return L("Moyennes, crédits ECTS, compensation et note qu'il te faut au prochain CC")
+        case .calc: return L("Graphique (courbes, limites, dérivées, LaTeX), scientifique et programmeur (bases, bits)")
+        case .headphone: return L("Batterie, réduction de bruit, égaliseur et mode automatique de ton casque Nothing")
+        case .planning: return L("Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC")
+        case .compare: return L("Voir ce qui a changé entre deux versions d'un PDF")
+        case .sign: return L("Dessiner ou importer ta signature et la poser sur un PDF")
+        case .edit: return L("Ajouter ou modifier du texte, surligner, dessiner, poser une image, cacher une zone")
+        case .organize: return L("Réordonner, pivoter, supprimer et extraire des pages")
+        case .merge: return L("Assembler plusieurs PDF en un seul")
+        case .split: return L("Découper un PDF en plusieurs fichiers")
+        case .layout: return L("Rogner les marges, 2 ou 4 pages par feuille, livret")
+        case .compress: return L("Réduire le poids de tes PDF, créer ou ouvrir des archives zip, tar.gz, 7z…")
+        case .ocr: return L("Rendre les scans cherchables et copiables (hors ligne)")
+        case .cleanup: return L("Caches, dossiers de compilation, corbeille, gros fichiers, doublons : de la place en un clic")
+        case .stamp: return L("Numéros de page, en-tête, pied de page, filigrane")
+        case .security: return L("Mot de passe, titre, auteur, mots-clés")
+        case .convert: return L("Images ↔ PDF, PDF → texte, export pour RAG")
+        case .batch: return L("Appliquer plusieurs opérations à tout un lot de PDF")
+        case .annales: return L("N'importe quel dépôt → sujet LaTeX propre, vérifié, tagué et rangé (IA locale)")
+        case .latex: return L("Compiler, prévisualiser, naviguer et démarrer des projets .tex")
         }
     }
 
@@ -372,7 +372,7 @@ struct ContentView: View {
                 ForEach(ToolSection.allCases.filter { $0 != .home }) { section in
                     let tools = section.tools.filter { profile.shows($0) }
                     if !tools.isEmpty {
-                        Section(section.rawValue) {
+                        Section(L(section.rawValue)) {
                             ForEach(tools) { tool in sidebarRow(tool) }
                         }
                     }

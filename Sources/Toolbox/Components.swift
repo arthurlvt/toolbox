@@ -94,6 +94,13 @@ struct ToolHeader: View {
     }
 }
 
+// MARK: - Traduction
+
+/// Texte traduit pour les textes passés en variable (titres d'outils, de widgets…).
+/// Les textes écrits directement dans Text("…"), Button("…")… sont traduits tout seuls par SwiftUI.
+/// Traductions : Resources/en.lproj/Localizable.strings (clé = texte français).
+func L(_ s: String) -> String { NSLocalizedString(s, comment: "") }
+
 // MARK: - Sélecteurs de fichiers
 
 enum Panels {

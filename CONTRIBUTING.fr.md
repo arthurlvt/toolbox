@@ -35,7 +35,10 @@ Quelques règles du projet :
   `ObservableObject` (souvent `static let shared`).
 - **100 % local** : aucune donnée de l'utilisateur ne part sur internet. Les seules connexions réseau acceptées sont
   explicites et facultatives (météo, GitHub, téléchargement d'outils).
-- **Français** dans l'interface et les commentaires, phrases courtes, tutoiement.
+- **Français** dans le code et les commentaires, phrases courtes, tutoiement. Les textes visibles sont traduits dans
+  `Resources/en.lproj/Localizable.strings` (clé = texte français) : les littéraux de `Text("…")`, `Button("…")`,
+  `.help("…")`… le sont tout seuls, un texte passé en variable passe par `L(texte)`. Ajoute la ligne anglaise de
+  chaque nouveau texte.
 - Une fonctionnalité liée à un matériel ou à une situation précise doit être **optionnelle** : masquée via
   `AppProfile` (`Profile.swift`) si l'utilisateur n'en a pas besoin.
 

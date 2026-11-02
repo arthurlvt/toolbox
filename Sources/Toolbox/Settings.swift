@@ -59,6 +59,46 @@ struct ShortcutSettings: View {
     }
 }
 
+/// Langue de l'interface : celle du Mac, ou forcée pour Toolbox seulement (clé AppleLanguages de l'app).
+final class LanguageSetting: ObservableObject {
+    static let options: [(code: String, label: String)] = [("", "Système"), ("fr", "Français"), ("en", "English")]
+    private static var bundleID: String { Bundle.main.bundleIdentifier ?? "fr.arthur.toolbox" }
+
+    @Published var code: String = {
+        let dom = UserDefaults.standard.persistentDomain(forName: Bundle.main.bundleIdentifier ?? "fr.arthur.toolbox")
+        return (dom?["AppleLanguages"] as? [String])?.first ?? ""
+    }() {
+        didSet {
+            if code.isEmpty {
+                UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+            } else {
+                UserDefaults.standard.set([code], forKey: "AppleLanguages")
+            }
+            changed = true
+        }
+    }
+    @Published var changed = false
+}
+
+struct LanguageSettings: View {
+    @StateObject private var l = LanguageSetting()
+
+    var body: some View {
+        Picker("Langue de l'interface", selection: $l.code) {
+            ForEach(LanguageSetting.options, id: \.code) { o in
+                Text(o.code.isEmpty ? L(o.label) : o.label).tag(o.code)
+            }
+        }
+        if l.changed {
+            HStack {
+                Text("La langue change au prochain démarrage.").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Redémarrer Toolbox") { BackupStore.relaunch() }
+            }
+        }
+    }
+}
+
 struct GeneralTab: View {
     @ObservedObject var g = GeneralSettings.shared
     @ObservedObject var courses = CoursesStore.shared
@@ -66,6 +106,7 @@ struct GeneralTab: View {
     var body: some View {
         Form {
             TextField("Ton prénom", text: $g.firstName)
+            LanguageSettings()
             LabeledContent("Dossier de cours") {
                 HStack {
                     Text(courses.root?.path.replacingOccurrences(of: NSHomeDirectory(), with: "~") ?? "Aucun")
@@ -84,6 +125,7 @@ struct GeneralTab: View {
             UpdateSettings()
             BackupSettings()
             ProfileSettings()
+            AdminInfoSettings()
             MacAlertSettings()
             NightlySettings()
             MorningSettings()

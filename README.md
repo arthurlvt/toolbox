@@ -8,9 +8,9 @@ My original idea was to publish a repo for each mini-project in this app, but th
 
 **Unfortunately, this app is only available on macOS for now, but it may be extended to other operating systems someday if I find the motivation.**
 
-> **Note:** the app's interface is currently in **French**. Translating it is on the [roadmap](#roadmap) and help
-> is very welcome. In this README, interface labels are given in English with the French label in parentheses
-> when it helps you find them.
+> **Language:** Toolbox follows your Mac's language: **English** or **French** (or pick one in Settings → General →
+> Interface language). The English translation covers the whole interface except some status messages and texts
+> with numbers in them, which are still French; help is welcome (see [Contributing](#contributing)).
 
 A native app (Swift, SwiftUI, PDFKit, Vision) plus a `pdftool` terminal command, both sharing the same engine.
 
@@ -73,7 +73,7 @@ The start page: an animated mascot (the Leaf) and widgets you can arrange howeve
 | **My apps** | App launcher (VS Code Insiders, iTerm2, Discord… by default), green dot if the app is open, **⌃⌥1 … ⌃⌥9** from anywhere |
 | **My courses** | The class happening right now (from the calendar), one tile per subject, recently opened files |
 | **VS Code projects** | Pinned and recent VS Code Insiders folders: one click opens them |
-| **Today** | Today's events from the Calendar app. The filter button picks which calendars Toolbox reads (handy if you also subscribe to friends' timetables); also in Settings → Calendars |
+| **Today** | Today's events from the Calendar app; the same class in several calendars (yours and friends' timetables) shows once, with one colour stripe per calendar. The filter button picks which calendars Toolbox reads (handy if you also subscribe to friends' timetables); also in Settings → Calendars |
 | **Sticky notes** | Creates a note in the Notes app in one click, shows a pinned note as a post-it, adds lines to the pinned note |
 | **Weather** | Temperature, sky, feels-like, wind and the next 8 hours. Only appears with an internet connection |
 | **Grades & ECTS** | Year average, ring of earned credits, the grade you need on what's left to pass each semester |
@@ -365,6 +365,12 @@ A small offline Overleaf: code on the left, PDF on the right.
     (Ollama) writes a custom template in the same style; Toolbox builds it and sends the errors back to it
     (3 attempts at most) before opening it;
   - *Report*: project-notebook title page, objective / deliverable boxes, table.
+  - *Administrative*: letter, request to the university's admissions office, sworn statement, proxy, contract
+    cancellation (registered letter). Already filled in with **your details** (name, address, phone, e-mail, date and
+    place of birth, student ID, institution), your city, today's date and your **signature** from the Sign tool; only
+    the red “[À compléter]” bits are left. Your details are typed once (Settings → General → My details, or in the
+    New document sheet), stay on your Mac and are part of the profile backups. Files go to
+    `Documents/Toolbox LaTeX/Administratif/`.
   The subject comes from “My courses” (the current class by default), the next number is suggested, and the file is
   stored in the right folder (`Analyse 1/TDs/TD4/TD4.tex`) or in `Documents/Toolbox LaTeX`.
 - Project from an older template (Beamer…), word count, undefined references.
@@ -615,7 +621,7 @@ make-dmg.sh   makes the .dmg from build/Toolbox.app
 ## Roadmap
 
 Areas where help would be valuable:
-- **Interface translation**: everything is in French for now. English first, other languages welcome.
+- **Translation**: English is in (`Resources/en.lproj/Localizable.strings`); some status messages and texts with numbers are still French. Other languages welcome.
 - **Android**: an equivalent of the iPhone widgets (Scriptable only exists on iOS). Idea: a JSON file served by
   Nextcloud / WebDAV or a small local server, read by a widget app such as KWGT.
 - **Other headphones**: the generic battery of Bluetooth devices known to macOS (AirPods, Beats, Sony, Bose…), then
@@ -628,6 +634,9 @@ Areas where help would be valuable:
 
 Everything is explained in [CONTRIBUTING.md](CONTRIBUTING.md): building, running the tests, adding a tool, a widget
 or a headphone model. Ideas and bugs go in *Issues* (templates are ready).
+
+**Releases are automatic**: pushing a tag `v…` (`git tag v2.1 && git push origin v2.1`) makes GitHub Actions build a
+universal app (Apple Silicon + Intel), run the tests, make the .dmg and attach it to the release.
 
 ## License and credits
 

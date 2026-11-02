@@ -8,7 +8,7 @@ import PDFCore
 /// reprenant la mise en page des modèles d'Annalyse (annales.cls, exemples, cahier de projet),
 /// mais autonome : pas besoin de la classe à côté du fichier, et pas de fiche de provenance.
 enum LatexDocKind: String, CaseIterable, Identifiable {
-    case td, tp, cours, test, rapport, autre
+    case td, tp, cours, test, rapport, admin, autre
     var id: String { rawValue }
 
     var title: String {
@@ -18,6 +18,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .cours: return "Cours"
         case .test: return "Test hebdo"
         case .rapport: return "Rapport"
+        case .admin: return "Administratif"
         case .autre: return "Autre"
         }
     }
@@ -28,6 +29,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .cours: return "book.closed"
         case .test: return "checklist"
         case .rapport: return "doc.richtext"
+        case .admin: return "envelope"
         case .autre: return "doc"
         }
     }
@@ -38,6 +40,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .cours: return .indigo
         case .test: return .pink
         case .rapport: return .orange
+        case .admin: return .teal
         case .autre: return .gray
         }
     }
@@ -48,6 +51,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .cours: return "Page de titre, sommaire, encadrés colorés : définition, théorème, propriété, méthode, exemple…"
         case .test: return "Test de connaissances de la semaine, en gros caractères : Restituer / Calculer, espace pour répondre, note sur 5."
         case .rapport: return "Page de titre façon cahier de projet, sommaire, sections, encadrés objectif / livrable, tableau."
+        case .admin: return "Courrier, demande à la fac, attestation sur l'honneur, procuration, résiliation : déjà rempli avec tes informations, ta ville, la date et ta signature."
         case .autre: return "Document simple avec le même préambule, ou modèle sur mesure préparé par l'IA locale (Ollama) d'après ta description."
         }
     }
@@ -57,7 +61,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .td: return .td
         case .tp: return .tp
         case .cours: return .cours
-        case .test, .rapport, .autre: return .autre
+        case .test, .rapport, .admin, .autre: return .autre
         }
     }
     var numbered: Bool { self == .td || self == .tp || self == .cours }
@@ -69,6 +73,7 @@ enum LatexDocKind: String, CaseIterable, Identifiable {
         case .cours: return "Ex. : Les nombres réels"
         case .test: return ""
         case .rapport: return "Ex. : Projet Annalyse"
+        case .admin: return "Objet"
         case .autre: return "Titre du document"
         }
     }
@@ -116,6 +121,17 @@ final class NewLatexDocForm: ObservableObject {
         didSet { d.set(inCourseFolder, forKey: "latexdoc.incourse") }
     }
 
+    // Administratif
+    @Published var adminType = AdminType(rawValue: UserDefaults.standard.string(forKey: "latexdoc.admin.type") ?? "") ?? .lettre {
+        didSet { d.set(adminType.rawValue, forKey: "latexdoc.admin.type") }
+    }
+    @Published var recipient = ""
+    @Published var mandataire = ""
+    @Published var useSignature = UserDefaults.standard.object(forKey: "latexdoc.admin.sign") as? Bool ?? true {
+        didSet { d.set(useSignature, forKey: "latexdoc.admin.sign") }
+    }
+    @Published var showInfo = false
+
     static let languages = ["C", "C++", "Python", "Java", "bash", "SQL", "HTML", "Aucun"]
 
     var course: Course? { CoursesStore.shared.courses.first { $0.id == courseID } }
@@ -124,7 +140,8 @@ final class NewLatexDocForm: ObservableObject {
     /// Ouvre la feuille, en devinant la matière (cours en ce moment, sinon dernière utilisée).
     func present() {
         author = UserProfile.firstName.isEmpty ? NSFullUserName() : UserProfile.firstName
-        title = ""; objectif = ""; enseignant = ""
+        title = ""; objectif = ""; enseignant = ""; recipient = ""; mandataire = ""
+        showInfo = AdminInfo.shared.fields.isEmpty
         let store = CoursesStore.shared
         let last = d.string(forKey: "latexdoc.course") ?? ""
         if let now = store.now?.course {
@@ -174,6 +191,7 @@ final class NewLatexDocForm: ObservableObject {
     var fullTitle: String {
         let t = title.trimmingCharacters(in: .whitespaces)
         if kind == .test { return "Test de connaissances" }
+        if kind == .admin { return t.isEmpty ? adminType.title : adminType.title + " -- " + t }
         guard kind.numbered else { return t.isEmpty ? (kind == .rapport ? "Rapport" : "Sans titre") : t }
         let head = kind == .cours ? "Chapitre \(number)" : "\(kind.title) \(number)"
         return t.isEmpty ? head : head + " -- " + t
@@ -183,7 +201,16 @@ final class NewLatexDocForm: ObservableObject {
     func destination() -> URL {
         let base: URL
         let name: String
-        if kind == .test {
+        if kind == .admin {
+            // Documents/Toolbox LaTeX/Administratif/2026-11-02 Procuration – colis/
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            let t = title.trimmingCharacters(in: .whitespaces)
+            let label = f.string(from: Date()) + " " + adminType.title + (t.isEmpty ? "" : " – " + String(t.prefix(40)))
+            name = Self.slug(adminType.title + (t.isEmpty ? "" : " " + String(t.prefix(40))))
+            base = LatexModel.draftsFolder.appendingPathComponent("Administratif", isDirectory: true)
+                .appendingPathComponent(label.replacingOccurrences(of: "/", with: "-"), isDirectory: true)
+        } else if kind == .test {
             name = "Test-" + Self.weekLabel(week, format: "yyyy-MM-dd")
             if inCourseFolder, let c = course {
                 base = c.url.appendingPathComponent("Tests", isDirectory: true)
@@ -226,7 +253,9 @@ final class NewLatexDocForm: ObservableObject {
         LatexDocTemplates.Values(kind: kind, matiere: courseName, number: number, theme: title, fullTitle: fullTitle,
                                  author: author, formation: formation, enseignant: enseignant, objectif: objectif,
                                  annee: Self.academicYear, corrige: kind == .test ? testCorrige : corrige, language: language,
-                                 week: Self.weekLabel(week), restituer: restituer, calculer: calculer, bareme: bareme)
+                                 week: Self.weekLabel(week), restituer: restituer, calculer: calculer, bareme: bareme,
+                                 adminType: adminType.rawValue, recipient: recipient, mandataire: mandataire,
+                                 signature: useSignature && AdminInfo.latestSignature != nil, me: AdminInfo.shared.fields)
     }
 }
 
@@ -250,6 +279,12 @@ enum LatexDocTemplates {
         var restituer: Int = 2
         var calculer: Int = 3
         var bareme: Int = 5
+        // Administratif
+        var adminType: String = AdminType.lettre.rawValue
+        var recipient: String = ""
+        var mandataire: String = ""
+        var signature: Bool = false
+        var me = AdminFields()
     }
 
     /// Échappe le texte saisi (& % # _ $ …) pour LaTeX.
@@ -489,6 +524,7 @@ enum LatexDocTemplates {
         case .cours: return cours(v)
         case .rapport: return rapport(v)
         case .test: return test(v)
+        case .admin: return admin(v)
         case .autre: return autre(v)
         }
     }
@@ -975,16 +1011,23 @@ extension LatexModel {
         let url = form.destination()
         do {
             try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            let text = LatexDocTemplates.document(form.values)
+            let values = form.values
+            let text = LatexDocTemplates.document(values)
             try text.write(to: url, atomically: true, encoding: .utf8)
+            if form.kind == .admin, values.signature, let sig = AdminInfo.latestSignature {
+                let dest = url.deletingLastPathComponent().appendingPathComponent("signature.png")
+                try? fm.removeItem(at: dest)
+                try? fm.copyItem(at: sig, to: dest)
+            }
             LatexDocsStore.shared.register(url, kind: form.kind.rawValue,
                                            title: form.kind == .test ? "Test – semaine du \(NewLatexDocForm.weekLabel(form.week))" : form.fullTitle.replacingOccurrences(of: "--", with: "–"),
-                                           matiere: form.kind == .autre ? "" : form.courseName)
+                                           matiere: form.kind == .autre || form.kind == .admin ? "" : form.courseName)
             form.remember()
             form.show = false
             open(url)
             let lines = text.components(separatedBy: "\n")
-            let target = lines.firstIndex { $0.hasPrefix("\\begin{exercice}") || $0.hasPrefix("\\partie") || $0.hasPrefix("\\section{") || $0.hasPrefix("Ton texte") }
+            let target = lines.firstIndex { $0.hasPrefix("% ↓ Ton texte") }.map { $0 + 1 }
+                ?? lines.firstIndex { $0.hasPrefix("\\begin{exercice}") || $0.hasPrefix("\\partie") || $0.hasPrefix("\\section{") || $0.hasPrefix("Ton texte") }
                 ?? lines.firstIndex { $0.hasPrefix("\\begin{document}") } ?? 0
             send(.goTo(line: target + 1))
             compile()
@@ -1013,11 +1056,34 @@ struct NewLatexDocSheet: View {
                 ForEach(LatexDocKind.allCases) { k in kindButton(k) }
                     .disabled(gen.running)
             }
-            Text(f.kind.summary).font(.caption).foregroundStyle(.secondary)
+            Text(L(f.kind.summary)).font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             Form {
-                if f.kind != .autre {
+                if f.kind == .admin {
+                    Picker("Document", selection: $f.adminType) {
+                        ForEach(AdminType.allCases) { Text(L($0.title)).tag($0) }
+                    }
+                    TextField(f.adminType.objectLabel, text: $f.title, prompt: Text(f.adminType.objectPrompt))
+                    if f.adminType.needsRecipient {
+                        TextField("Destinataire", text: $f.recipient,
+                                  prompt: Text(f.adminType == .demande ? "Vide = Service de la scolarité de ta fac" : "Nom, service, adresse (Entrée pour aller à la ligne)"),
+                                  axis: .vertical)
+                            .lineLimit(2...5)
+                    }
+                    if f.adminType == .procuration {
+                        TextField("Personne qui me représente", text: $f.mandataire, prompt: Text("Prénom et nom"))
+                    }
+                    if AdminInfo.latestSignature != nil {
+                        Toggle("Ajouter ma signature (outil Signer)", isOn: $f.useSignature)
+                    }
+                    DisclosureGroup(isExpanded: $f.showInfo) {
+                        AdminInfoFields()
+                    } label: {
+                        Text(AdminInfo.shared.fields.isEmpty ? "Mes informations : à remplir une fois" : "Mes informations : " + AdminInfo.shared.name)
+                    }
+                }
+                if f.kind != .autre && f.kind != .admin {
                     Picker("Matière", selection: $f.courseID) {
                         Text("Autre / aucune").tag("")
                         if !courses.courses.isEmpty { Divider() }
@@ -1039,7 +1105,7 @@ struct NewLatexDocSheet: View {
                     Stepper(value: $f.calculer, in: 0...6) { Text("II / Calculer : \(f.calculer) question\(f.calculer > 1 ? "s" : "")") }
                     Stepper(value: $f.bareme, in: 1...40) { Text("Noté sur \(f.bareme)") }
                     Toggle("Version corrigée (réponses à la place des blancs)", isOn: $f.testCorrige)
-                } else {
+                } else if f.kind != .admin {
                     TextField(f.kind.numbered ? "Thème" : "Titre", text: $f.title, prompt: Text(f.kind.titlePrompt))
                 }
                 if f.kind == .td || f.kind == .tp {
@@ -1056,19 +1122,19 @@ struct NewLatexDocSheet: View {
                 if f.kind == .td || f.kind == .tp {
                     Toggle("Afficher les corrections (\\corrigetrue)", isOn: $f.corrige)
                 }
-                if f.kind != .test { TextField("Auteur", text: $f.author) }
-                if f.kind != .autre && f.kind != .test {
+                if f.kind != .test && f.kind != .admin { TextField("Auteur", text: $f.author) }
+                if f.kind != .autre && f.kind != .test && f.kind != .admin {
                     TextField("Formation", text: $f.formation)
                     if f.kind == .cours || f.kind == .rapport {
                         TextField(f.kind == .rapport ? "Encadrant" : "Enseignant", text: $f.enseignant, prompt: Text("Facultatif"))
                     }
                 }
-                if f.course != nil {
+                if f.course != nil && f.kind != .admin {
                     Toggle("Ranger dans le dossier de la matière", isOn: $f.inCourseFolder)
                 }
             }
             .formStyle(.grouped)
-            .frame(minHeight: f.kind == .autre ? 150 : 260)
+            .frame(minHeight: f.kind == .autre ? 150 : (f.kind == .admin && f.showInfo ? 460 : 260))
             .disabled(gen.running)
 
             if f.kind == .autre {
@@ -1108,7 +1174,7 @@ struct NewLatexDocSheet: View {
             }
         }
         .padding(24)
-        .frame(width: 560)
+        .frame(width: 640)
     }
 
     private func kindButton(_ k: LatexDocKind) -> some View {
@@ -1116,7 +1182,7 @@ struct NewLatexDocSheet: View {
         return Button { f.kind = k } label: {
             VStack(spacing: 6) {
                 Image(systemName: k.icon).font(.title2)
-                Text(k.title).font(.callout.weight(.semibold))
+                Text(L(k.title)).font(.callout.weight(.semibold))
             }
             .frame(maxWidth: .infinity, minHeight: 64)
             .foregroundStyle(selected ? Color.white : k.color)

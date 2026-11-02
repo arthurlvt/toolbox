@@ -75,6 +75,37 @@ struct DayEvent: Identifiable {
     let allDay: Bool
     let location: String
     let color: Color
+    /// Couleurs de tous les calendriers qui contiennent le même événement (emplois du temps partagés).
+    var colors: [Color] = []
+    var calendarNames: [String] = []
+
+    /// Les mêmes cours dans plusieurs calendriers (le sien et ceux des amis) ne font qu'une ligne.
+    /// Même titre (sans tenir compte de la casse ni des espaces) et mêmes horaires = même événement.
+    static func merged(_ list: [(event: DayEvent, calendar: String)]) -> [DayEvent] {
+        var out: [DayEvent] = []
+        var index: [String: Int] = [:]
+        for (e, cal) in list {
+            let key = e.title.lowercased().split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+                + "|\(e.allDay)|\(Int(e.start.timeIntervalSince1970))|\(Int(e.end.timeIntervalSince1970))"
+            if let i = index[key] {
+                var m = out[i]
+                m.colors.append(e.color)
+                if !m.calendarNames.contains(cal) { m.calendarNames.append(cal) }
+                if m.location.isEmpty, !e.location.isEmpty {
+                    m = DayEvent(id: m.id, title: m.title, start: m.start, end: m.end, allDay: m.allDay,
+                                 location: e.location, color: m.color, colors: m.colors, calendarNames: m.calendarNames)
+                }
+                out[i] = m
+            } else {
+                var n = e
+                n.colors = [e.color]
+                n.calendarNames = [cal]
+                index[key] = out.count
+                out.append(n)
+            }
+        }
+        return out
+    }
 }
 
 // MARK: - État de l'accueil
@@ -356,11 +387,12 @@ final class HomeStore: ObservableObject {
                 return x.startDate < y.startDate
             }
             .map { e in
-                DayEvent(id: (e.eventIdentifier ?? UUID().uuidString) + "\(e.startDate.timeIntervalSince1970)",
-                         title: e.title ?? "(sans titre)", start: e.startDate, end: e.endDate, allDay: e.isAllDay,
-                         location: e.location ?? "", color: Color(nsColor: e.calendar?.color ?? .systemBlue))
+                (event: DayEvent(id: (e.eventIdentifier ?? UUID().uuidString) + "\(e.startDate.timeIntervalSince1970)",
+                                 title: e.title ?? "(sans titre)", start: e.startDate, end: e.endDate, allDay: e.isAllDay,
+                                 location: e.location ?? "", color: Color(nsColor: e.calendar?.color ?? .systemBlue)),
+                 calendar: e.calendar?.title ?? "")
             }
-        events = found
+        events = DayEvent.merged(found)
     }
 
     static func openCalendar() {
@@ -816,7 +848,14 @@ struct HomeView: View {
                     let past = !e.allDay && e.end < home.now
                     let ongoing = !e.allDay && e.start <= home.now && e.end > home.now
                     HStack(alignment: .top, spacing: 10) {
-                        RoundedRectangle(cornerRadius: 2).fill(e.color).frame(width: 4, height: 30)
+                        // une bande par calendrier qui contient ce cours
+                        VStack(spacing: 1) {
+                            ForEach(Array((e.colors.isEmpty ? [e.color] : e.colors).enumerated()), id: \.offset) { c in
+                                RoundedRectangle(cornerRadius: 2).fill(c.element)
+                            }
+                        }
+                        .frame(width: 4, height: 30)
+                        .help(e.calendarNames.count > 1 ? "Dans : " + e.calendarNames.joined(separator: ", ") : "")
                         VStack(alignment: .leading, spacing: 1) {
                             Text(e.title).font(.callout.weight(.medium)).lineLimit(1)
                             Text(e.allDay ? "Toute la journée"
@@ -893,7 +932,7 @@ struct Card<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label(title, systemImage: icon).font(.headline).foregroundStyle(tint)
+                Label(L(title), systemImage: icon).font(.headline).foregroundStyle(tint)
                 Spacer()
                 if let a = accessory { a }
             }
@@ -919,7 +958,7 @@ struct QuickAction: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: icon).font(.body.weight(.semibold))
-                Text(title).font(.callout.weight(.medium)).lineLimit(1)
+                Text(L(title)).font(.callout.weight(.medium)).lineLimit(1)
             }
             .foregroundStyle(hover.on ? Color.white : color)
             .padding(.horizontal, 14)

@@ -1114,7 +1114,7 @@ struct EditToolView: View {
                                 .foregroundStyle(s.tool == t ? Color.accentColor : Color.primary)
                         }
                         .buttonStyle(.plain)
-                        .help(t.title + " : " + t.help)
+                        .help(L(t.title) + " : " + L(t.help))
                     }
                 }
                 .padding(2)

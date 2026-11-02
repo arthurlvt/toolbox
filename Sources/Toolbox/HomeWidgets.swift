@@ -13,24 +13,24 @@ enum HomeWidget: String, CaseIterable, Identifiable, Codable {
 
     var title: String {
         switch self {
-        case .quickActions: return "Actions rapides"
-        case .apps: return "Mes apps"
-        case .courses: return "Mes cours"
-        case .vscode: return "Projets VS Code"
-        case .today: return "Aujourd'hui"
-        case .notes: return "Pense-bête"
-        case .weather: return "Météo"
-        case .exams: return "Comptes à rebours"
-        case .clipboard: return "Presse-papiers"
-        case .watch: return "Dossier surveillé"
-        case .github: return "GitHub"
-        case .recents: return "Fichiers récents"
-        case .tools: return "Tous les outils"
-        case .grades: return "Notes & ECTS"
-        case .planning: return "Planning"
-        case .nextShift: return "Prochain shift"
-        case .nextExam: return "Prochain CC"
-        case .mac: return "Mes appareils"
+        case .quickActions: return L("Actions rapides")
+        case .apps: return L("Mes apps")
+        case .courses: return L("Mes cours")
+        case .vscode: return L("Projets VS Code")
+        case .today: return L("Aujourd'hui")
+        case .notes: return L("Pense-bête")
+        case .weather: return L("Météo")
+        case .exams: return L("Comptes à rebours")
+        case .clipboard: return L("Presse-papiers")
+        case .watch: return L("Dossier surveillé")
+        case .github: return L("GitHub")
+        case .recents: return L("Fichiers récents")
+        case .tools: return L("Tous les outils")
+        case .grades: return L("Notes & ECTS")
+        case .planning: return L("Planning")
+        case .nextShift: return L("Prochain shift")
+        case .nextExam: return L("Prochain CC")
+        case .mac: return L("Mes appareils")
         }
     }
 

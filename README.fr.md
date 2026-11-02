@@ -64,7 +64,7 @@ La page d'ouverture : une mascotte animée (la Feuille) et des widgets à dispos
 | **Mes apps** | Lanceur d'apps (VS Code Insiders, iTerm2, Discord… par défaut), point vert si l'app est ouverte, **⌃⌥1 … ⌃⌥9** depuis n'importe où |
 | **Mes cours** | Le cours en ce moment (d'après le calendrier), une tuile par matière, les derniers fichiers ouverts |
 | **Projets VS Code** | Dossiers épinglés et derniers dossiers de VS Code Insiders : un clic les ouvre |
-| **Aujourd'hui** | Événements du jour de l'app Calendrier. Le bouton filtre choisit les calendriers que Toolbox lit (pratique si tu as aussi les emplois du temps de tes amis) ; aussi dans Réglages → Calendriers |
+| **Aujourd'hui** | Événements du jour de l'app Calendrier ; un même cours présent dans plusieurs calendriers (le tien, ceux de tes amis) n'apparaît qu'une fois, avec une bande de couleur par calendrier. Le bouton filtre choisit les calendriers que Toolbox lit (pratique si tu as aussi les emplois du temps de tes amis) ; aussi dans Réglages → Calendriers |
 | **Pense-bête** | Crée une note dans l'app Notes en un clic, affiche une note épinglée façon post-it, ajoute des lignes à la note épinglée |
 | **Météo** | Température, ciel, ressenti, vent et les 8 prochaines heures. N'apparaît qu'avec une connexion internet |
 | **Notes & ECTS** | Moyenne de l'année, anneau des crédits acquis, note qu'il te faut sur ce qui reste pour valider chaque semestre |
@@ -346,7 +346,13 @@ Un petit Overleaf hors ligne : le code à gauche, le PDF à droite.
   - *Autre* + une description (« une fiche de révision recto-verso sur les suites en deux colonnes… ») : l'**IA locale**
     (Ollama) rédige un modèle sur mesure dans le même style ; Toolbox le compile et lui renvoie les erreurs
     (3 essais au plus) avant de l'ouvrir ;
-  - *Rapport* : page de titre façon cahier de projet, encadrés objectif / livrable, tableau ; *Autre* : document simple.
+  - *Rapport* : page de titre façon cahier de projet, encadrés objectif / livrable, tableau ; *Autre* : document simple ;
+  - *Administratif* : courrier, demande à la scolarité, attestation sur l'honneur, procuration, résiliation (lettre
+    recommandée). Déjà rempli avec **tes informations** (nom, adresse, téléphone, e-mail, date et lieu de naissance,
+    n° étudiant, établissement), ta ville, la date du jour et ta **signature** de l'outil Signer : il ne reste que les
+    passages en rouge « [À compléter] ». Tes informations se saisissent une fois (Réglages → Général → Mes informations,
+    ou dans la feuille Nouveau document), restent sur ton Mac et font partie des sauvegardes du profil. Rangé dans
+    `Documents/Toolbox LaTeX/Administratif/`.
   La matière vient de « Mes cours » (celle du cours en cours par défaut), le numéro suivant est proposé, et le fichier est
   rangé dans le bon dossier (`Analyse 1/TDs/TD4/TD4.tex`) ou dans `Documents/Toolbox LaTeX`.
 - Projet depuis un ancien modèle (Beamer…), compteur de mots, références indéfinies.
@@ -612,13 +618,16 @@ Des pistes où une aide serait précieuse :
   les réglages avancés marque par marque (le code du casque Nothing est dans `Headphone.swift`).
 - **Autres maquettes de diplôme** pour Notes & ECTS (`GradesStore.l1InfoAvignon()` sert de modèle).
 - **Autres plannings** que celui d'un McDonald's (`ShiftParser` dans `PlanningView.swift`).
-- **Traduction** de l'interface (tout est en français pour l'instant).
+- **Traduction** : l'anglais est là (`Resources/en.lproj/Localizable.strings`) ; quelques messages d'état et textes avec des nombres restent en français. D'autres langues sont bienvenues.
 - **Linux / Windows** un jour : `PDFCore` et `pdftool` sont le plus portable, l'interface SwiftUI ne l'est pas.
 
 ## Contribuer
 
 Tout est expliqué dans [CONTRIBUTING.fr.md](CONTRIBUTING.fr.md) : compiler, lancer les tests, ajouter un outil, un widget
 ou un casque. Les idées et les bugs se signalent dans les *Issues* (des modèles sont prêts).
+
+**Les releases sont automatiques** : pousser un tag `v…` (`git tag v2.1 && git push origin v2.1`) fait compiler par
+GitHub Actions une appli universelle (Apple Silicon + Intel), lancer les tests, fabriquer le .dmg et l'attacher à la release.
 
 ## Licence et crédits
 

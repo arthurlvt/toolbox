@@ -20,6 +20,11 @@
     <string>2</string>
     <key>CFBundleDevelopmentRegion</key>
     <string>fr</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>fr</string>
+        <string>en</string>
+    </array>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>LSApplicationCategoryType</key>

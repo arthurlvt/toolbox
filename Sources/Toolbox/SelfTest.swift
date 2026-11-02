@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import SwiftUI
 import PDFKit
 import PDFCore
 
@@ -23,9 +24,49 @@ enum SelfTest {
         headphone()
         latexTemplates()
         pdfEditor()
+        todayMerge()
+        translations()
         print("Toolbox --selftest : \(passed) réussi\(passed > 1 ? "s" : ""), \(failed.count) échec\(failed.count > 1 ? "s" : "")")
         for f in failed { print("  ✗ " + f) }
         return failed.isEmpty ? 0 : 1
+    }
+
+    // MARK: Traduction anglaise
+
+    private static func translations() {
+        guard let path = Bundle.main.path(forResource: "Localizable", ofType: "strings", inDirectory: nil, forLocalization: "en"),
+              let dict = NSDictionary(contentsOfFile: path) as? [String: String] else {
+            check("traduction : en.lproj/Localizable.strings dans l'appli", false, "fichier absent ou illisible")
+            return
+        }
+        check("traduction : \(dict.count) textes en anglais", dict.count > 500)
+        // un % de format en trop ou en moins ferait planter l'affichage
+        let spec = try! NSRegularExpression(pattern: "%(?:\\d+\\$)?(?:@|l?l?d|l?f|s)")
+        func count(_ s: String) -> Int { spec.numberOfMatches(in: s, range: NSRange(s.startIndex..., in: s)) }
+        let wrong = dict.filter { count($0.key) != count($0.value) }.map { $0.key }
+        check("traduction : mêmes %@ / %lld dans la clé et la traduction", wrong.isEmpty, wrong.prefix(3).joined(separator: " | "))
+        check("traduction : titres d'outils", dict["Éditer un PDF"] == "Edit a PDF" && dict["Notes & ECTS"] == "Grades & ECTS")
+    }
+
+    // MARK: Accueil : même cours dans plusieurs calendriers
+
+    private static func todayMerge() {
+        let t0 = Date(timeIntervalSince1970: 1_800_000_000)
+        func ev(_ id: String, _ title: String, _ start: Date, _ color: Color, _ loc: String = "") -> DayEvent {
+            DayEvent(id: id, title: title, start: start, end: start.addingTimeInterval(5400), allDay: false, location: loc, color: color)
+        }
+        let list: [(event: DayEvent, calendar: String)] = [
+            (ev("1", "ANALYSE 1 - CM", t0, .blue), "Moi"),
+            (ev("2", "Analyse 1  -  CM", t0, .yellow, "AT02"), "Ami 1"),
+            (ev("3", "ANALYSE 1 - CM", t0, .orange), "Ami 2"),
+            (ev("4", "ANALYSE 1 - TD", t0, .yellow), "Ami 1"),
+            (ev("5", "ANALYSE 1 - CM", t0.addingTimeInterval(86400), .blue), "Moi"),
+        ]
+        let m = DayEvent.merged(list)
+        check("accueil : cours identiques regroupés", m.count == 3, "\(m.count) lignes")
+        check("accueil : une couleur par calendrier", m.first?.colors.count == 3)
+        check("accueil : salle reprise d'un doublon", m.first?.location == "AT02")
+        check("accueil : TD d'un autre groupe gardé à part", m.contains { $0.title == "ANALYSE 1 - TD" })
     }
 
     // MARK: Éditeur de PDF
@@ -319,6 +360,26 @@ enum SelfTest {
             check("modèle \(kind.title) : accolades équilibrées", open == close, "\(open) { pour \(close) }")
             check("modèle \(kind.title) : pas d'interpolation oubliée", !t.contains("\\#("))
         }
+        // documents administratifs (informations fictives)
+        let me = AdminFields(name: "Camille Martin", address: "12 rue des Lilas\nBât. B", cityLine: "84000 Avignon", phone: "06 00 00 00 00",
+                             email: "camille@example.com", birthDate: "1er janvier 2006", birthPlace: "Marseille", studentID: "1234567",
+                             school: "Avignon Université – L1 Informatique")
+        check("administratif : ville tirée du code postal", me.city == "Avignon")
+        for t in AdminType.allCases {
+            var v = LatexDocTemplates.Values(kind: .admin, matiere: "", number: 1, theme: "relevé de notes & attestation", fullTitle: t.title,
+                                             author: "", formation: "", enseignant: "", objectif: "", annee: "2026--2027", corrige: false, language: "C")
+            v.adminType = t.rawValue
+            v.me = me
+            v.mandataire = "Alex Durand"
+            let tex = LatexDocTemplates.document(v)
+            let open = tex.filter { $0 == "{" }.count - tex.components(separatedBy: "\\{").count + 1
+            let close = tex.filter { $0 == "}" }.count - tex.components(separatedBy: "\\}").count + 1
+            check("administratif \(t.title) : complet", tex.contains("\\begin{document}") && tex.hasSuffix("\\end{document}"))
+            check("administratif \(t.title) : accolades équilibrées", open == close, "\(open) { pour \(close) }")
+            check("administratif \(t.title) : mes informations", tex.contains("Camille Martin") && tex.contains("\\newcommand{\\maville}{Avignon}"))
+            check("administratif \(t.title) : texte échappé", tex.contains("\\&") && !tex.contains("notes & attestation"))
+        }
+
         let lib = LatexLibrary.all
         check("bibliothèque LaTeX : \(lib.count) symboles et formules", lib.count > 200)
         check("bibliothèque : recherche « xor »", !LatexLibrary.search("xor").isEmpty)

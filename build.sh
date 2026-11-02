@@ -25,8 +25,11 @@ rm -rf .build    # ancien dossier de compilation dans le projet, plus utilisé
 defaults write fr.arthur.toolbox build.sourceDir "$(pwd)" >/dev/null 2>&1 || true
 
 echo "→ Compilation (release)…"
-swift build -c release --scratch-path "$SCRATCH"
-BIN="$(swift build -c release --scratch-path "$SCRATCH" --show-bin-path)"
+# TOOLBOX_UNIVERSAL=1 : appli universelle (Apple Silicon + Intel), utilisé pour les releases (demande Xcode).
+ARCH_FLAGS=()
+[[ "${TOOLBOX_UNIVERSAL:-0}" == "1" ]] && ARCH_FLAGS=(--arch arm64 --arch x86_64)
+swift build -c release --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+BIN="$(swift build -c release --scratch-path "$SCRATCH" ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)"
 
 echo "→ Assemblage de ${APP_NAME}.app…"
 APP="build/${APP_NAME}.app"
@@ -35,9 +38,15 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/Toolbox" "$APP/Contents/MacOS/Toolbox"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# Traductions (en.lproj…) : l'appli suit la langue du Mac, ou celle choisie dans Réglages → Général
+for LPROJ in Resources/*.lproj; do
+  [[ -d "$LPROJ" ]] && cp -R "$LPROJ" "$APP/Contents/Resources/"
+done
 cp "$BIN/pdftool" build/pdftool
 echo "→ Tests des calculs (calculatrice, notes, planning, casque)…"
 if ! "$APP/Contents/MacOS/Toolbox" --selftest; then
+  # TOOLBOX_STRICT=1 (releases automatiques) : un test raté arrête tout
+  [[ "${TOOLBOX_STRICT:-0}" == "1" ]] && { echo "✗ Des tests ont échoué : pas de release."; exit 1; }
   echo "⚠︎ Des tests ont échoué (détail ci-dessus) : l'appli est quand même installée, mais dis-le à Claude."
 fi
 # Signature. Avec le certificat local « Toolbox Dev » (./setup-signing.sh, une fois), macOS reconnaît
