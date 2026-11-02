@@ -199,7 +199,7 @@ enum Tool: String, CaseIterable, Identifiable {
     case home
     case planning, headphone
     case courses, revisions, grades, calc, annales
-    case latex, organize, merge, split, layout, convert, stamp, security, compare, sign
+    case latex, edit, organize, merge, split, layout, convert, stamp, security, compare, sign
     case compress, ocr, batch, cleanup
 
     var id: String { rawValue }
@@ -209,7 +209,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .home: return .home
         case .courses, .revisions, .grades, .calc, .annales: return .study
         case .planning, .headphone: return .life
-        case .latex, .organize, .merge, .split, .layout, .convert, .stamp, .security, .compare, .sign: return .pages
+        case .latex, .edit, .organize, .merge, .split, .layout, .convert, .stamp, .security, .compare, .sign: return .pages
         case .compress, .ocr, .cleanup: return .optimize
         case .batch: return .optimize
         }
@@ -226,6 +226,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .headphone: return "Casque"
         case .compare: return "Comparer"
         case .sign: return "Signer"
+        case .edit: return "Éditer"
         case .organize: return "Organiser"
         case .merge: return "Fusionner"
         case .split: return "Diviser"
@@ -253,6 +254,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .planning: return "Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC"
         case .compare: return "Voir ce qui a changé entre deux versions d'un PDF"
         case .sign: return "Dessiner ou importer ta signature et la poser sur un PDF"
+        case .edit: return "Ajouter ou modifier du texte, surligner, dessiner, poser une image, cacher une zone"
         case .organize: return "Réordonner, pivoter, supprimer et extraire des pages"
         case .merge: return "Assembler plusieurs PDF en un seul"
         case .split: return "Découper un PDF en plusieurs fichiers"
@@ -279,6 +281,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .planning: return "travail shift horaires macdo boulot"
         case .headphone: return "nothing ecouteurs bluetooth batterie anc"
         case .latex: return "tex document td tp cours rapport"
+        case .edit: return "editer modifier annoter surligner souligner barrer texte ecrire dessiner image cacher blanc caviarder corriger"
         case .courses: return "cours matieres td tp annales"
         case .revisions: return "cc examen partiel checklist"
         default: return ""
@@ -296,6 +299,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .headphone: return "headphones"
         case .compare: return "plus.forwardslash.minus"
         case .sign: return "signature"
+        case .edit: return "pencil.and.outline"
         case .organize: return "square.grid.2x2"
         case .merge: return "doc.on.doc"
         case .split: return "scissors"
@@ -323,6 +327,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .headphone: return .cyan
         case .compare: return .orange
         case .sign: return .blue
+        case .edit: return .red
         case .organize: return .blue
         case .merge: return .purple
         case .split: return .orange
@@ -356,6 +361,7 @@ struct ContentView: View {
     @StateObject private var home = HomeStore()
     @StateObject private var compare = CompareStore()
     @StateObject private var sign = SignStore()
+    @StateObject private var edit = EditStore()
 
     var body: some View {
         NavigationSplitView {
@@ -391,6 +397,7 @@ struct ContentView: View {
         .onChange(of: nav.selection) { t in
             DiscordPresence.shared.refresh()
             AppRouterSelection.current = t
+            if t != .edit { edit.release() }      // libère la mémoire du PDF ouvert dans l'éditeur
             if let t = t { TourStore.shared.toolOpened(t) }
         }
         .onChange(of: profile.student) { _ in leaveHiddenTool() }
@@ -461,6 +468,7 @@ struct ContentView: View {
         case .planning: PlanningToolView(p: PlanningStore.shared)
         case .headphone: HeadphoneToolView()
         case .sign: SignToolView(s: sign)
+        case .edit: EditToolView(s: edit)
         case .organize: OrganizeToolView(model: organize)
         case .merge: MergeToolView(s: merge)
         case .split: SplitToolView()

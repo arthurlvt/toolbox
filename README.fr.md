@@ -64,7 +64,7 @@ La page d'ouverture : une mascotte animée (la Feuille) et des widgets à dispos
 | **Mes apps** | Lanceur d'apps (VS Code Insiders, iTerm2, Discord… par défaut), point vert si l'app est ouverte, **⌃⌥1 … ⌃⌥9** depuis n'importe où |
 | **Mes cours** | Le cours en ce moment (d'après le calendrier), une tuile par matière, les derniers fichiers ouverts |
 | **Projets VS Code** | Dossiers épinglés et derniers dossiers de VS Code Insiders : un clic les ouvre |
-| **Aujourd'hui** | Événements du jour de l'app Calendrier |
+| **Aujourd'hui** | Événements du jour de l'app Calendrier. Le bouton filtre choisit les calendriers que Toolbox lit (pratique si tu as aussi les emplois du temps de tes amis) ; aussi dans Réglages → Calendriers |
 | **Pense-bête** | Crée une note dans l'app Notes en un clic, affiche une note épinglée façon post-it, ajoute des lignes à la note épinglée |
 | **Météo** | Température, ciel, ressenti, vent et les 8 prochaines heures. N'apparaît qu'avec une connexion internet |
 | **Notes & ECTS** | Moyenne de l'année, anneau des crédits acquis, note qu'il te faut sur ce qui reste pour valider chaque semestre |
@@ -251,7 +251,8 @@ toujours le justifier.
 
 | Section | Outil | Ce qu'il fait |
 |---|---|---|
-| Pages | **Organiser** | Miniatures : glisser pour réordonner, pivoter, supprimer, extraire, ajouter les pages d'autres PDF |
+| Pages | **Éditer** | Un petit éditeur de PDF : ajouter du texte, **réécrire une phrase existante** (on la sélectionne, elle est cachée et remplacée par un texte modifiable dans la même police : celle embarquée dans le PDF si elle contient les lettres tapées, sinon la même installée sur ton Mac, sinon une qui ressemble), post-it, surligner / souligner / barrer, dessin à main levée, rectangles, ellipses, flèches, images et tes signatures, caches blancs, pivoter / insérer / supprimer des pages. Tout reste déplaçable et modifiable jusqu'à l'enregistrement ; outils au clavier (T, M, H, D…), ⌘Z. **Enregistrer une copie** intègre tout aux pages, et le texte sous un cache blanc est **vraiment supprimé** (la page est recréée en image avec une couche OCR invisible, elle reste cherchable). Les liens (web et internes) et le sommaire sont gardés. Ou garder les annotations modifiables pour Aperçu / Acrobat. Le PDF ouvert est libéré de la mémoire quand tu quittes l'outil (sauf s'il reste des modifications à enregistrer) |
+| | **Organiser** | Miniatures : glisser pour réordonner, pivoter, supprimer, extraire, ajouter les pages d'autres PDF |
 | | **Fusionner** | Plusieurs PDF → un seul, ordre par glisser-déposer |
 | | **Diviser** | Une page par fichier, toutes les N pages, plages (`1-3, 5, 8-`), extraction |
 | | **Mise en page** | Rogner les marges (auto ou en mm, sans perte), 2 ou 4 pages par feuille, livret A5 |
@@ -259,7 +260,7 @@ toujours le justifier.
 | | **Numéroter & filigrane** | Numéros de page, en-tête, pied de page, filigrane, avec aperçu en direct |
 | | **Sécurité & infos** | Ajouter / retirer un mot de passe, modifier titre, auteur, sujet, mots-clés |
 | | **Comparer** | Deux versions d'un PDF : pages appariées même si on en a ajouté ou retiré, superposition (rouge = supprimé, vert = ajouté), côte à côte, différences de texte, rapport PDF |
-| | **Signer** | Signature dessinée au trackpad ou importée (fond blanc retiré), posée, déplacée et redimensionnée sur la page, PDF signé (texte toujours sélectionnable) |
+| | **Signer** | Signature dessinée au trackpad ou importée (fond blanc retiré), posée, déplacée et redimensionnée sur la page, PDF signé (texte toujours sélectionnable, liens et sommaire gardés) |
 | Optimiser | **Compresser & archiver** | PDF : 3 niveaux, Ghostscript si installé, sinon PDFKit. **Archives** : créer un .zip, .tar.gz, .tar.bz2, .tar.xz ou .7z (fichiers et dossiers, 3 niveaux, mot de passe en zip ou 7z AES, sans fichiers parasites, sans fichiers LaTeX, mode « prêt à rendre » pour un TP sans .git ni binaires) ; **extraire** en voyant le contenu avant, tout ou une sélection, avec mot de passe |
 | | **OCR** | Rend les scans cherchables et copiables (Vision d'Apple, hors ligne, français + anglais) |
 | | **Traitement par lots** | OCR → numérotation/filigrane → auteur → compression → renommage, sur tout un dossier |

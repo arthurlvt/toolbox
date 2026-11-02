@@ -40,5 +40,6 @@ public enum Signature {
                 }
             }
         }
+        try? PDFLinks.restore(from: doc, into: output)
     }
 }

@@ -73,7 +73,7 @@ The start page: an animated mascot (the Leaf) and widgets you can arrange howeve
 | **My apps** | App launcher (VS Code Insiders, iTerm2, Discord… by default), green dot if the app is open, **⌃⌥1 … ⌃⌥9** from anywhere |
 | **My courses** | The class happening right now (from the calendar), one tile per subject, recently opened files |
 | **VS Code projects** | Pinned and recent VS Code Insiders folders: one click opens them |
-| **Today** | Today's events from the Calendar app |
+| **Today** | Today's events from the Calendar app. The filter button picks which calendars Toolbox reads (handy if you also subscribe to friends' timetables); also in Settings → Calendars |
 | **Sticky notes** | Creates a note in the Notes app in one click, shows a pinned note as a post-it, adds lines to the pinned note |
 | **Weather** | Temperature, sky, feels-like, wind and the next 8 hours. Only appears with an internet connection |
 | **Grades & ECTS** | Year average, ring of earned credits, the grade you need on what's left to pass each semester |
@@ -265,7 +265,8 @@ to justify it.
 
 | Section | Tool | What it does |
 |---|---|---|
-| Pages | **Organize** | Thumbnails: drag to reorder, rotate, delete, extract, add pages from other PDFs |
+| Pages | **Edit** | A small PDF editor: add text, **rewrite an existing sentence** (select it, it's covered and replaced by editable text in the same font: the one embedded in the PDF when it has the letters you type, otherwise the same font installed on your Mac, otherwise a lookalike), sticky notes, highlight / underline / strike through, freehand drawing, rectangles, ellipses, arrows, images and your saved signatures, white-out boxes, rotate / insert / delete pages. Everything stays movable and editable until you save; one-key tools (T, M, H, D…), ⌘Z. **Save a copy** bakes everything into the pages, and text under a white-out is **really removed** (that page is rebuilt as an image with an invisible OCR layer, so it stays searchable). Links (web and internal) and the table of contents are kept. Or keep the annotations editable for Preview / Acrobat. The open PDF is released from memory when you leave the tool (unless it has unsaved changes) |
+| | **Organize** | Thumbnails: drag to reorder, rotate, delete, extract, add pages from other PDFs |
 | | **Merge** | Several PDFs → one, order by drag and drop |
 | | **Split** | One page per file, every N pages, ranges (`1-3, 5, 8-`), extraction |
 | | **Layout** | Crop margins (auto or in mm, lossless), 2 or 4 pages per sheet, A5 booklet |
@@ -273,7 +274,7 @@ to justify it.
 | | **Numbering & watermark** | Page numbers, header, footer, watermark, with live preview |
 | | **Security & info** | Add / remove a password, edit title, author, subject, keywords |
 | | **Compare** | Two versions of a PDF: pages matched even if some were added or removed, overlay (red = removed, green = added), side by side, text differences, PDF report |
-| | **Sign** | Signature drawn on the trackpad or imported (white background removed), placed, moved and resized on the page, signed PDF (text still selectable) |
+| | **Sign** | Signature drawn on the trackpad or imported (white background removed), placed, moved and resized on the page, signed PDF (text still selectable, links and table of contents kept) |
 | Optimize | **Compress & archive** | PDF: 3 levels, Ghostscript if installed, otherwise PDFKit. **Archives**: create a .zip, .tar.gz, .tar.bz2, .tar.xz or .7z (files and folders, 3 levels, password with zip or 7z AES, no junk files, no LaTeX build files, “ready to hand in” mode for a lab without .git or binaries); **extract** with a preview of the contents, everything or a selection, with password |
 | | **OCR** | Makes scans searchable and copyable (Apple Vision, offline, French + English) |
 | | **Batch processing** | OCR → numbering/watermark → author → compression → renaming, on a whole folder |

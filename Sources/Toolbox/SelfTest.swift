@@ -1,4 +1,7 @@
 import Foundation
+import AppKit
+import PDFKit
+import PDFCore
 
 /// Tests des calculs sensibles, lancés par `Toolbox --selftest` (et par build.sh après chaque compilation).
 /// Pas de XCTest : il n'est pas fourni avec les seuls outils en ligne de commande d'Apple.
@@ -19,9 +22,75 @@ enum SelfTest {
         planning()
         headphone()
         latexTemplates()
+        pdfEditor()
         print("Toolbox --selftest : \(passed) réussi\(passed > 1 ? "s" : ""), \(failed.count) échec\(failed.count > 1 ? "s" : "")")
         for f in failed { print("  ✗ " + f) }
         return failed.isEmpty ? 0 : 1
+    }
+
+    // MARK: Éditeur de PDF
+
+    private static func pdfEditor() {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("toolbox-selftest-edit-\(getpid())")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let src = dir.appendingPathComponent("source.pdf")
+        // une page avec deux mots : SECRET (à cacher) et GARDE (à garder)
+        do {
+            try PageDrawing.rewrite(to: src) { w in
+                w.page(size: CGSize(width: 400, height: 300)) { ctx in
+                    PageDrawing.drawText("SECRET", in: ctx, at: CGPoint(x: 40, y: 200), size: 24, color: CGColor(gray: 0, alpha: 1), anchor: .left)
+                    PageDrawing.drawText("GARDE", in: ctx, at: CGPoint(x: 40, y: 100), size: 24, color: CGColor(gray: 0, alpha: 1), anchor: .left)
+                }
+            }
+        } catch { check("éditeur : PDF de test", false, error.localizedDescription); return }
+        guard let doc = PDFDocument(url: src), let page = doc.page(at: 0) else { check("éditeur : PDF de test lisible", false); return }
+
+        let text = PDFAnnotation(bounds: CGRect(x: 200, y: 40, width: 150, height: 30), forType: .freeText, withProperties: nil)
+        text.contents = "AJOUT"
+        text.font = NSFont(name: "Helvetica", size: 16)
+        text.fontColor = .black
+        text.color = .clear
+        page.addAnnotation(text)
+        let link = PDFAnnotation(bounds: CGRect(x: 40, y: 95, width: 100, height: 30), forType: .link, withProperties: nil)
+        link.url = URL(string: "https://example.com/toolbox")
+        page.addAnnotation(link)
+
+        let out1 = dir.appendingPathComponent("vectoriel.pdf")
+        let r1 = try? PDFEdit.flatten(doc, to: out1)
+        let s1 = PDFDocument(url: out1)?.page(at: 0)?.string ?? ""
+        check("éditeur : texte ajouté intégré à la page", s1.contains("AJOUT"), s1)
+        check("éditeur : texte d'origine conservé", s1.contains("SECRET") && s1.contains("GARDE"), s1)
+        check("éditeur : page restée vectorielle sans cache", r1?.redactedPages == 0)
+        let links1 = PDFDocument(url: out1)?.page(at: 0)?.annotations.filter { PDFEdit.kind($0) == "Link" } ?? []
+        check("éditeur : lien gardé dans la copie", links1.contains { ($0.url ?? ($0.action as? PDFActionURL)?.url)?.absoluteString == "https://example.com/toolbox" }, "\(links1.count) lien(s)")
+        check("éditeur : lien gardé au même endroit", links1.first.map { abs($0.bounds.minX - 40) < 1 && abs($0.bounds.minY - 95) < 1 } ?? false,
+              "\(links1.first?.bounds ?? .zero)")
+
+        let cover = PDFAnnotation(bounds: CGRect(x: 30, y: 190, width: 200, height: 40), forType: .square, withProperties: nil)
+        cover.color = .white
+        cover.interiorColor = .white
+        cover.userName = EditStore.redactTag
+        page.addAnnotation(cover)
+        let out2 = dir.appendingPathComponent("cache.pdf")
+        let r2 = try? PDFEdit.flatten(doc, to: out2, redact: { $0.userName == EditStore.redactTag })
+        let s2 = PDFDocument(url: out2)?.page(at: 0)?.string ?? ""
+        check("éditeur : texte sous le cache vraiment supprimé", !s2.contains("SECRET"), s2)
+        check("éditeur : texte ajouté toujours là avec un cache", s2.contains("AJOUT"), s2)
+        check("éditeur : page avec cache recréée", r2?.redactedPages == 1)
+
+        // polices pour réécrire un texte
+        check("polices : préfixe de sous-ensemble retiré", PDFFonts.baseName("ABCDEF+Calibri-Bold") == "Calibri-Bold")
+        check("polices : nom sans préfixe inchangé", PDFFonts.baseName("Helvetica") == "Helvetica")
+        check("polices : Times New Roman gras retrouvée",
+              PDFFonts.installed("ABCDEF+TimesNewRomanPS-BoldMT", size: 12).map { $0.familyName == "Times New Roman" && NSFontManager.shared.traits(of: $0).contains(.boldFontMask) } ?? false)
+        check("polices : LaTeX chasse fixe → Menlo", PDFFonts.lookalike("XYZABC+CMTT10", size: 10).familyName == "Menlo")
+        check("polices : LaTeX romain → serif", PDFFonts.lookalike("CMR10", size: 10).familyName == "Times New Roman")
+        check("polices : Calibri → sans serif", PDFFonts.lookalike("Calibri", size: 10).familyName == "Helvetica")
+        check("polices : couverture des lettres", PDFFonts.covers(NSFont(name: "Helvetica", size: 12)!, "Été 2026 !"))
+
+        let blank = PDFEdit.blankPage(size: CGSize(width: 300, height: 500))
+        check("éditeur : page blanche à la bonne taille", blank.map { PageDrawing.displaySize($0) == CGSize(width: 300, height: 500) } ?? false)
     }
 
     // MARK: Calculatrice

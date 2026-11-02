@@ -260,6 +260,7 @@ final class DiscordPresence: ObservableObject {
         case .headphone: return ("Règle son casque", "Réduction de bruit au max 🎧")
         case .compare: return ("Joue au jeu des 7 différences", "Entre deux PDF 🔍")
         case .sign: return ("Signe des documents", "Sans avoir lu les conditions ✍️")
+        case .edit: return ("Retouche un PDF", "Personne ne verra la différence 🤫")
         case .compress: return ("Compresse des PDF", "Chaque octet compte")
         case .merge: return ("Fusionne des PDF", "1 + 1 = 1")
         case .split: return ("Découpe des PDF", "Avec une précision chirurgicale ✂️")

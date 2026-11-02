@@ -191,6 +191,10 @@ final class TourStore: ObservableObject {
             return [st("latex.new", "Nouveau document", "TD, TP, cours, test hebdo, rapport… ou « Autre » pour que l'IA prépare un modèle sur mesure.", fallback: "latex.compile"),
                     st("latex.docs", "Mes documents", "Tout ce que tu as créé : double-clic pour reprendre, corbeille pour supprimer (⇧⌘O)."),
                     st("latex.symbols", "Symboles & formules", "Ensembles, logique, limites, dérivées… un clic les insère au curseur (⇧⌘M).")]
+        case .edit:
+            return [st("edit.tools", "Les outils", "Texte, « Modifier le texte » (sélectionne une phrase du PDF pour la réécrire), surligner, dessiner, formes, cache blanc, image ou signature. Une lettre au clavier choisit l'outil (T, M, H, D…)."),
+                    st("edit.canvas", "Sur la page", "Tout reste modifiable : clique pour sélectionner, glisse pour déplacer, la poignée pour redimensionner, double-clic pour changer un texte, ⌫ pour supprimer."),
+                    st("edit.save", "Enregistrer", "Une copie où tout est intégré aux pages. Le texte sous un cache blanc y est vraiment supprimé, pas juste caché.")]
         case .calc:
             return [st("calc.modes", "Trois calculatrices", "Graphique pour les fonctions, scientifique comme sur le Mac, programmeur pour les bases et les bits."),
                     st("calc.content", "À toi", "En graphique : tape f(x) = …, le bouton TeX convertit en LaTeX. En scientifique : tape directement, Entrée calcule.")]
