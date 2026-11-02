@@ -33,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         WatchFolderStore.shared.start()
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { LatexDocsStore.shared.refresh() }
         UpdateStore.shared.launchCheck()
+        BackupStore.autoBackupIfNeeded()        // sauvegarde du profil à chaque nouvelle version
         AppShortcutsStore.shared.start()
         DiscordPresence.shared.start()
         MacStatusStore.shared.start()

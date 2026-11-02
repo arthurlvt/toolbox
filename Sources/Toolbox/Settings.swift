@@ -82,6 +82,7 @@ struct GeneralTab: View {
             }
             TourMiniSettings()
             UpdateSettings()
+            BackupSettings()
             ProfileSettings()
             MacAlertSettings()
             NightlySettings()

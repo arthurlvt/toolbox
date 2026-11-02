@@ -40,8 +40,22 @@ echo "→ Tests des calculs (calculatrice, notes, planning, casque)…"
 if ! "$APP/Contents/MacOS/Toolbox" --selftest; then
   echo "⚠︎ Des tests ont échoué (détail ci-dessus) : l'appli est quand même installée, mais dis-le à Claude."
 fi
-# Signature ad hoc : suffisant pour lancer l'appli sur ton propre Mac.
-codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
+# Signature. Avec le certificat local « Toolbox Dev » (./setup-signing.sh, une fois), macOS reconnaît
+# l'appli d'une version à l'autre et garde les autorisations. Sinon : signature ad hoc, et macOS
+# redemande Calendrier, Rappels, capture d'écran… après chaque compilation.
+SIGN_ID="${TOOLBOX_SIGN_ID:-Toolbox Dev}"
+if security find-identity -p codesigning 2>/dev/null | grep -q "\"${SIGN_ID}\""; then
+  if codesign --force --deep --sign "${SIGN_ID}" "$APP" >/dev/null 2>&1; then
+    echo "→ Signée avec « ${SIGN_ID} » : les autorisations restent d'une version à l'autre"
+  else
+    codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
+    echo "⚠︎ Signature avec « ${SIGN_ID} » impossible (accès à la clé refusé ?) : signature ad hoc"
+  fi
+else
+  codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
+  echo "ℹ︎ Signature ad hoc : macOS redemandera les autorisations après chaque mise à jour."
+  echo "  Pour les garder : ./setup-signing.sh (une seule fois), puis ./build.sh"
+fi
 
 if [[ $INSTALL -eq 1 ]]; then
   mkdir -p "$HOME/Applications" "$HOME/.local/bin"

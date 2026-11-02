@@ -293,6 +293,12 @@ discrètement s'il y a des nouveautés sur GitHub ou si le code a changé depuis
 Le dossier du code est noté par `build.sh` (sinon : bouton *Choisir…*). Journal de l'installation :
 `~/Library/Logs/Toolbox-update.log`.
 
+**Profils et sauvegardes** (Réglages → Général) : ton profil (réglages, calendriers choisis, accueil, notes, planning,
+révisions, signatures…) est sauvegardé tout seul avant chaque mise à jour et à chaque nouvelle version (les 8 dernières
+gardées), ou à la demande. Restauration en un clic, export en .zip (autre Mac, Nextcloud) et import. Tu peux aussi avoir
+**plusieurs profils** (« Moi », « Test »…) : en changer enregistre le profil actuel et relance Toolbox avec l'autre ; un
+nouveau profil part de zéro (configuration de bienvenue) ou d'une copie du profil actuel.
+
 ## IA locale (Ollama)
 
 Toolbox **démarre Ollama tout seul** au lancement s'il ne tourne pas (Réglages → Général → IA locale) : il ouvre l'app
@@ -412,10 +418,14 @@ Prérequis : macOS 13 ou plus récent et les outils de développement Apple (`xc
 Xcode complet n'est pas nécessaire.
 
 ```bash
+./setup-signing.sh   # une fois : certificat de signature local, pour que macOS garde les autorisations
 ./build.sh
 ```
 
 - L'appli s'installe dans `~/Applications/Toolbox.app`, la commande dans `~/.local/bin/pdftool`.
+- Sans `setup-signing.sh`, l'appli est signée « ad hoc » : à chaque compilation, macOS croit voir une nouvelle appli et
+  redemande Calendriers, Rappels, Enregistrement de l'écran… `setup-signing.sh` crée un certificat auto-signé
+  « Toolbox Dev » dans ton trousseau (il ne quitte pas ton Mac) et `build.sh` l'utilise tout seul.
 - Ajoute `export PATH="$HOME/.local/bin:$PATH"` à `~/.zshrc` pour utiliser `pdftool` partout.
 
 ### Depuis un .dmg (pour un autre Mac)
@@ -546,6 +556,7 @@ Plages de pages : `1-3, 5, 8-` (`8-` = jusqu'à la fin, `-3` = depuis le début)
 | Calculatrice (fonctions, historique) | préférences de l'app |
 | Données partagées avec l'iPhone | iCloud Drive → `Toolbox/` (ToolboxMac.json, ToolboxDay.json, scripts Scriptable) |
 | Banque d'annales | le dossier choisi dans Annalyse → Réglages |
+| Sauvegardes du profil, autres profils | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
 
 Rien n'est écrit dans ton dossier de cours, sauf ce que tu crées toi-même (nouveau TD/TP, notes, photos, fichiers déposés).
 

@@ -307,6 +307,12 @@ whether there is anything new on GitHub or whether the code has changed since th
 The code folder is recorded by `build.sh` (otherwise: *Choose…* button). Install log:
 `~/Library/Logs/Toolbox-update.log`.
 
+**Profiles and backups** (Settings → General): your profile (settings, chosen calendars, Home layout, grades, planning,
+revisions, signatures…) is backed up automatically before each update and at each new version (last 8 kept), or on
+demand. Restore one in a click, export it as a .zip (another Mac, Nextcloud) and import it back. You can also keep
+**several profiles** (“Me”, “Test”…): switching saves the current one and restarts Toolbox with the other; a new profile
+starts empty (welcome setup) or as a copy of the current one.
+
 ## Local AI (Ollama)
 
 Toolbox **starts Ollama on its own** at launch if it isn't running (Settings → General → Local AI): it opens the
@@ -422,10 +428,14 @@ Requirements: macOS 13 or later and Apple's command line tools (`xcode-select --
 Full Xcode is not needed.
 
 ```bash
+./setup-signing.sh   # once: local signing certificate, so macOS keeps permissions across builds
 ./build.sh
 ```
 
 - The app is installed in `~/Applications/Toolbox.app`, the command in `~/.local/bin/pdftool`.
+- Without `setup-signing.sh`, the app is signed ad hoc: every build looks like a new app to macOS, which asks
+  again for Calendars, Reminders, Screen Recording… `setup-signing.sh` creates a self-signed “Toolbox Dev”
+  certificate in your login keychain (it never leaves your Mac) and `build.sh` uses it automatically.
 - Add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshrc` to use `pdftool` everywhere.
 
 ### From a .dmg (for another Mac)
@@ -556,6 +566,7 @@ Page ranges: `1-3, 5, 8-` (`8-` = to the end, `-3` = from the start).
 | Calculator (functions, history) | app preferences |
 | Data shared with the iPhone | iCloud Drive → `Toolbox/` (ToolboxMac.json, ToolboxDay.json, Scriptable scripts) |
 | Past-exam bank | the folder chosen in Annalyse → Settings |
+| Profile backups, other profiles | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
 
 Nothing is written into your courses folder, except what you create yourself (new TD/TP, notes, photos, dropped files).
 

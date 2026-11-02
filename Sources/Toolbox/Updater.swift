@@ -129,6 +129,7 @@ final class UpdateStore: ObservableObject {
 
     func update() {
         guard !busy, let dir = sourceDir else { return }
+        _ = try? BackupStore.create(reason: "auto (avant mise à jour)")     // filet de sécurité
         log = ""
         message = "Mise à jour en cours… (2 à 4 minutes)"
         phase = .pulling
