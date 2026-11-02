@@ -135,6 +135,12 @@ final class HomeStore: ObservableObject {
             sinks.append(publisher.sink { [weak self] _ in self?.objectWillChange.send() })
         }
         // Retour de la connexion : on actualise la météo.
+        // Calendriers cochés / décochés : on relit le jour et les comptes à rebours.
+        sinks.append(NotificationCenter.default.publisher(for: CalendarFilter.changed).sink { [weak self] _ in
+            guard let self = self, self.calendarAccess == true else { return }
+            self.fetchEvents()
+            self.exams.loadCalendar()
+        })
         sinks.append(net.$online.removeDuplicates().sink { [weak self] on in
             if on { DispatchQueue.main.async { self?.weather.refresh() } }
         })
@@ -344,8 +350,7 @@ final class HomeStore: ObservableObject {
         let cal = Calendar.current
         let start = cal.startOfDay(for: Date())
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return }
-        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: nil)
-        let found = store.events(matching: predicate)
+        let found = CalendarFilter.shared.events(store, from: start, to: end)
             .sorted { (x: EKEvent, y: EKEvent) -> Bool in
                 if x.isAllDay != y.isAllDay { return x.isAllDay }
                 return x.startDate < y.startDate
@@ -530,6 +535,7 @@ struct HomeView: View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 190), spacing: 10, alignment: .leading)], alignment: .leading, spacing: 10) {
             QuickAction(title: "Nouveau document LaTeX", icon: "square.and.pencil", color: .indigo) { newLatex() }
             QuickAction(title: "Capture → texte", icon: "text.viewfinder", color: .teal) { ScreenText.capture() }
+            QuickAction(title: "Éditer un PDF", icon: "pencil.and.outline", color: .red) { openTool(.edit) }
             QuickAction(title: "Signer un PDF", icon: "signature", color: .blue) { openTool(.sign) }
             QuickAction(title: "Fusionner des PDF", icon: "doc.on.doc", color: .purple) { openTool(.merge) }
             QuickAction(title: "Compresser", icon: "arrow.down.right.and.arrow.up.left", color: .green) { openTool(.compress) }
@@ -779,7 +785,10 @@ struct HomeView: View {
 
     private var todayCard: some View {
         Card(title: "Aujourd'hui", icon: "calendar", tint: .red,
-             accessory: AnyView(Button("Calendrier") { HomeStore.openCalendar() }.controlSize(.small))) {
+             accessory: AnyView(HStack(spacing: 6) {
+                 if home.calendarAccess == true { CalendarFilterMenu() }
+                 Button("Calendrier") { HomeStore.openCalendar() }.controlSize(.small)
+             })) {
             switch home.calendarAccess {
             case nil:
                 Text("Affiche ici les événements du jour de ton app Calendrier.")
@@ -798,6 +807,10 @@ struct HomeView: View {
                 if home.events.isEmpty {
                     Label("Rien de prévu aujourd'hui.", systemImage: "sun.max")
                         .font(.callout).foregroundStyle(.secondary)
+                }
+                if !CalendarFilter.shared.hidden.isEmpty, CalendarFilter.shared.hiddenCount > 0 {
+                    Text("\(CalendarFilter.shared.hiddenCount) calendrier(s) masqué(s)")
+                        .font(.caption2).foregroundStyle(.tertiary)
                 }
                 ForEach(home.events) { e in
                     let past = !e.allDay && e.end < home.now

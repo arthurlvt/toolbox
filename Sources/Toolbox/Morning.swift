@@ -25,7 +25,7 @@ enum Today {
         let start = cal.startOfDay(for: day)
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return [] }
         let cs = CoursesStore.shared
-        return store.events(matching: store.predicateForEvents(withStart: start, end: end, calendars: nil))
+        return CalendarFilter.shared.events(store, from: start, to: end)
             .filter { !$0.isAllDay }
             .compactMap { e -> Lesson? in
                 guard let c = cs.course(matchingTitle: e.title ?? "") else { return nil }

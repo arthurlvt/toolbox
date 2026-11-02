@@ -308,7 +308,7 @@ final class ExamsStore: ObservableObject {
         guard HomeStore.hasAccess else { fromCalendar = []; return }
         let start = Calendar.current.startOfDay(for: Date())
         guard let end = Calendar.current.date(byAdding: .day, value: 120, to: start) else { return }
-        let events = store.events(matching: store.predicateForEvents(withStart: start, end: end, calendars: nil))
+        let events = CalendarFilter.shared.events(store, from: start, to: end)
         var seen = Set<String>()
         fromCalendar = events.compactMap { e -> Countdown? in
             guard let title = e.title, title.range(of: Self.pattern, options: .regularExpression) != nil else { return nil }

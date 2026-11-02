@@ -31,6 +31,8 @@ struct SettingsView: View {
         TabView {
             GeneralTab()
                 .tabItem { Label("Général", systemImage: "person.crop.circle") }
+            CalendarSettings()
+                .tabItem { Label("Calendriers", systemImage: "calendar") }
             DiscordSettings()
                 .tabItem { Label("Discord", systemImage: "gamecontroller.fill") }
             ShortcutSettings()

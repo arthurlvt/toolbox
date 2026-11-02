@@ -807,7 +807,7 @@ final class PlanningStore: ObservableObject {
         if HomeStore.hasAccess {
             let dayStart = Calendar.current.startOfDay(for: start)
             let dayEnd = Calendar.current.date(byAdding: .day, value: 1, to: dayStart) ?? end
-            let evs = events.events(matching: events.predicateForEvents(withStart: dayStart, end: max(end, dayEnd), calendars: nil))
+            let evs = CalendarFilter.shared.events(events, from: dayStart, to: max(end, dayEnd))
                 .filter { $0.eventIdentifier != ignoring && !ours.contains($0.eventIdentifier ?? "") }
             let isExam: (EKEvent) -> Bool = { ($0.title ?? "").range(of: ExamsStore.pattern, options: .regularExpression) != nil }
             if let e = evs.first(where: { isExam($0) && ($0.isAllDay || Calendar.current.isDate($0.startDate, inSameDayAs: start)) }) {

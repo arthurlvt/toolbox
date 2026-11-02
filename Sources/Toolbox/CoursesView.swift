@@ -331,7 +331,7 @@ final class CoursesStore: ObservableObject {
     func updateNow() {
         guard HomeStore.hasAccess, !courses.isEmpty else { now = nil; return }
         let start = Date().addingTimeInterval(-60), end = Date().addingTimeInterval(20 * 60)
-        let list = events.events(matching: events.predicateForEvents(withStart: start, end: end, calendars: nil))
+        let list = CalendarFilter.shared.events(events, from: start, to: end)
             .filter { !$0.isAllDay && $0.endDate > Date() }
             .sorted { $0.startDate < $1.startDate }
         for e in list {
