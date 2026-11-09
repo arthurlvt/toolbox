@@ -91,6 +91,10 @@ struct MenuBarPanel: View {
                 Button { ScreenText.capture() } label: {
                     Label("Capture → texte", systemImage: "text.viewfinder").frame(maxWidth: .infinity)
                 }
+                Button { ColorStore.shared.pick(copy: true) } label: {
+                    Label("Pipette", systemImage: "eyedropper").frame(maxWidth: .infinity)
+                }
+                .help("Copie la couleur d'un pixel n'importe où à l'écran (⌃⌥C)")
                 Button {
                     openWindow(id: "main")
                     NSApp.activate(ignoringOtherApps: true)

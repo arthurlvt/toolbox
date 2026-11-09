@@ -8,6 +8,12 @@ import UniformTypeIdentifiers
 final class GeneralSettings: ObservableObject {
     static let shared = GeneralSettings()
 
+    @Published var colorHotKey = UserDefaults.standard.object(forKey: "colors.hotkey") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(colorHotKey, forKey: "colors.hotkey")
+            ColorStore.registerHotKey()
+        }
+    }
     @Published var searchHotKey = UserDefaults.standard.object(forKey: "courses.hotkey") as? Bool ?? true {
         didSet {
             UserDefaults.standard.set(searchHotKey, forKey: "courses.hotkey")
@@ -51,6 +57,7 @@ struct ShortcutSettings: View {
         Form {
             Toggle("⌥Espace : chercher dans mes cours depuis n'importe quelle app", isOn: $g.searchHotKey)
             Toggle("⌃⌥1 … ⌃⌥9 : lancer les apps du widget « Mes apps »", isOn: $apps.hotKeysOn)
+            Toggle("⌃⌥C : pipette, la couleur d'un pixel est copiée (depuis n'importe quelle app)", isOn: $g.colorHotKey)
             Toggle("Notification au début d'un cours (d'après le calendrier)", isOn: $g.courseNotify)
             Text("Dans l'app : ⌘K palette de commandes · ⇧⌘T capture → texte · ⌘B compiler (LaTeX) · ⇧⌘N nouveau document LaTeX")
                 .font(.caption).foregroundStyle(.secondary)

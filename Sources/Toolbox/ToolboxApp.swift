@@ -54,6 +54,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         if UserDefaults.standard.object(forKey: "courses.hotkey") as? Bool ?? true {
             GlobalHotKey.shared.register { QuickSearchPanel.shared.toggle() }
         }
+        // ⌃⌥C : pipette depuis n'importe quelle app, la couleur est copiée
+        ColorStore.registerHotKey()
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
@@ -198,7 +200,7 @@ enum ToolSection: String, CaseIterable, Identifiable {
 
 enum Tool: String, CaseIterable, Identifiable {
     case home
-    case planning, headphone
+    case planning, headphone, clip
     case courses, revisions, grades, calc, annales
     case latex, edit, organize, merge, split, layout, convert, stamp, security, compare, sign
     case compress, ocr, batch, cleanup
@@ -209,7 +211,7 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return .home
         case .courses, .revisions, .grades, .calc, .annales: return .study
-        case .planning, .headphone: return .life
+        case .planning, .headphone, .clip: return .life
         case .latex, .edit, .organize, .merge, .split, .layout, .convert, .stamp, .security, .compare, .sign: return .pages
         case .compress, .ocr, .cleanup: return .optimize
         case .batch: return .optimize
@@ -224,6 +226,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .grades: return L("Notes & ECTS")
         case .calc: return L("Calculatrice")
         case .planning: return L("Planning")
+        case .clip: return L("Couleurs & presse-papiers")
         case .headphone: return L("Casque")
         case .compare: return L("Comparer")
         case .sign: return L("Signer")
@@ -253,6 +256,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .calc: return L("Graphique (courbes, limites, dérivées, LaTeX), scientifique et programmeur (bases, bits)")
         case .headphone: return L("Batterie, réduction de bruit, égaliseur et mode automatique de ton casque Nothing")
         case .planning: return L("Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC")
+        case .clip: return L("Pipette (hex, RGB, LaTeX…), transformations de texte en un clic, historique du presse-papiers")
         case .compare: return L("Voir ce qui a changé entre deux versions d'un PDF")
         case .sign: return L("Dessiner ou importer ta signature et la poser sur un PDF")
         case .edit: return L("Ajouter ou modifier du texte, surligner, dessiner, poser une image, cacher une zone")
@@ -280,6 +284,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .calc: return "calcul scientifique programmeur hexadecimal binaire graphe courbe fonction"
         case .grades: return "moyenne note ects credits ue semestre"
         case .planning: return "travail shift horaires macdo boulot"
+        case .clip: return "couleur pipette hex rgb hsl nuancier presse papier copier coller texte majuscule base64 json slug historique"
         case .headphone: return "nothing ecouteurs bluetooth batterie anc"
         case .latex: return "tex document td tp cours rapport"
         case .edit: return "editer modifier annoter surligner souligner barrer texte ecrire dessiner image cacher blanc caviarder corriger"
@@ -297,6 +302,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .grades: return "chart.bar.doc.horizontal"
         case .calc: return "x.squareroot"
         case .planning: return "fork.knife"
+        case .clip: return "eyedropper.halffull"
         case .headphone: return "headphones"
         case .compare: return "plus.forwardslash.minus"
         case .sign: return "signature"
@@ -325,6 +331,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .grades: return .green
         case .calc: return .blue
         case .planning: return .yellow
+        case .clip: return .pink
         case .headphone: return .cyan
         case .compare: return .orange
         case .sign: return .blue
@@ -467,6 +474,7 @@ struct ContentView: View {
         case .grades: GradesToolView(g: GradesStore.shared)
         case .calc: CalcToolView(s: CalcStore.shared)
         case .planning: PlanningToolView(p: PlanningStore.shared)
+        case .clip: ClipToolView()
         case .headphone: HeadphoneToolView()
         case .sign: SignToolView(s: sign)
         case .edit: EditToolView(s: edit)
@@ -575,6 +583,10 @@ struct ContentView: View {
             list.append(PaletteCommand(title: "Capture d'écran → texte", subtitle: "Sélectionne une zone, le texte est copié",
                                        icon: "text.viewfinder", color: .teal, keywords: "ocr copier screenshot") {
                 ScreenText.capture()
+            })
+            list.append(PaletteCommand(title: "Pipette : copier une couleur", subtitle: "N'importe où à l'écran (⌃⌥C)",
+                                       icon: "eyedropper", color: .pink, keywords: "couleur hex rgb color picker") {
+                ColorStore.shared.pick(copy: true)
             })
             list.append(PaletteCommand(title: "Importer mon planning", subtitle: "Photo, capture ou PDF → Calendrier",
                                        icon: "fork.knife", color: .yellow, keywords: "mcdo travail shift horaires") {

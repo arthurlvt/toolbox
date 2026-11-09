@@ -26,9 +26,45 @@ enum SelfTest {
         pdfEditor()
         todayMerge()
         translations()
+        clipTools()
         print("Toolbox --selftest : \(passed) réussi\(passed > 1 ? "s" : ""), \(failed.count) échec\(failed.count > 1 ? "s" : "")")
         for f in failed { print("  ✗ " + f) }
         return failed.isEmpty ? 0 : 1
+    }
+
+    // MARK: Couleurs & presse-papiers
+
+    private static func clipTools() {
+        let blue = RGBColor(hex: "#1A73E8")
+        check("couleur : hex lu et réécrit", blue?.hex == "#1A73E8")
+        check("couleur : hex court", RGBColor(hex: "#fa0")?.hex == "#FFAA00")
+        check("couleur : rgb()", RGBColor.parse("rgb(26, 115, 232)")?.hex == "#1A73E8")
+        check("couleur : nombres seuls", RGBColor.parse("26 115 232")?.hex == "#1A73E8")
+        check("couleur : hsl()", RGBColor.parse("hsl(0, 100%, 50%)")?.hex == "#FF0000")
+        check("couleur : SwiftUI", RGBColor.parse("Color(red: 1.0, green: 0.0, blue: 0.0)")?.hex == "#FF0000")
+        check("couleur : \\definecolor", RGBColor.parse("\\definecolor{x}{HTML}{1A73E8}")?.hex == "#1A73E8")
+        check("couleur : texte non reconnu", RGBColor.parse("bonjour") == nil)
+        if let b = blue {
+            let h = b.hsl
+            check("couleur : HSL", abs(h.h - 214) < 1 && abs(h.s - 0.81) < 0.01 && abs(h.l - 0.506) < 0.01, "\(h)")
+            check("couleur : aller-retour HSL", RGBColor.fromHSL(h.h, h.s, h.l).hex == "#1A73E8")
+            check("couleur : complémentaire", b.rotated(180).hsl.h.rounded() == ((h.h + 180).truncatingRemainder(dividingBy: 360)).rounded())
+            check("couleur : format LaTeX", b.formats(latexName: "bleu").contains { $0.1 == "\\definecolor{bleu}{HTML}{1A73E8}" })
+        }
+        check("couleur : contraste noir/blanc = 21", abs(RGBColor.black.contrast(with: .white) - 21) < 0.01)
+        check("couleur : texte lisible sur jaune = noir", RGBColor(r: 1, g: 0.9, b: 0.2).readableText == .black)
+
+        func tr(_ t: TextTransform, _ s: String) -> String { (try? t.run(s)) ?? "ERREUR" }
+        check("texte : recoller un PDF", tr(.joinLines, "Une phrase cou-\npée en deux\nlignes.\n\nNouveau paragraphe.") == "Une phrase coupée en deux lignes.\n\nNouveau paragraphe.")
+        check("texte : début de phrase", tr(.sentence, "BONJOUR. ÇA VA ? oui") == "Bonjour. Ça va ? Oui")
+        check("texte : sans accents", tr(.noAccents, "Élève œuvre façade") == "Eleve oeuvre facade")
+        check("texte : nom de fichier", tr(.slug, "Analyse 1 – TD n°3") == "analyse-1-td-n-3")
+        check("texte : camelCase", tr(.camel, "nombre de pages") == "nombreDePages")
+        check("texte : lignes uniques", tr(.uniqueLines, "a\nb\na") == "a\nb")
+        check("texte : Base64 aller-retour", tr(.base64Decode, tr(.base64Encode, "Été 2026")) == "Été 2026")
+        check("texte : JSON invalide refusé", (try? TextTransform.jsonPretty.run("{pas du json")) == nil)
+        check("texte : guillemets droits", tr(.straightQuotes, "il dit «\u{00A0}oui\u{00A0}» et “non”") == "il dit \"oui\" et \"non\"")
+        check("texte : guillemets français", tr(.frenchQuotes, "il dit \"oui\"") == "il dit «\u{00A0}oui\u{00A0}»")
     }
 
     // MARK: Traduction anglaise

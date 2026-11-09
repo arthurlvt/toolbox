@@ -228,6 +228,23 @@ Graphing mode:
 Limits and notable points are numerical estimates: they give the result, but your written work still has
 to justify it.
 
+## Colours & clipboard
+
+Three tabs:
+- **Colours**: the **eyedropper** picks any pixel on screen (also **⌃⌥C from any app**, the menu bar or ⌘K) and copies
+  it in the format you choose. Every format of the colour, copied in one click: HEX, RGB, HSL, HSB, CMYK,
+  `\definecolor` for LaTeX (HTML or RGB, with your colour name), SwiftUI, AppKit, integer. Paste any colour to read it
+  (`#1a73e8`, `rgb(…)`, `hsl(…)`, `26 115 232`, `Color(red: …)`, `\definecolor…`), or use the system colour panel.
+  Shades, harmonies (complementary, analogous, triad, square), WCAG contrast with white and black text (AA / AAA),
+  recent colours and favourites.
+- **Text**: paste a text and transform it in one click (the result can be copied automatically): UPPERCASE,
+  lowercase, sentence case, Each Word, no accents, **join lines copied from a PDF** (hyphenated words glued back,
+  paragraphs kept), extra spaces, clean / sort / deduplicate / reverse / number lines, straight or French quotes,
+  file-name, camelCase, snake_case, URL and Base64 encode / decode, pretty or compact JSON, escape for LaTeX.
+  Character, word and line counts, reading time.
+- **History**: the last copied texts (memory only, passwords ignored), with search; a colour code shows its swatch;
+  send a text to the Text tab in one click.
+
 ## Planning
 
 - **Import** a photo, a screenshot (area to select), a PDF or pasted text.
@@ -411,11 +428,12 @@ In the terminal: `pdftool annales depot.pdf photo.heic --annalyse ~/…/Annalyse
 |---|---|---|
 | **⌘K** | in Toolbox | Palette: tools, actions, subjects, sessions (“td 3 struct”), projects, apps, recent files, “Create the note …” |
 | **⌥Space** | everywhere | Search your courses (names and contents) |
+| **⌃⌥C** | everywhere | Eyedropper: the colour of a pixel is copied (HEX by default) |
 | **⌃⌥1 … ⌃⌥9** | everywhere | Launch the apps from the “My apps” widget |
 | **⇧⌘T** | in Toolbox | Screenshot → text |
 | **⌘,** | in Toolbox | Settings (shortcuts, notifications) |
 
-**Menu bar** (wrench-and-screwdriver icon): sticky notes, screenshot → text, drop a PDF to compress,
+**Menu bar** (wrench-and-screwdriver icon): sticky notes, screenshot → text, eyedropper, drop a PDF to compress,
 clipboard and apps. Closing the window keeps Toolbox in the menu bar. To quit: ⌘Q.
 
 **From Finder:**
@@ -568,8 +586,9 @@ Page ranges: `1-3, 5, 8-` (`8-` = to the end, `-3` = from the start).
 | Planning | `~/Library/Application Support/Toolbox/Planning.json` |
 | Revisions | `~/Library/Application Support/Toolbox/Revisions.json` |
 | New LaTeX documents | `~/Documents/Toolbox LaTeX/` (or the subject's folder: `TDs/TD4/`, `Tests/`…) |
-| “My documents” list, profile, tours seen | app preferences |
-| Calculator (functions, history) | app preferences |
+| “My documents” list, profile, tours seen, calendars shown, interface language | app preferences |
+| My details (administrative documents) | app preferences (`admin.*` keys), never in the code |
+| Calculator (functions, history), colours (recent, favourites) | app preferences |
 | Data shared with the iPhone | iCloud Drive → `Toolbox/` (ToolboxMac.json, ToolboxDay.json, Scriptable scripts) |
 | Past-exam bank | the folder chosen in Annalyse → Settings |
 | Profile backups, other profiles | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
@@ -589,23 +608,29 @@ swift run pdftool --help
 ```
 Sources/
   PDFCore/    shared engine: pages, drawing, compression, OCR, comparison, signature, LaTeX,
-              Annalyse (Annales/), course library and index, GitHub, VS Code
+              Annalyse (Annales/), course library and index, GitHub, VS Code,
+              PDF editor saving (PDFEdit.swift), fonts and links (PDFFonts.swift)
   Toolbox/    SwiftUI app: one view per tool, Home and widgets, My courses, LaTeX editor,
               grades and ECTS, calculators (MathEngine.swift, ClassicCalc.swift), planning, headphones, archives
               (ArchiveTool.swift), LaTeX templates (LatexDocTypes.swift), symbol library
               (LatexLibrary.swift), local AI (OllamaService.swift, LatexAIDoc.swift), profile and tools to install
               (Profile.swift), guided tour (Tour.swift), ⌘K palette, menu bar,
-              disk cleanup (Cleanup.swift), built-in updates (Updater.swift), GitHub sign-in (GitHubLogin.swift)
+              disk cleanup (Cleanup.swift), built-in updates (Updater.swift), GitHub sign-in (GitHubLogin.swift),
+              PDF editor (PDFEditor.swift), calendar filter (CalendarFilter.swift), profiles and backups
+              (Backup.swift), administrative documents (AdminDocs.swift), colours & clipboard (ClipTools.swift)
   pdftool/    terminal command
-Resources/    Info.plist (file types, Services, permissions) + icon
-build.sh      builds outside the folder (Nextcloud), assembles the .app, registers it with macOS
+Resources/    Info.plist (file types, Services, permissions, languages) + icon + translations (en.lproj)
+build.sh      builds outside the folder (Nextcloud), signs, assembles the .app, registers it with macOS
+setup-signing.sh  once: local signing certificate (permissions kept across builds)
 make-dmg.sh   makes the .dmg from build/Toolbox.app
+.github/workflows/release.yml   automatic release (.dmg) on each v… tag
 ```
 
 - **Tests**: `build.sh` runs `Toolbox --selftest` after each build: calculators (graphing,
   scientific, programmer), limits, grades and ECTS (including a full S1 example), schedule parsing and breaks,
-  headphones CRC, LaTeX templates, symbol library, AI answer extraction, document deletion,
-  archives, guided-tour placement. Code in `SelfTest.swift`; run it by hand with
+  headphones CRC, LaTeX templates (administrative ones included), symbol library, AI answer extraction,
+  document deletion, archives, guided-tour placement, PDF editor saving (added text, real redaction, links kept),
+  font matching, duplicate classes in “Today”, English translation, colour conversions and text transformations. Code in `SelfTest.swift`; run it by hand with
   `~/Applications/Toolbox.app/Contents/MacOS/Toolbox --selftest`.
 - Views don't use `@State`, a macro missing from the Command Line Tools on recent SDKs:
   each tool has a small `ObservableObject`.

@@ -215,6 +215,23 @@ Trois modes en haut de la page :
 Les limites et les points remarquables sont des estimations numériques : elles donnent le résultat, la copie doit
 toujours le justifier.
 
+## Couleurs & presse-papiers
+
+Trois onglets :
+- **Couleurs** : la **pipette** prend n'importe quel pixel de l'écran (aussi **⌃⌥C depuis n'importe quelle app**, la
+  barre des menus ou ⌘K) et le copie au format choisi. Tous les formats de la couleur, copiés en un clic : HEX, RGB, HSL,
+  HSB, CMJN, `\definecolor` pour LaTeX (HTML ou RGB, avec le nom de ta couleur), SwiftUI, AppKit, entier. Colle
+  n'importe quelle couleur pour la lire (`#1a73e8`, `rgb(…)`, `hsl(…)`, `26 115 232`, `Color(red: …)`, `\definecolor…`),
+  ou passe par le nuancier du système. Nuances, harmonies (complémentaire, analogues, triade, carré), contraste WCAG
+  avec un texte blanc et noir (AA / AAA), couleurs récentes et favoris.
+- **Texte** : colle un texte et transforme-le en un clic (le résultat peut être copié tout seul) : MAJUSCULES,
+  minuscules, début de phrase, Chaque Mot, sans accents, **recoller les lignes copiées d'un PDF** (mots coupés par un
+  tiret recollés, paragraphes gardés), espaces en trop, nettoyer / trier / dédoublonner / inverser / numéroter les
+  lignes, guillemets droits ou « », nom-de-fichier, camelCase, snake_case, URL et Base64 dans les deux sens, JSON
+  indenté ou compact, échapper pour LaTeX. Nombre de caractères, de mots et de lignes, temps de lecture.
+- **Historique** : les derniers textes copiés (en mémoire seulement, mots de passe ignorés), avec recherche ; un code
+  couleur affiche sa pastille ; un clic envoie un texte dans l'onglet Texte.
+
 ## Planning
 
 - **Importer** une photo, une capture d'écran (zone à sélectionner), un PDF ou du texte collé.
@@ -393,11 +410,12 @@ En terminal : `pdftool annales depot.pdf photo.heic --annalyse ~/…/Annalyse --
 |---|---|---|
 | **⌘K** | dans Toolbox | Palette : outils, actions, matières, séances (« td 3 struct »), projets, apps, fichiers récents, « Créer la note … » |
 | **⌥Espace** | partout | Recherche dans tes cours (noms et contenu) |
+| **⌃⌥C** | partout | Pipette : la couleur d'un pixel est copiée (HEX par défaut) |
 | **⌃⌥1 … ⌃⌥9** | partout | Lance les apps du widget « Mes apps » |
 | **⇧⌘T** | dans Toolbox | Capture d'écran → texte |
 | **⌘,** | dans Toolbox | Réglages (raccourcis, notifications) |
 
-**Barre des menus** (icône clé et tournevis) : pense-bête, capture → texte, déposer un PDF à compresser,
+**Barre des menus** (icône clé et tournevis) : pense-bête, capture → texte, pipette, déposer un PDF à compresser,
 presse-papiers et apps. Fermer la fenêtre laisse Toolbox dans la barre des menus. Pour quitter : ⌘Q.
 
 **Depuis le Finder :**
@@ -558,8 +576,9 @@ Plages de pages : `1-3, 5, 8-` (`8-` = jusqu'à la fin, `-3` = depuis le début)
 | Planning | `~/Library/Application Support/Toolbox/Planning.json` |
 | Révisions | `~/Library/Application Support/Toolbox/Revisions.json` |
 | Nouveaux documents LaTeX | `~/Documents/Toolbox LaTeX/` (ou le dossier de la matière : `TDs/TD4/`, `Tests/`…) |
-| Liste « Mes documents », profil, visites vues | préférences de l'app |
-| Calculatrice (fonctions, historique) | préférences de l'app |
+| Liste « Mes documents », profil, visites vues, calendriers affichés, langue de l'interface | préférences de l'app |
+| Mes informations (documents administratifs) | préférences de l'app (clés `admin.*`), jamais dans le code |
+| Calculatrice (fonctions, historique), couleurs (récentes, favoris) | préférences de l'app |
 | Données partagées avec l'iPhone | iCloud Drive → `Toolbox/` (ToolboxMac.json, ToolboxDay.json, scripts Scriptable) |
 | Banque d'annales | le dossier choisi dans Annalyse → Réglages |
 | Sauvegardes du profil, autres profils | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
@@ -579,24 +598,30 @@ swift run pdftool --help
 ```
 Sources/
   PDFCore/    moteur partagé : pages, dessin, compression, OCR, comparaison, signature, LaTeX,
-              Annalyse (Annales/), bibliothèque et index des cours, GitHub, VS Code
+              Annalyse (Annales/), bibliothèque et index des cours, GitHub, VS Code,
+              enregistrement de l'éditeur de PDF (PDFEdit.swift), polices et liens (PDFFonts.swift)
   Toolbox/    appli SwiftUI : une vue par outil, accueil et widgets, Mes cours, éditeur LaTeX,
               notes et ECTS, calculatrices (MathEngine.swift, ClassicCalc.swift), planning, casque, archives
               (ArchiveTool.swift), modèles LaTeX (LatexDocTypes.swift), bibliothèque de symboles
               (LatexLibrary.swift), IA locale (OllamaService.swift, LatexAIDoc.swift), profil et outils à installer
-              (Profile.swift), visite guidée (Tour.swift), palette ⌘K, barre des menus
+              (Profile.swift), visite guidée (Tour.swift), palette ⌘K, barre des menus, éditeur de PDF
+              (PDFEditor.swift), filtre des calendriers (CalendarFilter.swift), profils et sauvegardes (Backup.swift),
+              documents administratifs (AdminDocs.swift), couleurs et presse-papiers (ClipTools.swift)
   pdftool/    commande terminal
-Resources/    Info.plist (types de fichiers, Services, autorisations) + icône
-build.sh      compile hors du dossier (Nextcloud), assemble le .app, l'enregistre auprès de macOS
+Resources/    Info.plist (types de fichiers, Services, autorisations, langues) + icône + traductions (en.lproj)
+build.sh      compile hors du dossier (Nextcloud), signe, assemble le .app, l'enregistre auprès de macOS
+setup-signing.sh  une fois : certificat de signature local (autorisations gardées d'une version à l'autre)
 make-dmg.sh   fabrique le .dmg à partir de build/Toolbox.app
+.github/workflows/release.yml   release automatique (.dmg) à chaque tag v…
               (nettoyage du disque : Cleanup.swift ; mise à jour intégrée : Updater.swift ;
               connexion GitHub : GitHubLogin.swift)
 ```
 
 - **Tests** : `build.sh` lance `Toolbox --selftest` après chaque compilation : calculatrices (graphique,
   scientifique, programmeur), limites, notes et ECTS (dont un S1 complet), lecture du planning et pauses,
-  CRC du casque, modèles LaTeX, bibliothèque de symboles, extraction des réponses de l'IA, suppression des
-  documents, archives, placement de la visite guidée. Code dans `SelfTest.swift` ; à relancer à la main :
+  CRC du casque, modèles LaTeX (administratifs compris), bibliothèque de symboles, extraction des réponses de l'IA,
+  suppression des documents, archives, placement de la visite guidée, enregistrement de l'éditeur de PDF (texte
+  ajouté, vrai caviardage, liens gardés), choix des polices, cours en double dans « Aujourd'hui », traduction anglaise, conversions de couleurs et transformations de texte. Code dans `SelfTest.swift` ; à relancer à la main :
   `~/Applications/Toolbox.app/Contents/MacOS/Toolbox --selftest`.
 - Les vues n'utilisent pas `@State`, une macro absente des Command Line Tools sur les SDK récents :
   chaque outil a un petit `ObservableObject`.
