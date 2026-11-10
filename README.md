@@ -230,7 +230,7 @@ to justify it.
 
 ## Colours & clipboard
 
-Three tabs:
+In the **Tools** section of the sidebar. Three tabs:
 - **Colours**: the **eyedropper** picks any pixel on screen (also **⌃⌥C from any app**, the menu bar or ⌘K) and copies
   it in the format you choose. Every format of the colour, copied in one click: HEX, RGB, HSL, HSB, CMYK,
   `\definecolor` for LaTeX (HTML or RGB, with your colour name), SwiftUI, AppKit, integer. Paste any colour to read it

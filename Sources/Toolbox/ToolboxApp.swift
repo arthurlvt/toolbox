@@ -193,6 +193,7 @@ enum ToolSection: String, CaseIterable, Identifiable {
     case study = "Études"
     case pages = "Pages"
     case optimize = "Optimiser"
+    case tools = "Outils"
 
     var id: String { rawValue }
     var tools: [Tool] { Tool.allCases.filter { $0.section == self } }
@@ -211,7 +212,8 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return .home
         case .courses, .revisions, .grades, .calc, .annales: return .study
-        case .planning, .headphone, .clip: return .life
+        case .planning, .headphone: return .life
+        case .clip: return .tools
         case .latex, .edit, .organize, .merge, .split, .layout, .convert, .stamp, .security, .compare, .sign: return .pages
         case .compress, .ocr, .cleanup: return .optimize
         case .batch: return .optimize

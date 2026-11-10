@@ -217,7 +217,7 @@ toujours le justifier.
 
 ## Couleurs & presse-papiers
 
-Trois onglets :
+Dans la catégorie **Outils** de la barre latérale. Trois onglets :
 - **Couleurs** : la **pipette** prend n'importe quel pixel de l'écran (aussi **⌃⌥C depuis n'importe quelle app**, la
   barre des menus ou ⌘K) et le copie au format choisi. Tous les formats de la couleur, copiés en un clic : HEX, RGB, HSL,
   HSB, CMJN, `\definecolor` pour LaTeX (HTML ou RGB, avec le nom de ta couleur), SwiftUI, AppKit, entier. Colle
