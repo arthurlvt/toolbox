@@ -293,8 +293,6 @@ In the **Tools** section of the sidebar. Three tabs:
 | | **Compare** | Two versions of a PDF: pages matched even if some were added or removed, overlay (red = removed, green = added), side by side, text differences, PDF report |
 | | **Sign** | Signature drawn on the trackpad or imported (white background removed), placed, moved and resized on the page, signed PDF (text still selectable, links and table of contents kept) |
 | Optimize | **Compress & archive** | PDF: 3 levels, Ghostscript if installed, otherwise PDFKit. **Archives**: create a .zip, .tar.gz, .tar.bz2, .tar.xz or .7z (files and folders, 3 levels, password with zip or 7z AES, no junk files, no LaTeX build files, “ready to hand in” mode for a lab without .git or binaries); **extract** with a preview of the contents, everything or a selection, with password |
-| | **OCR** | Makes scans searchable and copyable (Apple Vision, offline, French + English) |
-| | **Batch processing** | OCR → numbering/watermark → author → compression → renaming, on a whole folder |
 | | **Clean up the Mac** | Caches, build files, LaTeX auxiliary files, trash, old downloads, large files, duplicates, AI models (see below) |
 
 **Screenshot → text** (⇧⌘T, ⌘K, menu bar): select an area of the screen, the text is read offline and copied.
@@ -419,6 +417,12 @@ In Annalyse → Settings:
 - `matieres.yaml`, `notions.yaml`, `etablissements.yaml` and `latex/modele_annale.tex` can be edited without touching the code.
 
 In the terminal: `pdftool annales depot.pdf photo.heic --annalyse ~/…/Annalyse --model qwen2.5vl:7b`
+
+## OCR
+
+Right under Annalyse in the Studies section, since they go together: makes scans searchable and copyable (Apple
+Vision, offline, French + English), e.g. a scanned handout or a past exam before dropping it into Annalyse.
+Pages that already have text can be skipped.
 
 ---
 

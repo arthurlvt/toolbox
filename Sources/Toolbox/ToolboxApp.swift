@@ -202,21 +202,20 @@ enum ToolSection: String, CaseIterable, Identifiable {
 enum Tool: String, CaseIterable, Identifiable {
     case home
     case planning, headphone, clip
-    case courses, revisions, grades, calc, annales
+    case courses, revisions, grades, calc, annales, ocr
     case latex, edit, organize, merge, split, layout, convert, stamp, security, compare, sign
-    case compress, ocr, batch, cleanup
+    case compress, cleanup
 
     var id: String { rawValue }
 
     var section: ToolSection {
         switch self {
         case .home: return .home
-        case .courses, .revisions, .grades, .calc, .annales: return .study
+        case .courses, .revisions, .grades, .calc, .annales, .ocr: return .study
         case .planning, .headphone: return .life
         case .clip: return .tools
         case .latex, .edit, .organize, .merge, .split, .layout, .convert, .stamp, .security, .compare, .sign: return .pages
-        case .compress, .ocr, .cleanup: return .optimize
-        case .batch: return .optimize
+        case .compress, .cleanup: return .optimize
         }
     }
 
@@ -243,7 +242,6 @@ enum Tool: String, CaseIterable, Identifiable {
         case .stamp: return L("Numéroter & filigrane")
         case .security: return L("Sécurité & infos")
         case .convert: return L("Convertir")
-        case .batch: return L("Traitement par lots")
         case .annales: return L("Annalyse")
         case .latex: return L("LaTeX")
         }
@@ -272,7 +270,6 @@ enum Tool: String, CaseIterable, Identifiable {
         case .stamp: return L("Numéros de page, en-tête, pied de page, filigrane")
         case .security: return L("Mot de passe, titre, auteur, mots-clés")
         case .convert: return L("Images ↔ PDF, PDF → texte, export pour RAG")
-        case .batch: return L("Appliquer plusieurs opérations à tout un lot de PDF")
         case .annales: return L("N'importe quel dépôt → sujet LaTeX propre, vérifié, tagué et rangé (IA locale)")
         case .latex: return L("Compiler, prévisualiser, naviguer et démarrer des projets .tex")
         }
@@ -319,7 +316,6 @@ enum Tool: String, CaseIterable, Identifiable {
         case .stamp: return "number"
         case .security: return "lock.doc"
         case .convert: return "arrow.triangle.2.circlepath"
-        case .batch: return "square.stack.3d.down.right"
         case .annales: return "graduationcap"
         case .latex: return "function"
         }
@@ -348,7 +344,6 @@ enum Tool: String, CaseIterable, Identifiable {
         case .stamp: return .pink
         case .security: return .gray
         case .convert: return .teal
-        case .batch: return .cyan
         case .annales: return .red
         case .latex: return .indigo
         }
@@ -489,7 +484,6 @@ struct ContentView: View {
         case .stamp: StampToolView()
         case .security: SecurityToolView()
         case .convert: ConvertToolView(s: convert)
-        case .batch: BatchToolView()
         case .cleanup: CleanupToolView()
         case .annales: AnnalesToolView(s: annales)
         case .latex: LatexToolView(model: latex)

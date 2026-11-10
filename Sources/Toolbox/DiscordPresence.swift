@@ -271,7 +271,6 @@ final class DiscordPresence: ObservableObject {
         case .security: return ("Cadenasse des PDF 🔒", "Mot de passe : ********")
         case .convert: return ("Convertit des fichiers", "Alchimiste des formats ⚗️")
         case .layout: return ("Fait de la mise en page", "2 pages par feuille, c'est écolo 🌱")
-        case .batch: return ("Automatise tout", "Pendant ce temps, il boit un café ☕")
         case .cleanup: return ("Fait le ménage sur son Mac", "Marie Kondo du disque dur 🧹")
         }
     }

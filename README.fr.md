@@ -279,8 +279,6 @@ Dans la catégorie **Outils** de la barre latérale. Trois onglets :
 | | **Comparer** | Deux versions d'un PDF : pages appariées même si on en a ajouté ou retiré, superposition (rouge = supprimé, vert = ajouté), côte à côte, différences de texte, rapport PDF |
 | | **Signer** | Signature dessinée au trackpad ou importée (fond blanc retiré), posée, déplacée et redimensionnée sur la page, PDF signé (texte toujours sélectionnable, liens et sommaire gardés) |
 | Optimiser | **Compresser & archiver** | PDF : 3 niveaux, Ghostscript si installé, sinon PDFKit. **Archives** : créer un .zip, .tar.gz, .tar.bz2, .tar.xz ou .7z (fichiers et dossiers, 3 niveaux, mot de passe en zip ou 7z AES, sans fichiers parasites, sans fichiers LaTeX, mode « prêt à rendre » pour un TP sans .git ni binaires) ; **extraire** en voyant le contenu avant, tout ou une sélection, avec mot de passe |
-| | **OCR** | Rend les scans cherchables et copiables (Vision d'Apple, hors ligne, français + anglais) |
-| | **Traitement par lots** | OCR → numérotation/filigrane → auteur → compression → renommage, sur tout un dossier |
 | | **Nettoyer le Mac** | Caches, compilation, LaTeX auxiliaires, corbeille, vieux téléchargements, gros fichiers, doublons, modèles IA (voir plus bas) |
 
 **Capture d'écran → texte** (⇧⌘T, ⌘K, barre des menus) : tu sélectionnes une zone de l'écran, le texte est lu hors ligne et copié.
@@ -401,6 +399,12 @@ Dans Annalyse → Réglages :
 - `matieres.yaml`, `notions.yaml`, `etablissements.yaml` et `latex/modele_annale.tex` se modifient sans toucher au code.
 
 En terminal : `pdftool annales depot.pdf photo.heic --annalyse ~/…/Annalyse --model qwen2.5vl:7b`
+
+## OCR
+
+Juste sous Annalyse, dans la catégorie Études, car les deux se complètent : rend les scans cherchables et copiables
+(Vision d'Apple, hors ligne, français + anglais), par exemple un polycopié scanné ou une annale avant de la déposer
+dans Annalyse. Les pages qui ont déjà du texte peuvent être ignorées.
 
 ---
 
