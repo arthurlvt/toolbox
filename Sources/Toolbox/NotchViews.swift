@@ -313,7 +313,7 @@ struct HomePane: View {
                 IslandCard { batteries }
                 IslandCard { actions }
             }
-            .frame(width: 150)
+            .frame(width: 168)
         }
         .frame(height: 170)
     }
@@ -443,7 +443,7 @@ struct HomePane: View {
                 NotchController.shared.close()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { ColorStore.shared.pick(copy: true) }
             }
-            quick("text.viewfinder", L("Capture → texte")) {
+            quick("text.viewfinder", L("Lire l'écran")) {
                 NotchController.shared.close()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { ScreenText.capture() }
             }
@@ -452,21 +452,9 @@ struct HomePane: View {
                       NotchTimer.format(timer.remaining ?? 0), tint: .orange) { timer.togglePause() }
                     .contextMenu { Button(L("Arrêter le minuteur")) { timer.stop() } }
             } else {
-                Menu {
-                    ForEach(NotchTimer.presets, id: \.0) { p in
-                        Button("\(p.0) min · " + L(p.1)) { timer.start(minutes: p.0, label: p.1) }
-                    }
-                } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: "timer").font(.system(size: 14, weight: .semibold))
-                        Text(L("Minuteur")).font(.system(size: 9.5, weight: .medium)).lineLimit(1)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 34)
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
+                quick("timer", L("Minuteur")) { TimerMenu.show() }
             }
-            quick("doc.on.clipboard", L("Presse-papiers")) {
+            quick("doc.on.clipboard", L("Historique")) {
                 NotchController.shared.close()
                 AppRouter.shared.show = .clip
                 AppRouter.showMainWindow()
@@ -478,7 +466,7 @@ struct HomePane: View {
         Button(action: action) {
             VStack(spacing: 3) {
                 Image(systemName: icon).font(.system(size: 14, weight: .semibold)).foregroundStyle(tint)
-                Text(title).font(.system(size: 9.5, weight: .medium)).lineLimit(1).monospacedDigit()
+                Text(title).font(.system(size: 10, weight: .medium)).lineLimit(1).minimumScaleFactor(0.75).monospacedDigit()
             }
             .frame(maxWidth: .infinity, minHeight: 34)
             .background(RoundedRectangle(cornerRadius: 9).fill(Color.white.opacity(0.06)))
@@ -486,6 +474,25 @@ struct HomePane: View {
         }
         .buttonStyle(.plain)
         .help(title)
+    }
+}
+
+/// Menu du minuteur, ouvert sous le pointeur (un Menu SwiftUI n'a pas le même style que les autres boutons).
+enum TimerMenu {
+    final class Item: NSMenuItem {
+        var run: () -> Void = {}
+        @objc func fire() { run() }
+    }
+
+    static func show() {
+        let menu = NSMenu()
+        for p in NotchTimer.presets {
+            let it = Item(title: "\(p.0) min · " + L(p.1), action: #selector(Item.fire), keyEquivalent: "")
+            it.target = it
+            it.run = { NotchTimer.shared.start(minutes: p.0, label: p.1) }
+            menu.addItem(it)
+        }
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
     }
 }
 

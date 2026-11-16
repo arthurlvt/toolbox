@@ -144,6 +144,8 @@ final class NotchModel: ObservableObject {
 final class NotchPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
+    /// macOS repousse toute fenêtre qui chevauche la barre des menus : pas celle-ci, elle doit coller à l'encoche.
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect { frameRect }
 }
 
 // MARK: Contrôleur
