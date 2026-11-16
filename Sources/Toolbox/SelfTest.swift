@@ -27,9 +27,78 @@ enum SelfTest {
         todayMerge()
         translations()
         clipTools()
+        courseImport()
+        notch()
         print("Toolbox --selftest : \(passed) réussi\(passed > 1 ? "s" : ""), \(failed.count) échec\(failed.count > 1 ? "s" : "")")
         for f in failed { print("  ✗ " + f) }
         return failed.isEmpty ? 0 : 1
+    }
+
+    // MARK: Île dynamique
+
+    private static func notch() {
+        check("île : titre de cours raccourci", DayInfo.shortTitle("ANALYSE 1 - GUILLAUME Sophie - L1 INFORMATIQUE") == "Analyse 1")
+        check("île : titre normal gardé", DayInfo.shortTitle("Macdo") == "Macdo")
+        check("île : minuteur mm:ss", NotchTimer.format(25 * 60) == "25:00" && NotchTimer.format(61) == "1:01")
+        check("île : minuteur h:mm:ss", NotchTimer.format(3725) == "1:02:05")
+        let r = NotchShape(top: 10, bottom: 20).path(in: CGRect(x: 0, y: 0, width: 300, height: 100)).boundingRect
+        check("île : forme dans son cadre", r.minX >= -0.5 && r.maxX <= 300.5 && r.maxY <= 100.5, "\(r)")
+    }
+
+    // MARK: Importer / exporter des cours
+
+    private static func courseImport() {
+        let fm = FileManager.default
+        let base = fm.temporaryDirectory.appendingPathComponent("toolbox-selftest-import-\(getpid())", isDirectory: true)
+        defer { try? fm.removeItem(at: base) }
+        func touch(_ path: String, _ text: String = "x") {
+            let u = base.appendingPathComponent(path)
+            try? fm.createDirectory(at: u.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? text.write(to: u, atomically: true, encoding: .utf8)
+        }
+        // mes cours : Analyse 1 existe déjà
+        touch("mes-cours/Maths/Analyse 1/cours/chap1.pdf", "mon chap1")
+        touch("mes-cours/Maths/Analyse 1/TDs/TD1.pdf", "td1")
+        // archive d'un ami : une matière Toolbox, un dossier « Moodle », un fichier en vrac
+        touch("ami/Classe L1/Maths/Analyse 1/cours/chap1.pdf", "mon chap1")          // identique : sauté
+        touch("ami/Classe L1/Maths/Analyse 1/cours/chap2.pdf", "chap2")
+        touch("ami/Classe L1/Maths/Analyse 1/TDs/TD2/td2.pdf", "td2")
+        touch("ami/Classe L1/Prog/C/TPs/TP3/main.c", "int main(){}")
+        touch("ami/Classe L1/Bases de maths/Section 2 - Travaux dirigés/feuille2.pdf", "f2")
+        touch("ami/Classe L1/Bases de maths/Diaporama/intro.pdf", "intro")
+        touch("ami/Classe L1/Bases de maths/Annales/CC1 2024.pdf", "cc")
+        touch("ami/Classe L1/.DS_Store", "")
+        touch("ami/Classe L1/Prog/C/TPs/TP3/main.o", "binaire")
+        let mine = CourseLibrary.scan(root: base.appendingPathComponent("mes-cours"))
+        let existing = mine.map { (course: $0, name: $0.name, aliases: "") }
+        do {
+            let plan = try CourseImport.plan(base.appendingPathComponent("ami"), existing: existing)
+            let names = plan.groups.map { $0.name }
+            check("import : 3 matières repérées", plan.groups.count == 3, names.joined(separator: ", "))
+            let ana = plan.groups.first { CourseLibrary.fold($0.name).contains("analyse") }
+            check("import : Analyse 1 rejoint la matière existante", ana?.target?.lastPathComponent == "Analyse 1")
+            let bdm = plan.groups.first { CourseLibrary.fold($0.name).contains("bases") }
+            check("import : dossier Moodle trié (TD, cours, CC)",
+                  bdm.map { $0.count(.td) == 1 && $0.count(.cours) == 1 && $0.count(.cc) == 1 } ?? false,
+                  bdm.map { $0.files.map { "\($0.kind.rawValue):\($0.relative)" }.joined(separator: " ") } ?? "absent")
+            check("import : fichiers de compilation ignorés", !plan.groups.flatMap { $0.files }.contains { $0.source.pathExtension == "o" })
+            let root = base.appendingPathComponent("mes-cours")
+            let res = try CourseImport.apply(plan, root: root)
+            check("import : fichier identique sauté", res.skipped == 1, "\(res.skipped)")
+            check("import : TD rangé dans la matière existante", fm.fileExists(atPath: root.appendingPathComponent("Maths/Analyse 1/TDs/TD2/td2.pdf").path))
+            check("import : TP gardé dans son dossier", fm.fileExists(atPath: root.appendingPathComponent("Prog/C/TPs/TP3/main.c").path))
+            check("import : nouvelle matière créée", res.newSubjects.count == 2, res.newSubjects.map { $0.lastPathComponent }.joined(separator: ", "))
+            // export puis réimport : même tri
+            let zip = base.appendingPathComponent("export.zip")
+            let all = CourseLibrary.scan(root: root).map { (course: $0, name: $0.name, aliases: "ana") }
+            let n = try CourseImport.export(all, root: root, to: zip, options: .init(includeNotes: false, includeCorrections: true))
+            let back = try CourseImport.plan(zip, existing: [])
+            check("export : zip relu par l'import", back.fromToolbox && back.fileCount == n, "\(back.fileCount)/\(n)")
+            check("export : autres noms gardés", back.groups.allSatisfy { $0.aliases == "ana" })
+            CourseImport.cleanup(back)
+        } catch {
+            check("import : sans erreur", false, error.localizedDescription)
+        }
     }
 
     // MARK: Couleurs & presse-papiers

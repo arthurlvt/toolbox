@@ -129,6 +129,7 @@ struct GeneralTab: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { TourStore.shared.start() }
             }
             TourMiniSettings()
+            NotchSettingsSection()
             UpdateSettings()
             BackupSettings()
             ProfileSettings()

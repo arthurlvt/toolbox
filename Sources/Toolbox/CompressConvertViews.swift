@@ -86,6 +86,16 @@ struct CompressToolView: View {
             }
         }
         .padding(20)
+        .onAppear(perform: takePending)
+        .onReceive(AppRouter.shared.$pendingTick) { _ in takePending() }
+    }
+
+    /// PDF envoyés depuis l'étagère de l'île dynamique.
+    private func takePending() {
+        if let urls = AppRouter.shared.takePending(.compress) {
+            archives.tab = .pdf
+            s.add(urls)
+        }
     }
 
     @ViewBuilder

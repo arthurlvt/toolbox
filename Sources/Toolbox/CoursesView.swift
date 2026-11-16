@@ -386,6 +386,7 @@ struct QuickLookPreview: NSViewRepresentable {
 struct CoursesToolView: View {
     @ObservedObject var s: CoursesStore
     @ObservedObject var marks = CourseMarks.shared
+    @ObservedObject var imp = CourseImportStore.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -396,6 +397,11 @@ struct CoursesToolView: View {
                     Text("Choisis le dossier où sont rangés tes cours.")
                     Button("Choisir le dossier…") { if let u = Panels.folder(prompt: "Mes cours sont ici") { s.root = u } }
                         .buttonStyle(.borderedProminent)
+                    Text("Pas encore de cours sur ce Mac ?").font(.callout).foregroundStyle(.secondary).padding(.top, 8)
+                    Button { imp.chooseAndPlan() } label: {
+                        Label("Importer une classe ou un cours…", systemImage: "tray.and.arrow.down")
+                    }
+                    .help("Un .zip exporté par un ami, un téléchargement Moodle ou un dossier : tout est trié par matière dans Documents/Cours")
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -409,6 +415,16 @@ struct CoursesToolView: View {
         }
         .padding(20)
         .sheet(item: $s.editing) { c in CourseEditSheet(s: s, course: c) }
+        .sheet(isPresented: Binding(get: { imp.plan != nil }, set: { if !$0 { imp.cancel() } })) {
+            CourseImportSheet()
+        }
+        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
+            // un .zip de cours déposé n'importe où sur la page : on propose de l'importer
+            FileDrop.load(providers) { urls in
+                if let u = urls.first(where: { ["zip", "7z", "tgz", "gz"].contains($0.pathExtension.lowercased()) }) { imp.plan(u) }
+            }
+            return true
+        }
     }
 
     // MARK: Matières
@@ -470,6 +486,22 @@ struct CoursesToolView: View {
                         .help("Lecture du contenu des documents pour la recherche")
                 }
                 Spacer()
+                if imp.busy { ProgressView().controlSize(.small) }
+                Menu {
+                    Button("Importer une classe ou un cours…") { imp.chooseAndPlan() }
+                    Divider()
+                    Button("Exporter cette matière…") { imp.export(all: false) }
+                        .disabled(s.selected == nil)
+                    Button("Exporter toute la classe…") { imp.export(all: true) }
+                        .disabled(s.courses.isEmpty)
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down.square")
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("Importer une classe ou un cours (.zip, dossier) · Exporter pour un ami")
+                .tourTarget("courses.import")
                 Button("Dossier…") { if let u = Panels.folder(directory: s.root, prompt: "Mes cours sont ici") { s.root = u } }
                     .buttonStyle(.borderless).font(.caption)
                     .help(s.root?.path ?? "")

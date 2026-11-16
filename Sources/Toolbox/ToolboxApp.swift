@@ -19,6 +19,17 @@ final class AppRouter: ObservableObject {
     @Published var trainFor: (String, String)?
     /// Texte à insérer dans le document LaTeX ouvert (calculatrice…).
     @Published var latexInsert: String?
+    /// Fichiers à ouvrir dans un outil précis (étagère de l'île dynamique…).
+    @Published var openIn: OpenRequest?
+    /// Fichiers en attente pour un outil dont la vue garde son propre état (Compresser, OCR).
+    var pending: [Tool: [URL]] = [:]
+    @Published var pendingTick = 0
+
+    func takePending(_ t: Tool) -> [URL]? {
+        guard let p = pending[t], !p.isEmpty else { return nil }
+        pending[t] = nil
+        return p
+    }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -34,6 +45,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { LatexDocsStore.shared.refresh() }
         UpdateStore.shared.launchCheck()
         BackupStore.autoBackupIfNeeded()        // sauvegarde du profil à chaque nouvelle version
+        NotchController.shared.apply()          // île dynamique sur l'encoche (si activée)
         AppShortcutsStore.shared.start()
         DiscordPresence.shared.start()
         MacStatusStore.shared.start()
@@ -430,6 +442,24 @@ struct ContentView: View {
             DispatchQueue.main.async {
                 AppRouter.shared.trainFor = nil
                 train(name: target.0, folder: target.1)
+            }
+        }
+        .onReceive(AppRouter.shared.$openIn) { req in
+            guard let req = req, let first = req.urls.first else { return }
+            DispatchQueue.main.async {
+                AppRouter.shared.openIn = nil
+                req.urls.filter { $0.pathExtension.lowercased() == "pdf" }.forEach(RecentFiles.add)
+                switch req.tool {
+                case .edit: edit.open(first)
+                case .sign: sign.open(first)
+                case .organize: organize.open(first)
+                case .merge: merge.add(req.urls)
+                case .latex: latex.open(first)
+                default:
+                    AppRouter.shared.pending[req.tool] = req.urls
+                    AppRouter.shared.pendingTick += 1
+                }
+                nav.selection = req.tool
             }
         }
         .onReceive(AppRouter.shared.$incoming) { urls in

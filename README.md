@@ -94,6 +94,25 @@ It sleeps at night, jumps when you click it and celebrates when a LaTeX build pa
 
 ---
 
+## Dynamic island (notch)
+
+On a Mac with a notch, Toolbox turns it into a dynamic island (Settings → General → Dynamic island; on a Mac
+without a notch it can sit at the top of the screen).
+- **At rest** it blends into the notch, or shows a **live activity** on each side: timer countdown, the album art
+  and a moving equalizer when music plays, the class in progress with the time left.
+- **Hover (or click)** to open it: the **music** playing in Spotify or Music (artwork, progress, previous / play /
+  next), your **day** (class in progress with its progress bar, next class with its room, next shift, next test with
+  D-x and revision progress), **batteries** (Mac, Nothing headphones, iPhone), and **quick actions** (eyedropper,
+  screenshot → text, timer 5 / 15 / 25 / 50 min, clipboard). Pin it to keep it open.
+- **Shelf**: drag files to the notch and it opens to catch them. Keep them at hand, drag them out again, or in one click
+  compress, OCR, merge, edit, sign, AirDrop, copy or show them in Finder.
+- **Alerts**: it opens on its own for a few seconds when a class starts in 5 minutes (with the room), when you plug in
+  or unplug the Mac, when the battery gets low, when the Nothing headphones connect (with their battery, like AirPods)
+  and when the timer ends.
+- Trackpad haptic feedback, hidden in full-screen apps, clicks pass through to the menu bar everywhere else.
+- Music: since macOS 15.4 only Apple can read “Now Playing” for every app, so the island talks to Spotify and Music
+  directly (only if they are already open; macOS asks once for permission).
+
 ## My courses
 
 Reads your courses folder (e.g. `uapv-cours/cours`) and presents it **by subject**, without moving or renaming
@@ -134,6 +153,17 @@ anything.
   *View subject* buttons. Add aliases to a subject (right-click → Rename, colour, aliases)
   if your timetable calls it something else.
 - **Practice** builds an exam from the subject's past papers (Annalyse).
+
+**Sharing courses with a friend** (⇅ button at the bottom of the subject list, or drop a .zip on the page)
+- **Import a class or a course…**: a .zip (Toolbox export, a friend's folder, Moodle download, a teacher's zip), a
+  .tar.gz, a .7z or a folder. Toolbox opens it, finds the subjects (folders with cours/TDs/TPs/CCs, or one top-level
+  folder per subject as in a Moodle download) and sorts every file into course / tutorial / lab / test / notes from its
+  folders (“Travaux dirigés”, “Annales”, “Diaporama”…) and its name. Subjects you already have are joined
+  (same name or alias), the others are created. A preview shows what goes where and lets you change a destination.
+  Nothing is moved or overwritten, identical files are skipped, build files and caches are left out.
+- **Export this subject / the whole class…**: a clean .zip, with or without your notes and answer keys, that Toolbox
+  re-imports exactly (display names and aliases included).
+- On a Mac with no courses yet, importing creates `Documents/Cours` on its own.
 
 ---
 
@@ -526,6 +556,7 @@ Security.
 | **Notifications** | class start, low iPhone battery, morning check | on the first notification |
 | **Bluetooth** | Nothing headphones battery and settings, Class mode (disconnecting the headphones) | first headphones read |
 | **Automation → Notes** (Apple Events) | sticky notes, pinned note on Home | setup, or first sticky note |
+| **Automation → Spotify / Music** (Apple Events) | music in the dynamic island | the first time music plays with the island on |
 | **Screen Recording** | “Screenshot → text”, schedule import from a screenshot | first capture |
 | **Desktop, Documents, Downloads folders** | courses and LaTeX documents, *Clean up the Mac* (old downloads, large files) | when these folders are first read |
 | **Administrator password** (once) | scheduled Mac wake for the morning check (`pmset`) | when you turn on wake |
@@ -592,7 +623,7 @@ Page ranges: `1-3, 5, 8-` (`8-` = to the end, `-3` = from the start).
 | New LaTeX documents | `~/Documents/Toolbox LaTeX/` (or the subject's folder: `TDs/TD4/`, `Tests/`…) |
 | “My documents” list, profile, tours seen, calendars shown, interface language | app preferences |
 | My details (administrative documents) | app preferences (`admin.*` keys), never in the code |
-| Calculator (functions, history), colours (recent, favourites) | app preferences |
+| Calculator (functions, history), colours (recent, favourites), dynamic island shelf | app preferences |
 | Data shared with the iPhone | iCloud Drive → `Toolbox/` (ToolboxMac.json, ToolboxDay.json, Scriptable scripts) |
 | Past-exam bank | the folder chosen in Annalyse → Settings |
 | Profile backups, other profiles | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
@@ -613,7 +644,7 @@ swift run pdftool --help
 Sources/
   PDFCore/    shared engine: pages, drawing, compression, OCR, comparison, signature, LaTeX,
               Annalyse (Annales/), course library and index, GitHub, VS Code,
-              PDF editor saving (PDFEdit.swift), fonts and links (PDFFonts.swift)
+              PDF editor saving (PDFEdit.swift), fonts and links (PDFFonts.swift), course import (CourseImport.swift)
   Toolbox/    SwiftUI app: one view per tool, Home and widgets, My courses, LaTeX editor,
               grades and ECTS, calculators (MathEngine.swift, ClassicCalc.swift), planning, headphones, archives
               (ArchiveTool.swift), LaTeX templates (LatexDocTypes.swift), symbol library
@@ -621,7 +652,9 @@ Sources/
               (Profile.swift), guided tour (Tour.swift), ⌘K palette, menu bar,
               disk cleanup (Cleanup.swift), built-in updates (Updater.swift), GitHub sign-in (GitHubLogin.swift),
               PDF editor (PDFEditor.swift), calendar filter (CalendarFilter.swift), profiles and backups
-              (Backup.swift), administrative documents (AdminDocs.swift), colours & clipboard (ClipTools.swift)
+              (Backup.swift), administrative documents (AdminDocs.swift), colours & clipboard (ClipTools.swift),
+              course import / export (CourseImportView.swift),
+              dynamic island (NotchIsland.swift, NotchServices.swift, NotchViews.swift)
   pdftool/    terminal command
 Resources/    Info.plist (file types, Services, permissions, languages) + icon + translations (en.lproj)
 build.sh      builds outside the folder (Nextcloud), signs, assembles the .app, registers it with macOS
@@ -634,7 +667,8 @@ make-dmg.sh   makes the .dmg from build/Toolbox.app
   scientific, programmer), limits, grades and ECTS (including a full S1 example), schedule parsing and breaks,
   headphones CRC, LaTeX templates (administrative ones included), symbol library, AI answer extraction,
   document deletion, archives, guided-tour placement, PDF editor saving (added text, real redaction, links kept),
-  font matching, duplicate classes in “Today”, English translation, colour conversions and text transformations. Code in `SelfTest.swift`; run it by hand with
+  font matching, duplicate classes in “Today”, English translation, colour conversions and text transformations,
+  course import (sorting, joining existing subjects, skipping duplicates) and export / re-import. Code in `SelfTest.swift`; run it by hand with
   `~/Applications/Toolbox.app/Contents/MacOS/Toolbox --selftest`.
 - Views don't use `@State`, a macro missing from the Command Line Tools on recent SDKs:
   each tool has a small `ObservableObject`.

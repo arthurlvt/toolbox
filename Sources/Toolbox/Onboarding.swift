@@ -334,7 +334,7 @@ struct OnboardingView: View {
                 if o.gradesEmpty {
                     Toggle("Préparer Notes & ECTS avec la maquette L1 Informatique (CERI, Avignon)", isOn: $o.loadMaquette)
                 }
-                Text("Pas de dossier de cours ? Passe cette étape, tu pourras le choisir plus tard.").font(.caption).foregroundStyle(.secondary)
+                Text("Pas de dossier de cours ? Passe cette étape : dans « Mes cours », tu pourras importer le .zip de cours d'un ami (ou un téléchargement Moodle), tout sera trié par matière.").font(.caption).foregroundStyle(.secondary)
             }
         case .apps:
             VStack(spacing: 12) {

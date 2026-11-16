@@ -85,6 +85,27 @@ Elle dort la nuit, saute quand on clique dessus et fait la fête quand une compi
 
 ---
 
+## Île dynamique (encoche)
+
+Sur un Mac à encoche, Toolbox la transforme en île dynamique (Réglages → Général → Île dynamique ; sur un Mac sans
+encoche, elle peut se placer en haut de l'écran).
+- **Au repos**, elle se confond avec l'encoche, ou affiche une **activité en direct** de chaque côté : le minuteur, la
+  pochette et un égaliseur animé quand la musique joue, le cours en cours avec le temps restant.
+- **Au survol (ou au clic)**, elle s'ouvre : la **musique** de Spotify ou Musique (pochette, progression, précédent /
+  lecture / suivant), ta **journée** (cours en cours avec sa barre de progression, prochain cours et sa salle, prochain
+  shift, prochain CC avec J-x et l'avancement des révisions), les **batteries** (Mac, casque Nothing, iPhone) et des
+  **actions rapides** (pipette, capture → texte, minuteur 5 / 15 / 25 / 50 min, presse-papiers). Une punaise la garde
+  ouverte.
+- **Étagère** : glisse des fichiers vers l'encoche, elle s'ouvre pour les recevoir. Garde-les sous la main, ressors-les
+  en glisser-déposer, ou en un clic : compresser, OCR, fusionner, éditer, signer, AirDrop, copier, afficher dans le Finder.
+- **Alertes** : elle s'ouvre seule quelques secondes quand un cours commence dans 5 minutes (avec la salle), quand tu
+  branches ou débranches le Mac, quand la batterie est faible, quand le casque Nothing se connecte (avec sa batterie,
+  façon AirPods) et à la fin du minuteur.
+- Retour haptique sur le trackpad, cachée dans les apps en plein écran, les clics passent à la barre des menus partout
+  ailleurs.
+- Musique : depuis macOS 15.4, seul Apple peut lire « À l'écoute » pour toutes les apps ; l'île interroge donc
+  directement Spotify et Musique (seulement s'ils sont déjà ouverts ; macOS demande une fois l'autorisation).
+
 ## Mes cours
 
 Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière**, sans rien déplacer ni renommer.
@@ -122,6 +143,17 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
   *Nouveau TP* et *Voir la matière*. Ajoute des alias à une matière (clic droit → Renommer, couleur, alias)
   si ton emploi du temps ne l'appelle pas pareil.
 - **S'entraîner** compose un sujet avec les annales de la matière (Annalyse).
+
+**Partager ses cours avec un ami** (bouton ⇅ en bas de la liste des matières, ou un .zip déposé sur la page)
+- **Importer une classe ou un cours…** : un .zip (export Toolbox, dossier d'un ami, téléchargement Moodle, zip d'un
+  prof), un .tar.gz, un .7z ou un dossier. Toolbox l'ouvre, repère les matières (dossiers avec cours/TDs/TPs/CCs, ou un
+  dossier par matière comme dans un téléchargement Moodle) et range chaque fichier en cours / TD / TP / CC / notes
+  d'après ses dossiers (« Travaux dirigés », « Annales », « Diaporama »…) et son nom. Les matières que tu as déjà sont
+  rejointes (même nom ou alias), les autres sont créées. Un aperçu montre ce qui va où et permet de changer une
+  destination. Rien n'est déplacé ni écrasé, les fichiers identiques sont sautés, compilation et caches sont ignorés.
+- **Exporter cette matière / toute la classe…** : un .zip propre, avec ou sans tes notes et les corrigés, que Toolbox
+  réimporte à l'identique (noms affichés et alias compris).
+- Sur un Mac sans cours, l'import crée `Documents/Cours` tout seul.
 
 ---
 
@@ -516,6 +548,7 @@ sécurité.
 | **Notifications** | début de cours, batterie de l'iPhone basse, check du matin | au premier envoi |
 | **Bluetooth** | batterie et réglages du casque Nothing, Mode cours (déconnexion du casque) | première lecture du casque |
 | **Automatisation → Notes** (Apple Events) | pense-bête, note épinglée sur l'accueil | setup, ou premier pense-bête |
+| **Automatisation → Spotify / Musique** (Apple Events) | musique dans l'île dynamique | la première fois qu'une musique joue avec l'île activée |
 | **Enregistrement de l'écran** | « Capture d'écran → texte », import du planning par capture | première capture |
 | **Dossiers Bureau, Documents, Téléchargements** | cours et documents LaTeX, *Nettoyer le Mac* (vieux téléchargements, gros fichiers) | à la première lecture de ces dossiers |
 | **Mot de passe administrateur** (une fois) | réveil programmé du Mac pour le check du matin (`pmset`) | quand tu actives le réveil |
@@ -582,7 +615,7 @@ Plages de pages : `1-3, 5, 8-` (`8-` = jusqu'à la fin, `-3` = depuis le début)
 | Nouveaux documents LaTeX | `~/Documents/Toolbox LaTeX/` (ou le dossier de la matière : `TDs/TD4/`, `Tests/`…) |
 | Liste « Mes documents », profil, visites vues, calendriers affichés, langue de l'interface | préférences de l'app |
 | Mes informations (documents administratifs) | préférences de l'app (clés `admin.*`), jamais dans le code |
-| Calculatrice (fonctions, historique), couleurs (récentes, favoris) | préférences de l'app |
+| Calculatrice (fonctions, historique), couleurs (récentes, favoris), étagère de l'île dynamique | préférences de l'app |
 | Données partagées avec l'iPhone | iCloud Drive → `Toolbox/` (ToolboxMac.json, ToolboxDay.json, scripts Scriptable) |
 | Banque d'annales | le dossier choisi dans Annalyse → Réglages |
 | Sauvegardes du profil, autres profils | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
@@ -603,14 +636,16 @@ swift run pdftool --help
 Sources/
   PDFCore/    moteur partagé : pages, dessin, compression, OCR, comparaison, signature, LaTeX,
               Annalyse (Annales/), bibliothèque et index des cours, GitHub, VS Code,
-              enregistrement de l'éditeur de PDF (PDFEdit.swift), polices et liens (PDFFonts.swift)
+              enregistrement de l'éditeur de PDF (PDFEdit.swift), polices et liens (PDFFonts.swift), import de cours (CourseImport.swift)
   Toolbox/    appli SwiftUI : une vue par outil, accueil et widgets, Mes cours, éditeur LaTeX,
               notes et ECTS, calculatrices (MathEngine.swift, ClassicCalc.swift), planning, casque, archives
               (ArchiveTool.swift), modèles LaTeX (LatexDocTypes.swift), bibliothèque de symboles
               (LatexLibrary.swift), IA locale (OllamaService.swift, LatexAIDoc.swift), profil et outils à installer
               (Profile.swift), visite guidée (Tour.swift), palette ⌘K, barre des menus, éditeur de PDF
               (PDFEditor.swift), filtre des calendriers (CalendarFilter.swift), profils et sauvegardes (Backup.swift),
-              documents administratifs (AdminDocs.swift), couleurs et presse-papiers (ClipTools.swift)
+              documents administratifs (AdminDocs.swift), couleurs et presse-papiers (ClipTools.swift),
+              import / export de cours (CourseImportView.swift),
+              île dynamique (NotchIsland.swift, NotchServices.swift, NotchViews.swift)
   pdftool/    commande terminal
 Resources/    Info.plist (types de fichiers, Services, autorisations, langues) + icône + traductions (en.lproj)
 build.sh      compile hors du dossier (Nextcloud), signe, assemble le .app, l'enregistre auprès de macOS
@@ -625,7 +660,8 @@ make-dmg.sh   fabrique le .dmg à partir de build/Toolbox.app
   scientifique, programmeur), limites, notes et ECTS (dont un S1 complet), lecture du planning et pauses,
   CRC du casque, modèles LaTeX (administratifs compris), bibliothèque de symboles, extraction des réponses de l'IA,
   suppression des documents, archives, placement de la visite guidée, enregistrement de l'éditeur de PDF (texte
-  ajouté, vrai caviardage, liens gardés), choix des polices, cours en double dans « Aujourd'hui », traduction anglaise, conversions de couleurs et transformations de texte. Code dans `SelfTest.swift` ; à relancer à la main :
+  ajouté, vrai caviardage, liens gardés), choix des polices, cours en double dans « Aujourd'hui », traduction anglaise, conversions de couleurs et transformations de texte,
+  import de cours (tri, matières existantes rejointes, doublons sautés) et export / réimport. Code dans `SelfTest.swift` ; à relancer à la main :
   `~/Applications/Toolbox.app/Contents/MacOS/Toolbox --selftest`.
 - Les vues n'utilisent pas `@State`, une macro absente des Command Line Tools sur les SDK récents :
   chaque outil a un petit `ObservableObject`.

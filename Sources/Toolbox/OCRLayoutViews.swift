@@ -115,6 +115,13 @@ struct OCRToolView: View {
             StatusBanner(message: s.status)
         }
         .padding(20)
+        .onAppear(perform: takePending)
+        .onReceive(AppRouter.shared.$pendingTick) { _ in takePending() }
+    }
+
+    /// PDF envoyés depuis l'étagère de l'île dynamique.
+    private func takePending() {
+        if let urls = AppRouter.shared.takePending(.ocr) { s.add(urls) }
     }
 }
 
