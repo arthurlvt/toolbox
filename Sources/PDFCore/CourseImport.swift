@@ -38,6 +38,9 @@ public enum CourseImport {
         public let source: URL
         public var kind: CourseKind
         public var relative: String      // chemin sous le dossier du type (« TP3/main.c », « td2.pdf »)
+        public init(source: URL, kind: CourseKind, relative: String) {
+            self.source = source; self.kind = kind; self.relative = relative
+        }
     }
 
     /// Une matière de l'archive.
@@ -51,6 +54,10 @@ public enum CourseImport {
         public var target: URL?
 
         public func count(_ k: CourseKind) -> Int { files.filter { $0.kind == k }.count }
+
+        public init(name: String, domain: String, aliases: String, files: [File], target: URL?) {
+            self.name = name; self.domain = domain; self.aliases = aliases; self.files = files; self.target = target
+        }
     }
 
     public struct Plan {
@@ -58,6 +65,10 @@ public enum CourseImport {
         public var workDir: URL?                 // dossier temporaire (archive extraite) à supprimer à la fin
         public var fromToolbox: Bool
         public var fileCount: Int { groups.reduce(0) { $0 + $1.files.count } }
+
+        public init(groups: [Group], workDir: URL?, fromToolbox: Bool) {
+            self.groups = groups; self.workDir = workDir; self.fromToolbox = fromToolbox
+        }
     }
 
     public struct Result {

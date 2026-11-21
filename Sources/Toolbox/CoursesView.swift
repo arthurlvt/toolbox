@@ -387,6 +387,7 @@ struct CoursesToolView: View {
     @ObservedObject var s: CoursesStore
     @ObservedObject var marks = CourseMarks.shared
     @ObservedObject var imp = CourseImportStore.shared
+    @ObservedObject var moodle = MoodleStore.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -400,6 +401,9 @@ struct CoursesToolView: View {
                     Text("Pas encore de cours sur ce Mac ?").font(.callout).foregroundStyle(.secondary).padding(.top, 8)
                     Button { imp.chooseAndPlan() } label: {
                         Label("Importer une classe ou un cours…", systemImage: "tray.and.arrow.down")
+                    }
+                    Button { moodle.showSheet = true } label: {
+                        Label("Récupérer mes cours depuis Moodle (e-uapv)…", systemImage: "arrow.triangle.2.circlepath")
                     }
                     .help("Un .zip exporté par un ami, un téléchargement Moodle ou un dossier : tout est trié par matière dans Documents/Cours")
                 }
@@ -418,6 +422,7 @@ struct CoursesToolView: View {
         .sheet(isPresented: Binding(get: { imp.plan != nil }, set: { if !$0 { imp.cancel() } })) {
             CourseImportSheet()
         }
+        .sheet(isPresented: $moodle.showSheet) { MoodleSheet() }
         .onDrop(of: [.fileURL], isTargeted: nil) { providers in
             // un .zip de cours déposé n'importe où sur la page : on propose de l'importer
             FileDrop.load(providers) { urls in
@@ -486,8 +491,13 @@ struct CoursesToolView: View {
                         .help("Lecture du contenu des documents pour la recherche")
                 }
                 Spacer()
-                if imp.busy { ProgressView().controlSize(.small) }
+                if imp.busy || moodle.busy { ProgressView().controlSize(.small).help(moodle.progress) }
                 Menu {
+                    Button("Synchroniser avec Moodle (e-uapv)…") { moodle.showSheet = true }
+                    if moodle.connected {
+                        Button("Synchroniser maintenant") { moodle.sync() }.disabled(moodle.busy)
+                    }
+                    Divider()
                     Button("Importer une classe ou un cours…") { imp.chooseAndPlan() }
                     Divider()
                     Button("Exporter cette matière…") { imp.export(all: false) }

@@ -154,6 +154,16 @@ anything.
   if your timetable calls it something else.
 - **Practice** builds an exam from the subject's past papers (Annalyse).
 
+**Moodle sync** (⇅ button → *Sync with Moodle*, or ⌘K)
+- Works with any Moodle that allows the mobile app (checked on e-uapv, Avignon University). You sign in on the usual
+  ENT page in a Toolbox window: your password is never seen by Toolbox, only an access token is kept in the macOS
+  keychain. The yearly address change (e-uapv2026, e-uapv2027…) is followed on its own.
+- Pick the courses to follow and the matching subject (guessed from the name). Their files (resources and folders)
+  are downloaded and sorted like an import (“Travaux dirigés” → TD, “Annales” → CC…); only new or changed files are
+  fetched, nothing is ever deleted, and a file replaced by the teacher keeps its old version next to it. Videos and
+  files over 150 MB are skipped.
+- Sync by hand or automatically (every 3 h, 12 h or once a day); the dynamic island tells you when new files arrive.
+
 **Sharing courses with a friend** (⇅ button at the bottom of the subject list, or drop a .zip on the page)
 - **Import a class or a course…**: a .zip (Toolbox export, a friend's folder, Moodle download, a teacher's zip), a
   .tar.gz, a .7z or a folder. Toolbox opens it, finds the subjects (folders with cours/TDs/TPs/CCs, or one top-level
@@ -644,7 +654,7 @@ swift run pdftool --help
 Sources/
   PDFCore/    shared engine: pages, drawing, compression, OCR, comparison, signature, LaTeX,
               Annalyse (Annales/), course library and index, GitHub, VS Code,
-              PDF editor saving (PDFEdit.swift), fonts and links (PDFFonts.swift), course import (CourseImport.swift)
+              PDF editor saving (PDFEdit.swift), fonts and links (PDFFonts.swift), course import (CourseImport.swift), Moodle API (Moodle.swift)
   Toolbox/    SwiftUI app: one view per tool, Home and widgets, My courses, LaTeX editor,
               grades and ECTS, calculators (MathEngine.swift, ClassicCalc.swift), planning, headphones, archives
               (ArchiveTool.swift), LaTeX templates (LatexDocTypes.swift), symbol library
@@ -654,7 +664,7 @@ Sources/
               PDF editor (PDFEditor.swift), calendar filter (CalendarFilter.swift), profiles and backups
               (Backup.swift), administrative documents (AdminDocs.swift), colours & clipboard (ClipTools.swift),
               course import / export (CourseImportView.swift),
-              dynamic island (NotchIsland.swift, NotchServices.swift, NotchViews.swift)
+              dynamic island (NotchIsland.swift, NotchServices.swift, NotchViews.swift), Moodle sync (MoodleSync.swift)
   pdftool/    terminal command
 Resources/    Info.plist (file types, Services, permissions, languages) + icon + translations (en.lproj)
 build.sh      builds outside the folder (Nextcloud), signs, assembles the .app, registers it with macOS

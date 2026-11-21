@@ -29,9 +29,39 @@ enum SelfTest {
         clipTools()
         courseImport()
         notch()
+        moodle()
         print("Toolbox --selftest : \(passed) réussi\(passed > 1 ? "s" : ""), \(failed.count) échec\(failed.count > 1 ? "s" : "")")
         for f in failed { print("  ✗ " + f) }
         return failed.isEmpty ? 0 : 1
+    }
+
+    // MARK: Moodle
+
+    private static func moodle() {
+        let raw = Data("abcdef0123:::montoken42:::prive".utf8).base64EncodedString()
+        check("moodle : jeton lu dans la redirection", URL(string: "moodlemobile://token=" + raw).flatMap(Moodle.token(fromRedirect:)) == "montoken42")
+        check("moodle : redirection sans jeton", URL(string: "moodlemobile://autre").flatMap(Moodle.token(fromRedirect:)) == nil)
+        check("moodle : nom de matière nettoyé", Moodle.subjectName("[2026] L1 INFO - ANALYSE 1 (S-E02-6502)") == "Analyse 1",
+              Moodle.subjectName("[2026] L1 INFO - ANALYSE 1 (S-E02-6502)"))
+        let json = """
+        [{"id":1,"name":"Travaux dirigés","modules":[
+           {"id":10,"name":"Feuille 1","modname":"resource","contents":[{"type":"file","filename":"TD1.pdf","filepath":"/","filesize":1000,"fileurl":"https://x/pluginfile.php/1/TD1.pdf","timemodified":5}]},
+           {"id":11,"name":"Forum","modname":"forum"},
+           {"id":12,"name":"Vidéo","modname":"resource","contents":[{"type":"file","filename":"cours.mp4","filepath":"/","filesize":900000000,"fileurl":"https://x/v.mp4","timemodified":5}]}]},
+         {"id":2,"name":"Annales","modules":[
+           {"id":20,"name":"CC 2024","modname":"folder","contents":[{"type":"file","filename":"sujet.pdf","filepath":"/session1/","filesize":10,"fileurl":"https://x/s.pdf","timemodified":7}]}]}]
+        """
+        if let sections = try? JSONDecoder().decode([Moodle.Section].self, from: Data(json.utf8)) {
+            let (files, large) = Moodle.files(of: sections, course: 3)
+            check("moodle : fichiers et dossiers lus, forum et vidéo ignorés", files.count == 2 && large == 1, "\(files.count) / \(large)")
+            let td = files.first { $0.components.last == "TD1.pdf" }
+            check("moodle : TD rangé dans les TD", td.map { CourseImport.classify($0.components).0 == .td } ?? false)
+            let cc = files.first { $0.components.last == "sujet.pdf" }
+            check("moodle : dossier d'annales rangé dans les CC", cc.map { CourseImport.classify($0.components) == (.cc, "CC 2024/session1/sujet.pdf") } ?? false,
+                  cc.map { "\(CourseImport.classify($0.components))" } ?? "absent")
+        } else {
+            check("moodle : contenu de cours lisible", false)
+        }
     }
 
     // MARK: Île dynamique

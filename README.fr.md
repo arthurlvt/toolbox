@@ -144,6 +144,18 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
   si ton emploi du temps ne l'appelle pas pareil.
 - **S'entraîner** compose un sujet avec les annales de la matière (Annalyse).
 
+**Synchronisation Moodle** (bouton ⇅ → *Synchroniser avec Moodle*, ou ⌘K)
+- Marche avec tout Moodle qui autorise l'application mobile (vérifié sur e-uapv, Avignon Université). La connexion se fait
+  sur la page habituelle de l'ENT, dans une fenêtre de Toolbox : ton mot de passe n'est jamais vu par Toolbox, seul un
+  jeton d'accès est gardé dans le trousseau de macOS. Le changement d'adresse chaque année (e-uapv2026, e-uapv2027…)
+  est suivi tout seul.
+- Choisis les cours à suivre et la matière correspondante (devinée d'après le nom). Leurs fichiers (ressources et
+  dossiers) sont téléchargés et triés comme un import (« Travaux dirigés » → TD, « Annales » → CC…) ; seuls les fichiers
+  nouveaux ou modifiés sont récupérés, rien n'est jamais supprimé, et un fichier remplacé par le prof garde son ancienne
+  version à côté. Les vidéos et fichiers de plus de 150 Mo sont ignorés.
+- Synchro à la main ou automatique (toutes les 3 h, 12 h ou une fois par jour) ; l'île dynamique prévient quand de
+  nouveaux fichiers arrivent.
+
 **Partager ses cours avec un ami** (bouton ⇅ en bas de la liste des matières, ou un .zip déposé sur la page)
 - **Importer une classe ou un cours…** : un .zip (export Toolbox, dossier d'un ami, téléchargement Moodle, zip d'un
   prof), un .tar.gz, un .7z ou un dossier. Toolbox l'ouvre, repère les matières (dossiers avec cours/TDs/TPs/CCs, ou un
@@ -636,7 +648,7 @@ swift run pdftool --help
 Sources/
   PDFCore/    moteur partagé : pages, dessin, compression, OCR, comparaison, signature, LaTeX,
               Annalyse (Annales/), bibliothèque et index des cours, GitHub, VS Code,
-              enregistrement de l'éditeur de PDF (PDFEdit.swift), polices et liens (PDFFonts.swift), import de cours (CourseImport.swift)
+              enregistrement de l'éditeur de PDF (PDFEdit.swift), polices et liens (PDFFonts.swift), import de cours (CourseImport.swift), API Moodle (Moodle.swift)
   Toolbox/    appli SwiftUI : une vue par outil, accueil et widgets, Mes cours, éditeur LaTeX,
               notes et ECTS, calculatrices (MathEngine.swift, ClassicCalc.swift), planning, casque, archives
               (ArchiveTool.swift), modèles LaTeX (LatexDocTypes.swift), bibliothèque de symboles
@@ -645,7 +657,7 @@ Sources/
               (PDFEditor.swift), filtre des calendriers (CalendarFilter.swift), profils et sauvegardes (Backup.swift),
               documents administratifs (AdminDocs.swift), couleurs et presse-papiers (ClipTools.swift),
               import / export de cours (CourseImportView.swift),
-              île dynamique (NotchIsland.swift, NotchServices.swift, NotchViews.swift)
+              île dynamique (NotchIsland.swift, NotchServices.swift, NotchViews.swift), synchro Moodle (MoodleSync.swift)
   pdftool/    commande terminal
 Resources/    Info.plist (types de fichiers, Services, autorisations, langues) + icône + traductions (en.lproj)
 build.sh      compile hors du dossier (Nextcloud), signe, assemble le .app, l'enregistre auprès de macOS

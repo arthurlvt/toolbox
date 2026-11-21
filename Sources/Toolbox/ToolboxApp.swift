@@ -46,6 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         UpdateStore.shared.launchCheck()
         BackupStore.autoBackupIfNeeded()        // sauvegarde du profil à chaque nouvelle version
         NotchController.shared.apply()          // île dynamique sur l'encoche (si activée)
+        MoodleStore.shared.scheduleAuto()       // synchro Moodle automatique (si connecté)
         AppShortcutsStore.shared.start()
         DiscordPresence.shared.start()
         MacStatusStore.shared.start()
@@ -609,6 +610,11 @@ struct ContentView: View {
             list.append(PaletteCommand(title: "Capture d'écran → texte", subtitle: "Sélectionne une zone, le texte est copié",
                                        icon: "text.viewfinder", color: .teal, keywords: "ocr copier screenshot") {
                 ScreenText.capture()
+            })
+            list.append(PaletteCommand(title: "Synchroniser Moodle (e-uapv)", subtitle: "Nouveaux fichiers de tes cours, triés par matière",
+                                       icon: "arrow.triangle.2.circlepath", color: .orange, keywords: "moodle eupav e-uapv ent cours telecharger synchro") {
+                if MoodleStore.shared.connected { MoodleStore.shared.sync() } else { MoodleStore.shared.showSheet = true }
+                AppRouter.shared.show = .courses
             })
             list.append(PaletteCommand(title: "Pipette : copier une couleur", subtitle: "N'importe où à l'écran (⌃⌥C)",
                                        icon: "eyedropper", color: .pink, keywords: "couleur hex rgb color picker") {
