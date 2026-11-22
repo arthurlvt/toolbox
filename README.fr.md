@@ -186,6 +186,24 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
 - **Mode automatique** : transparence pendant un cours (repéré dans le calendrier comme dans Mes cours), mode habituel
   le reste du temps, faible latence quand un jeu est au premier plan.
 
+## Mails
+
+Tes derniers mails (fac et boîte perso) sur une page, triés par importance. Toolbox passe par l'**app Mail** : il ne
+voit aucun mot de passe et marche avec tout compte que Mail sait ouvrir (Outlook / Hotmail, Partage de la fac, Gmail,
+iCloud…).
+
+- **Mise en route** : ajoute tes comptes dans Mail (Mail → Réglages → Comptes), puis page Mails → *Activer les mails*.
+  macOS demande une fois d'autoriser Toolbox à piloter Mail.
+- **Importants / Non lus / Tous**, par compte ou tous ensemble. *Importants* : les mails de la fac et des profs, ceux
+  dont l'objet parle d'examen, CC, notes, inscription, bourse, emploi du temps, salle, stage…, et tes mails signalés.
+  Les pubs et newsletters sont grisées en bas.
+- **Tes règles** : clic droit sur un mail → toujours important / normal / pub pour cet expéditeur ou tout son domaine.
+  Dans les réglages (roue dentée), coche tes **comptes de la fac** : tout mail d'une vraie personne y devient important.
+- **Actions**, appliquées dans Mail : lu / non lu, drapeau, archiver (dossier « Archive » du compte), corbeille. Un clic
+  sur le mail l'ouvre dans Mail.
+- **Relevé toutes les 5 minutes** (Mail gardé ouvert en arrière-plan, réglable) et **alerte pour un nouveau mail
+  important non lu**, dans l'île dynamique et sur l'iPhone si ntfy est activé (voir [Moodle](#moodle-e-uapv)).
+
 ## Révisions
 
 - **Tes CC viennent du calendrier** : le calendrier « CCs/Soutenance » (ou tout calendrier nommé CC, Examens,
@@ -231,6 +249,13 @@ Dans la barre latérale, rubrique Études. Rafraîchie toute seule toutes les he
   avant, et rien ne part sans une confirmation qui dit ce qui va se passer (remplacement du dépôt actuel, retard…).
   Pour les devoirs avec un bouton *Envoyer le devoir*, tu choisis entre garder un brouillon et envoyer pour de bon,
   avec un avertissement clair : un devoir envoyé ne se modifie plus.
+- **Rendre depuis ton travail** : bouton *Rendre sur Moodle* (icône plateau) sur un fichier dans Mes cours, et
+  *Rendre le PDF sur Moodle* dans le menu ⋯ de l'éditeur LaTeX. Le devoir le plus probable est en tête (★) : même
+  matière que le fichier, même type et numéro (« TP3_Dupont.pdf » → « TP 3 noté »). Même vérification et même
+  confirmation que sur la page Moodle.
+- **Dates limites dans Calendrier** (cloche → *Dates limites dans Calendrier*) : un calendrier orange « Devoirs Moodle »,
+  visible aussi sur l'iPhone, avec un rappel la veille ; le titre prend un ✓ quand c'est rendu. Le **Planning** signale
+  un shift la veille d'un rendu (ou le jour même, avant l'heure limite).
 - **Annonces** : les messages des profs dans le forum d'annonces de chaque cours, en texte simple, avec un badge
   *Nouveau*.
 - **Nouvelles notes** : quand un prof publie une note sur Moodle (« Note publiée · Analyse 1 — CC1 : 13,5/20 »), une alerte reste dans
@@ -600,10 +625,11 @@ sécurité.
 
 | Autorisation | Pour quoi | Quand c'est demandé |
 |---|---|---|
-| **Calendriers** (accès complet) | événements du jour, « cours en ce moment », prochains CC (Révisions, comptes à rebours), calendrier dédié au travail et shifts du planning | setup, ou première ouverture de l'accueil / du Planning |
+| **Calendriers** (accès complet) | dates limites Moodle (calendrier « Devoirs Moodle », si activé), événements du jour, « cours en ce moment », prochains CC (Révisions, comptes à rebours), calendrier dédié au travail et shifts du planning | setup, ou première ouverture de l'accueil / du Planning |
 | **Rappels** | alerte « Recharge ton Mac » qui sonne sur l'iPhone, rappel du soir (Mac et casque à charger) | quand tu actives ces alertes |
 | **Notifications** | début de cours, batterie de l'iPhone basse, check du matin | au premier envoi |
 | **Bluetooth** | batterie et réglages du casque Nothing, Mode cours (déconnexion du casque) | première lecture du casque |
+| **Automatisation → Mail** (Apple Events) | page Mails : lire tes derniers mails, lu / drapeau / archiver / corbeille | quand tu actives les mails |
 | **Automatisation → Notes** (Apple Events) | pense-bête, note épinglée sur l'accueil | setup, ou premier pense-bête |
 | **Automatisation → Spotify / Musique** (Apple Events) | musique dans l'île dynamique | la première fois qu'une musique joue avec l'île activée |
 | **Enregistrement de l'écran** | « Capture d'écran → texte », import du planning par capture | première capture |
@@ -679,6 +705,7 @@ Plages de pages : `1-3, 5, 8-` (`8-` = jusqu'à la fin, `-3` = depuis le début)
 | Jeton Moodle | trousseau de macOS (service `fr.arthur.toolbox.moodle`) |
 | Réglages Moodle et ntfy, fichiers déjà récupérés, annonces et notes déjà signalées | préférences de l'app (clés `moodle.*`, `push.*`) |
 | Fichiers récupérés sur Moodle | dossier de cours → `En attente (Moodle)/` |
+| Réglages des mails, tes règles par expéditeur, mails déjà signalés | préférences de l'app (clés `mail.*`) ; les mails eux-mêmes restent dans Mail |
 | Sauvegardes du profil, autres profils | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
 
 Rien n'est écrit dans ton dossier de cours, sauf ce que tu crées toi-même (nouveau TD/TP, notes, photos, fichiers déposés)
@@ -707,7 +734,7 @@ Sources/
               (PDFEditor.swift), filtre des calendriers (CalendarFilter.swift), profils et sauvegardes (Backup.swift),
               documents administratifs (AdminDocs.swift), couleurs et presse-papiers (ClipTools.swift),
               import / export de cours (CourseImportView.swift),
-              île dynamique (NotchIsland.swift, NotchServices.swift, NotchViews.swift), synchro Moodle (MoodleSync.swift), devoirs, annonces et notifications ntfy (MoodleFeed.swift)
+              île dynamique (NotchIsland.swift, NotchServices.swift, NotchViews.swift), synchro Moodle (MoodleSync.swift), devoirs, annonces et notifications ntfy (MoodleFeed.swift), mails via l'app Mail (MailInbox.swift)
   pdftool/    commande terminal
 Resources/    Info.plist (types de fichiers, Services, autorisations, langues) + icône + traductions (en.lproj)
 build.sh      compile hors du dossier (Nextcloud), signe, assemble le .app, l'enregistre auprès de macOS

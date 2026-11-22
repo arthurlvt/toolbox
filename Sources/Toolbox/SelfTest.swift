@@ -30,6 +30,7 @@ enum SelfTest {
         courseImport()
         notch()
         moodle()
+        mail()
         print("Toolbox --selftest : \(passed) réussi\(passed > 1 ? "s" : ""), \(failed.count) échec\(failed.count > 1 ? "s" : "")")
         for f in failed { print("  ✗ " + f) }
         return failed.isEmpty ? 0 : 1
@@ -37,7 +38,23 @@ enum SelfTest {
 
     // MARK: Moodle
 
-    private static func moodle() {
+    private static func mail() {
+        func msg(_ from: String, _ subject: String, account: String = "Outlook") -> MailBridge.Message {
+            MailBridge.Message(account: account, mailbox: "INBOX", mailID: 1, sender: from, subject: subject, date: Date(),
+                               read: false, flagged: false, messageID: "", snippet: "")
+        }
+        let prof = msg("Jean Dupont <jean.dupont@univ-avignon.fr>", "TP noté")
+        check("mail : adresse et nom lus", prof.address == "jean.dupont@univ-avignon.fr" && prof.senderName == "Jean Dupont" && prof.domain == "univ-avignon.fr")
+        check("mail : prof de la fac → important", MailImportance.of(prof, rules: [:], schoolAccounts: []) == .high)
+        check("mail : pub → pubs", MailImportance.of(msg("Amazon <no-reply@amazon.fr>", "Black Friday : -40 % sur tout"), rules: [:], schoolAccounts: []) == .low)
+        check("mail : robot de la fac + emploi du temps → important",
+              MailImportance.of(msg("noreply@univ-avignon.fr", "Modification de votre emploi du temps"), rules: [:], schoolAccounts: []) == .high)
+        check("mail : ami → normal", MailImportance.of(msg("Léo <leo@gmail.com>", "ce soir ?"), rules: [:], schoolAccounts: []) == .normal)
+        check("mail : compte de la fac → important", MailImportance.of(msg("Léo <leo@gmail.com>", "ce soir ?", account: "Partage"), rules: [:], schoolAccounts: ["Partage"]) == .high)
+        check("mail : ta règle passe avant", MailImportance.of(prof, rules: ["@univ-avignon.fr": 0], schoolAccounts: []) == .low)
+    }
+
+        private static func moodle() {
         let raw = Data("abcdef0123:::montoken42:::prive".utf8).base64EncodedString()
         check("moodle : jeton lu dans la redirection", URL(string: "moodlemobile://token=" + raw).flatMap(Moodle.token(fromRedirect:)) == "montoken42")
         check("moodle : redirection sans jeton", URL(string: "moodlemobile://autre").flatMap(Moodle.token(fromRedirect:)) == nil)
@@ -91,6 +108,10 @@ enum SelfTest {
         let total = Moodle.GradeItem(id: 2, itemname: nil, itemtype: "course", graderaw: 12, gradeformatted: "12,00", grademax: 20)
         let vide = Moodle.GradeItem(id: 3, itemname: "CC2", itemtype: "mod", graderaw: nil, gradeformatted: "-", grademax: 20)
         check("moodle : total du cours et note vide ignorés", !total.isPublished && !vide.isPublished)
+        check("moodle : « TP3_Dupont » → TP 3", MoodleFeed.tag("TP3_Dupont") == MoodleFeed.Tag(kind: "tp", n: 3))
+        check("moodle : « Rendu TP n°02 » → TP 2", MoodleFeed.tag("Rendu TP n°02") == MoodleFeed.Tag(kind: "tp", n: 2))
+        check("moodle : « Projet 1 – rendu final » → projet 1", MoodleFeed.tag("Projet 1 – rendu final") == MoodleFeed.Tag(kind: "projet", n: 1))
+        check("moodle : pas de numéro → rien", MoodleFeed.tag("Analyse complexe") == nil && MoodleFeed.tag("Python3") == nil)
         let html = "<p>Salle&nbsp;<b>S3</b> d&#233;plac&eacute;e</p><p>Merci</p>"
         check("moodle : annonce HTML → texte", Moodle.plainText(html) == "Salle S3 déplacée\nMerci", Moodle.plainText(html))
     }

@@ -36,7 +36,7 @@
 
     <!-- Page d'accueil : pense-bête dans l'app Notes -->
     <key>NSAppleEventsUsageDescription</key>
-    <string>Toolbox crée tes pense-bêtes dans Notes, affiche ta note épinglée sur sa page d'accueil, et montre la musique de Spotify ou Musique dans l'île dynamique.</string>
+    <string>Toolbox crée tes pense-bêtes dans Notes, affiche ta note épinglée sur sa page d'accueil, montre la musique de Spotify ou Musique dans l'île dynamique, et lit tes derniers mails dans Mail (lu, drapeau, archiver, supprimer).</string>
 
     <!-- Page d'accueil : événements du jour -->
     <key>NSBluetoothAlwaysUsageDescription</key>

@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
+import EventKit
 import PDFCore
 
 // MARK: - Moodle : devoirs à rendre, dépôts et annonces
@@ -103,6 +104,13 @@ final class MoodleFeed: ObservableObject {
     @Published var pushTopic: String = PushNotifier.topic { didSet { PushNotifier.topic = pushTopic } }
     @Published var remindHours: Int { didSet { d.set(remindHours, forKey: "moodle.remindHours") } }
     @Published var gradesOn: Bool { didSet { d.set(gradesOn, forKey: "moodle.grades") } }
+    /// Dates limites dans un calendrier « Devoirs Moodle » (visible aussi sur l'iPhone).
+    @Published var calendarOn: Bool {
+        didSet {
+            d.set(calendarOn, forKey: "moodle.calendar.on")
+            if calendarOn { syncCalendar(ask: true) } else { removeCalendarEvents() }
+        }
+    }
     /// Annonces déjà vues dans la page (pour le badge « Nouveau »).
     @Published var newsSeenAt: Date { didSet { d.set(newsSeenAt, forKey: "moodle.newsSeenAt") } }
 
@@ -132,6 +140,7 @@ final class MoodleFeed: ObservableObject {
     init() {
         remindHours = UserDefaults.standard.object(forKey: "moodle.remindHours") as? Int ?? 24
         gradesOn = UserDefaults.standard.object(forKey: "moodle.grades") as? Bool ?? true
+        calendarOn = UserDefaults.standard.bool(forKey: "moodle.calendar.on")
         newsSeenAt = UserDefaults.standard.object(forKey: "moodle.newsSeenAt") as? Date ?? Date()
     }
 
@@ -206,6 +215,8 @@ final class MoodleFeed: ObservableObject {
                 self.announce(n)
                 if wantGrades { self.announceGrades(g, courses: follow) }
                 self.checkReminders()
+                self.syncCalendar()
+                PlanningStore.shared.refreshConflicts()
                 if !silent {
                     self.status = .ok(String(format: L("%lld devoir(s) à rendre, %lld annonce(s)."), self.pendingCount, n.count))
                 }
@@ -310,22 +321,98 @@ final class MoodleFeed: ObservableObject {
     }
 
     /// Vérifie ce que Moodle refuserait de toute façon, puis demande confirmation.
-    func prepare(_ w: Work, _ urls: [URL]) {
-        guard w.canEdit else { status = .err(L("Ce devoir ne peut plus être modifié.")); return }
+    /// Ce que Moodle refuserait de toute façon (nil = ok).
+    func problem(_ w: Work, _ urls: [URL]) -> String? {
+        guard w.canEdit else { return L("Ce devoir ne peut plus être modifié.") }
         if w.a.maxFiles > 0, urls.count > w.a.maxFiles {
-            status = .err(String(format: L("Ce devoir accepte %lld fichier(s) au maximum."), w.a.maxFiles)); return
+            return String(format: L("Ce devoir accepte %lld fichier(s) au maximum."), w.a.maxFiles)
         }
         if let bad = urls.first(where: { !w.a.accepts(fileName: $0.lastPathComponent) }) {
-            status = .err(String(format: L("« %@ » n'est pas d'un type accepté (%@)."), bad.lastPathComponent, w.a.fileTypes)); return
+            return String(format: L("« %@ » n'est pas d'un type accepté (%@)."), bad.lastPathComponent, w.a.fileTypes)
         }
         if w.a.maxBytes > 0, let big = urls.first(where: { ((try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) > w.a.maxBytes }) {
-            status = .err(String(format: L("« %@ » dépasse la taille maximale (%@)."), big.lastPathComponent,
-                                 ByteCountFormatter.string(fromByteCount: Int64(w.a.maxBytes), countStyle: .file))); return
+            return String(format: L("« %@ » dépasse la taille maximale (%@)."), big.lastPathComponent,
+                          ByteCountFormatter.string(fromByteCount: Int64(w.a.maxBytes), countStyle: .file))
         }
         if let dir = urls.first(where: { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }) {
-            status = .err(String(format: L("« %@ » est un dossier : compresse-le d'abord en .zip."), dir.lastPathComponent)); return
+            return String(format: L("« %@ » est un dossier : compresse-le d'abord en .zip."), dir.lastPathComponent)
         }
+        return nil
+    }
+
+    /// Depuis la page Moodle : vérification, puis confirmation dans la page.
+    func prepare(_ w: Work, _ urls: [URL]) {
+        if let p = problem(w, urls) { status = .err(p); return }
         confirm = Pending(action: .deposit(urls), work: w)
+    }
+
+    /// Depuis ailleurs (Mes cours, LaTeX) : même vérification, confirmation dans une fenêtre, résultat en toast.
+    func depositModal(_ w: Work, _ urls: [URL]) {
+        if let p = problem(w, urls) { ToastCenter.shared.show(p, seconds: 5); return }
+        let p = Pending(action: .deposit(urls), work: w)
+        let alert = NSAlert()
+        alert.messageText = confirmTitle(p)
+        alert.informativeText = confirmMessage(p)
+        alert.alertStyle = w.late ? .warning : .informational
+        alert.addButton(withTitle: w.a.needsSubmitButton ? L("Déposer (brouillon)") : L("Déposer"))
+        let canSubmit = w.a.needsSubmitButton && w.status?.canSubmit != false
+        if canSubmit { alert.addButton(withTitle: L("Déposer et envoyer le devoir")) }
+        alert.addButton(withTitle: L("Annuler"))
+        let r = alert.runModal()
+        if r == .alertFirstButtonReturn { perform(p, toast: true) }
+        else if canSubmit && r == .alertSecondButtonReturn { perform(p, alsoSubmit: true, toast: true) }
+    }
+
+    // MARK: Quel devoir pour ce fichier ?
+
+    /// Devoirs où l'on peut encore déposer, le plus probable d'abord : même matière que le fichier (dossier de la
+    /// matière, ou « En attente (Moodle)/…/<cours> »), même type et numéro (« TP3 » ↔ « TP 3 noté »), puis date limite.
+    func candidates(for file: URL) -> [(work: Work, likely: Bool)] {
+        let open = works.filter { $0.canEdit && !($0.done && $0.a.needsSubmitButton) }
+        guard !open.isEmpty else { return [] }
+        let path = file.path
+        let courses = CoursesStore.shared
+        let subject = courses.courses.first { path.hasPrefix($0.url.path + "/") }
+        let subjectKeys: [String] = subject.map { c in
+            ([courses.name(c), c.folderName] + (courses.custom[c.id]?.aliases ?? "").split(separator: ",").map(String.init))
+                .map { CourseLibrary.fold($0).trimmingCharacters(in: .whitespaces) }.filter { $0.count >= 3 }
+        } ?? []
+        let inPending = subject?.folderName == MoodleStore.pendingName
+        let fileTag = Self.tag(file.deletingPathExtension().lastPathComponent)
+            ?? Self.tag(file.deletingLastPathComponent().lastPathComponent)
+
+        func score(_ w: Work) -> Int {
+            var sc = 0
+            let course = CourseLibrary.fold(w.courseName)
+            if inPending {
+                if path.contains("/" + CourseImport.safeName(w.courseName) + "/") { sc += 10 }
+            } else if subjectKeys.contains(where: { course.contains($0) || $0.contains(course) }) {
+                sc += 10
+            }
+            if let ft = fileTag, let wt = Self.tag(w.a.name) {
+                if ft == wt { sc += 6 } else if ft.n == wt.n { sc += 2 } else if ft.kind == wt.kind { sc += 1 }
+            }
+            return sc
+        }
+        let scored = open.map { ($0, score($0)) }
+            .sorted { $0.1 != $1.1 ? $0.1 > $1.1 : ($0.0.due ?? .distantFuture) < ($1.0.due ?? .distantFuture) }
+        let best = scored.first?.1 ?? 0
+        return scored.map { (work: $0.0, likely: best >= 10 && $0.1 == best) }
+    }
+
+    struct Tag: Equatable { let kind: String; let n: Int }
+
+    /// « TP3_Dupont », « tp 03 », « Projet 2 » → (tp, 3)…
+    static func tag(_ s: String) -> Tag? {
+        let f = CourseLibrary.fold(s)
+        guard let r = f.range(of: #"(?<![a-z])(tp|td|projet|devoir|dm|ds|exercice|exo)[\s_\-n°o]*0*([0-9]{1,2})(?![0-9])"#, options: .regularExpression) else {
+            return nil
+        }
+        let part = String(f[r])
+        let kind = ["tp", "td", "projet", "devoir", "dm", "ds", "exercice", "exo"].first { part.hasPrefix($0) } ?? ""
+        let digits = part.reversed().prefix { $0.isNumber }.reversed()
+        guard let n = Int(String(digits)) else { return nil }
+        return Tag(kind: kind == "exo" ? "exercice" : kind, n: n)
     }
 
     func askRemove(_ w: Work) { confirm = Pending(action: .remove, work: w) }
@@ -366,7 +453,7 @@ final class MoodleFeed: ObservableObject {
         return lines.joined(separator: "\n\n")
     }
 
-    func perform(_ p: Pending, alsoSubmit: Bool = false) {
+    func perform(_ p: Pending, alsoSubmit: Bool = false, toast: Bool = false) {
         let m = MoodleStore.shared
         guard let c = m.client else { return }
         confirm = nil
@@ -389,6 +476,10 @@ final class MoodleFeed: ObservableObject {
         }) { [weak self] r in
             guard let self = self else { return }
             self.busy = false
+            defer {
+                if toast, let s = self.status { ToastCenter.shared.show(s.text, cheer: s.kind == .success, seconds: 5) }
+                self.syncCalendar()
+            }
             switch r {
             case .success(let st):
                 if let i = self.works.firstIndex(where: { $0.id == id }) { self.works[i].status = st }
@@ -411,6 +502,111 @@ final class MoodleFeed: ObservableObject {
                 self.refresh(silent: true)
             }
         }
+    }
+}
+
+// MARK: - Calendrier « Devoirs Moodle »
+
+extension MoodleFeed {
+    static let calendarTitle = "Devoirs Moodle"
+
+    private var eventIDs: [String: String] {
+        get { (UserDefaults.standard.dictionary(forKey: "moodle.calendar.events") as? [String: String]) ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: "moodle.calendar.events") }
+    }
+
+    private var store: EKEventStore { CalendarFilter.shared.store }
+
+    /// Le calendrier dédié, créé au besoin (orange, sur le compte du calendrier par défaut, donc sur l'iPhone si iCloud).
+    private func moodleCalendar(create: Bool) throws -> EKCalendar? {
+        let st = store
+        if let id = UserDefaults.standard.string(forKey: "moodle.calendar.id"), let c = st.calendar(withIdentifier: id) { return c }
+        if let c = st.calendars(for: .event).first(where: { $0.title == Self.calendarTitle && $0.allowsContentModifications }) {
+            UserDefaults.standard.set(c.calendarIdentifier, forKey: "moodle.calendar.id")
+            return c
+        }
+        guard create else { return nil }
+        let source = st.defaultCalendarForNewEvents?.source
+            ?? st.sources.first { $0.sourceType == .calDAV }
+            ?? st.sources.first { $0.sourceType == .local }
+        guard let src = source else { throw MoodleError(L("Aucun compte de calendrier trouvé.")) }
+        let cal = EKCalendar(for: .event, eventStore: st)
+        cal.title = Self.calendarTitle
+        cal.cgColor = NSColor.systemOrange.cgColor
+        cal.source = src
+        try st.saveCalendar(cal, commit: true)
+        UserDefaults.standard.set(cal.calendarIdentifier, forKey: "moodle.calendar.id")
+        return cal
+    }
+
+    /// Un événement de 30 min qui finit à la date limite, par devoir ; ✓ dans le titre une fois rendu.
+    /// Rappel la veille tant que ce n'est pas rendu. Rien d'autre dans le calendrier n'est touché.
+    func syncCalendar(ask: Bool = false) {
+        guard calendarOn else { return }
+        guard HomeStore.hasAccess else {
+            if ask { status = .err(L("Toolbox n'a pas accès au Calendrier : autorise-le dans Réglages Système → Confidentialité.")) }
+            return
+        }
+        do {
+            guard let cal = try moodleCalendar(create: true) else { return }
+            let st = store
+            var ids = eventIDs
+            var keep = Set<String>()
+            for w in works {
+                guard let due = w.due else { continue }
+                let key = String(w.id)
+                keep.insert(key)
+                let ev = ids[key].flatMap { st.event(withIdentifier: $0) } ?? EKEvent(eventStore: st)
+                let title = (w.done ? "✓ " : "") + w.a.name + " · " + w.courseName
+                let start = due.addingTimeInterval(-30 * 60)
+                if ev.calendar != nil, ev.title == title, ev.endDate == due, ev.startDate == start { continue }
+                ev.calendar = cal
+                ev.title = title
+                ev.startDate = start
+                ev.endDate = due
+                ev.url = link(w)
+                ev.notes = (w.done ? L("Rendu sur Moodle.") : L("À rendre sur Moodle.")) + "\n" + L("Ajouté par Toolbox")
+                ev.alarms = w.done ? nil : [EKAlarm(relativeOffset: -24 * 3600)]
+                try st.save(ev, span: .thisEvent, commit: false)
+                ids[key] = ev.eventIdentifier
+            }
+            // devoirs disparus (supprimés par le prof) : on retire leur événement s'il est encore à venir
+            for (key, id) in ids where !keep.contains(key) {
+                if let ev = st.event(withIdentifier: id), ev.endDate > Date() { try? st.remove(ev, span: .thisEvent, commit: false) }
+                if st.event(withIdentifier: id)?.endDate ?? .distantPast <= Date() { ids[key] = nil }
+            }
+            try st.commit()
+            eventIDs = ids
+            if ask { status = .ok(String(format: L("Dates limites ajoutées au calendrier « %@ »."), Self.calendarTitle)) }
+        } catch {
+            status = .err(L("Calendrier") + " : " + error.localizedDescription)
+        }
+    }
+
+    /// Option coupée : on retire les événements créés par Toolbox (le calendrier vide reste, à supprimer si tu veux).
+    func removeCalendarEvents() {
+        guard HomeStore.hasAccess else { return }
+        let st = store
+        for (_, id) in eventIDs { if let ev = st.event(withIdentifier: id) { try? st.remove(ev, span: .thisEvent, commit: false) } }
+        try? st.commit()
+        eventIDs = [:]
+    }
+
+    /// Pour le Planning : un rendu le lendemain d'un shift (ou le jour même, après le shift).
+    func deadlineWarning(shiftStart: Date, shiftEnd: Date) -> String? {
+        let cal = Calendar.current
+        let tf = DateFormatter()
+        tf.dateFormat = "HH:mm"
+        for w in works where !w.done && w.a.acceptsFiles {
+            guard let due = w.due, due > shiftStart else { continue }
+            if cal.isDate(due, inSameDayAs: shiftStart), due > shiftEnd {
+                return String(format: L("📚 À rendre ce jour-là : %@ (%@)"), w.a.name, tf.string(from: due))
+            }
+            if let next = cal.date(byAdding: .day, value: 1, to: shiftStart), cal.isDate(due, inSameDayAs: next) {
+                return String(format: L("📚 À rendre le lendemain : %@ (%@)"), w.a.name, tf.string(from: due))
+            }
+        }
+        return nil
     }
 }
 
@@ -624,6 +820,8 @@ struct MoodlePushSettings: View {
             }
             .fixedSize()
             Toggle("Prévenir des nouvelles notes", isOn: $f.gradesOn)
+            Toggle("Dates limites dans Calendrier (« Devoirs Moodle »)", isOn: $f.calendarOn)
+                .help("Un calendrier orange, visible aussi sur l'iPhone ; ✓ quand c'est rendu")
             Text("Rappels et nouvelles annonces s'affichent dans la dynamic island. Une nouvelle note y reste jusqu'à ce que tu cliques dessus ; rien n'est gardé ni calculé.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Divider()
@@ -654,5 +852,41 @@ struct MoodlePushSettings: View {
         }
         .padding(16)
         .frame(width: 380)
+    }
+}
+
+// MARK: - « Rendre sur Moodle » (Mes cours, LaTeX)
+
+/// Menu des devoirs où déposer ce fichier, le plus probable en tête (★). Rien ne part sans confirmation.
+struct MoodleDepositMenu: View {
+    let file: URL?
+    var compact = false
+    @ObservedObject var f = MoodleFeed.shared
+    @ObservedObject var m = MoodleStore.shared
+
+    var body: some View {
+        if m.connected, let file = file {
+            Menu {
+                let list = f.candidates(for: file)
+                if list.isEmpty {
+                    Text(f.lastRefresh == nil ? L("Devoirs pas encore chargés…") : L("Aucun devoir ouvert au dépôt."))
+                    Button("Rafraîchir les devoirs") { f.refresh() }
+                } else {
+                    ForEach(Array(list.prefix(12).enumerated()), id: \.element.work.id) { i, c in
+                        Button((c.likely ? "★ " : "") + c.work.a.name + " — " + c.work.courseName
+                               + (c.work.due.map { " · " + $0.formatted(.dateTime.day().month(.abbreviated).hour().minute()) } ?? "")) {
+                            f.depositModal(c.work, [file])
+                        }
+                        if i == 0 && c.likely && list.count > 1 { Divider() }
+                    }
+                }
+            } label: {
+                if compact { Image(systemName: "tray.and.arrow.up") } else { Label("Rendre sur Moodle", systemImage: "tray.and.arrow.up") }
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help(L("Déposer ce fichier dans un devoir Moodle (avec confirmation)"))
+            .onAppear { if f.lastRefresh == nil { f.refresh(silent: true) } }
+        }
     }
 }

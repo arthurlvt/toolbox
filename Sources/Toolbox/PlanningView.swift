@@ -808,7 +808,8 @@ final class PlanningStore: ObservableObject {
             let dayStart = Calendar.current.startOfDay(for: start)
             let dayEnd = Calendar.current.date(byAdding: .day, value: 1, to: dayStart) ?? end
             let evs = CalendarFilter.shared.events(events, from: dayStart, to: max(end, dayEnd))
-                .filter { $0.eventIdentifier != ignoring && !ours.contains($0.eventIdentifier ?? "") }
+                .filter { $0.eventIdentifier != ignoring && !ours.contains($0.eventIdentifier ?? "")
+                    && $0.calendar?.title != MoodleFeed.calendarTitle }
             let isExam: (EKEvent) -> Bool = { ($0.title ?? "").range(of: ExamsStore.pattern, options: .regularExpression) != nil }
             if let e = evs.first(where: { isExam($0) && ($0.isAllDay || Calendar.current.isDate($0.startDate, inSameDayAs: start)) }) {
                 return "⚠️ \(e.title ?? "Examen") ce jour-là" + (e.isAllDay ? "" : " (\(tf.string(from: e.startDate)))")
@@ -822,7 +823,7 @@ final class PlanningStore: ObservableObject {
            let c = list.first(where: { Calendar.current.isDate($0.date, inSameDayAs: start) }) {
             return "⚠️ \(c.title) ce jour-là"
         }
-        return nil
+        return MoodleFeed.shared.deadlineWarning(shiftStart: start, shiftEnd: end)
     }
 
     func refreshConflicts() {

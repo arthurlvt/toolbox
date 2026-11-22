@@ -754,6 +754,18 @@ struct LatexToolView: View {
                     NSWorkspace.shared.activateFileViewerSelecting([model.pdfExists ? model.pdfURL! : tex])
                 }
                 Button("Enregistrer sous…") { model.saveAs() }
+                if MoodleStore.shared.connected, model.pdfExists, let pdf = model.pdfURL {
+                    Menu("Rendre le PDF sur Moodle") {
+                        let list = MoodleFeed.shared.candidates(for: model.currentFile ?? pdf)
+                        if list.isEmpty { Text(L("Aucun devoir ouvert au dépôt.")) }
+                        ForEach(Array(list.prefix(12)), id: \.work.id) { c in
+                            Button((c.likely ? "★ " : "") + c.work.a.name + " — " + c.work.courseName) {
+                                model.save()
+                                MoodleFeed.shared.depositModal(c.work, [pdf])
+                            }
+                        }
+                    }
+                }
                 Button("Ouvrir dans un éditeur externe") {
                     model.save()
                     Editor.open(model.currentFile ?? tex, line: model.cursorLine)

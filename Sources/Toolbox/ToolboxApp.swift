@@ -47,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         BackupStore.autoBackupIfNeeded()        // sauvegarde du profil à chaque nouvelle version
         NotchController.shared.apply()          // île dynamique sur l'encoche (si activée)
         MoodleStore.shared.scheduleAuto()       // synchro Moodle automatique (si connecté)
+        MailStore.shared.schedule()             // mails toutes les 5 min (si activé)
         AppShortcutsStore.shared.start()
         DiscordPresence.shared.start()
         MacStatusStore.shared.start()
@@ -214,7 +215,7 @@ enum ToolSection: String, CaseIterable, Identifiable {
 
 enum Tool: String, CaseIterable, Identifiable {
     case home
-    case planning, headphone, clip
+    case planning, headphone, mail, clip
     case courses, revisions, moodle, grades, calc, annales, ocr
     case latex, edit, organize, merge, split, layout, convert, stamp, security, compare, sign
     case compress, cleanup
@@ -225,7 +226,7 @@ enum Tool: String, CaseIterable, Identifiable {
         switch self {
         case .home: return .home
         case .courses, .revisions, .moodle, .grades, .calc, .annales, .ocr: return .study
-        case .planning, .headphone: return .life
+        case .planning, .headphone, .mail: return .life
         case .clip: return .tools
         case .latex, .edit, .organize, .merge, .split, .layout, .convert, .stamp, .security, .compare, .sign: return .pages
         case .compress, .cleanup: return .optimize
@@ -241,6 +242,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .grades: return L("Notes & ECTS")
         case .calc: return L("Calculatrice")
         case .planning: return L("Planning")
+        case .mail: return L("Mails")
         case .clip: return L("Couleurs & presse-papiers")
         case .headphone: return L("Casque")
         case .compare: return L("Comparer")
@@ -271,6 +273,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .calc: return L("Graphique (courbes, limites, dérivées, LaTeX), scientifique et programmeur (bases, bits)")
         case .headphone: return L("Batterie, réduction de bruit, égaliseur et mode automatique de ton casque Nothing")
         case .planning: return L("Photo du planning → Calendrier, heures du mois, alertes si ça tombe sur un CC")
+        case .mail: return L("Tes derniers mails (fac et perso) triés par importance : lu, drapeau, archiver, supprimer")
         case .clip: return L("Pipette (hex, RGB, LaTeX…), transformations de texte en un clic, historique du presse-papiers")
         case .compare: return L("Voir ce qui a changé entre deux versions d'un PDF")
         case .sign: return L("Dessiner ou importer ta signature et la poser sur un PDF")
@@ -298,6 +301,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .calc: return "calcul scientifique programmeur hexadecimal binaire graphe courbe fonction"
         case .grades: return "moyenne note ects credits ue semestre"
         case .planning: return "travail shift horaires macdo boulot"
+        case .mail: return "mail mails email courriel outlook hotmail partage fac boite reception inbox"
         case .clip: return "couleur pipette hex rgb hsl nuancier presse papier copier coller texte majuscule base64 json slug historique"
         case .headphone: return "nothing ecouteurs bluetooth batterie anc"
         case .latex: return "tex document td tp cours rapport"
@@ -318,6 +322,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .grades: return "chart.bar.doc.horizontal"
         case .calc: return "x.squareroot"
         case .planning: return "fork.knife"
+        case .mail: return "envelope.fill"
         case .clip: return "eyedropper.halffull"
         case .headphone: return "headphones"
         case .compare: return "plus.forwardslash.minus"
@@ -347,6 +352,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .grades: return .green
         case .calc: return .blue
         case .planning: return .yellow
+        case .mail: return .blue
         case .clip: return .pink
         case .headphone: return .cyan
         case .compare: return .orange
@@ -508,6 +514,7 @@ struct ContentView: View {
         case .grades: GradesToolView(g: GradesStore.shared)
         case .calc: CalcToolView(s: CalcStore.shared)
         case .planning: PlanningToolView(p: PlanningStore.shared)
+        case .mail: MailToolView()
         case .clip: ClipToolView()
         case .headphone: HeadphoneToolView()
         case .sign: SignToolView(s: sign)

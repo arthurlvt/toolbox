@@ -828,6 +828,9 @@ struct CoursesToolView: View {
                         Button { AppRouter.shared.incoming = [item.url] } label: { Image(systemName: "square.grid.2x2") }
                             .help("Ouvrir dans Toolbox (organiser, annoter…)")
                     }
+                    if !item.isFolder {
+                        MoodleDepositMenu(file: item.url, compact: true)
+                    }
                     if item.isImage {
                         Button {
                             if let t = CourseIndex.shared.text(of: item.url), !t.isEmpty {

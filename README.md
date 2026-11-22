@@ -195,6 +195,24 @@ anything.
 - **Automatic mode**: transparency during a class (found in the calendar, as in My courses), your usual mode
   the rest of the time, low latency when a game is in the foreground.
 
+## Email
+
+Your latest email (university and personal mailbox) on one page, sorted by importance. Toolbox goes through the **Mail
+app**: it never sees a password and works with any account Mail can open (Outlook / Hotmail, the university's Partage,
+Gmail, iCloud…).
+
+- **Getting started**: add your accounts in Mail (Mail → Settings → Accounts), then Email page → *Turn on email*. macOS
+  asks once to allow Toolbox to control Mail.
+- **Important / Unread / All**, per account or all together. *Important*: email from the university and teachers,
+  subjects about exams, tests, grades, enrolment, grants, timetable, rooms, internships…, and your flagged email. Ads
+  and newsletters are greyed out at the bottom.
+- **Your rules**: right-click an email → always important / normal / ad for this sender or their whole domain. In the
+  settings (gear), tick your **university accounts**: any email from a real person there becomes important.
+- **Actions**, applied in Mail: read / unread, flag, archive (the account's “Archive” folder), trash. Clicking an email
+  opens it in Mail.
+- **Checked every 5 minutes** (Mail kept open in the background, optional) and **an alert for every new important
+  unread email**, in the dynamic island and on the iPhone if ntfy is on (see [Moodle](#moodle-e-uapv)).
+
 ## Revisions
 
 - **Your tests come from the calendar**: the “CCs/Soutenance” calendar (or any calendar named CC, Exams,
@@ -237,6 +255,12 @@ In the sidebar, under Study. Refreshed on its own every hour (↻ button to forc
   nothing is sent without a confirmation that says what will happen (replacing the current upload, late submission…).
   For assignments with a *Submit assignment* button you choose between keeping a draft and submitting for good, with
   a clear warning that a submission can no longer be changed.
+- **Hand in from your work**: *Hand in on Moodle* button (tray icon) on a file in My courses, and *Hand in the PDF on
+  Moodle* in the LaTeX editor's ⋯ menu. The most likely assignment comes first (★): same subject as the file, same
+  type and number (“TP3_Dupont.pdf” → “TP 3 graded”). Same checks and same confirmation as on the Moodle page.
+- **Due dates in Calendar** (bell → *Due dates in Calendar*): an orange “Devoirs Moodle” calendar, also on the iPhone,
+  with a reminder the day before; the title gets a ✓ once handed in. **Planning** flags a shift the day before a due
+  date (or the same day, before the deadline).
 - **Announcements**: the teachers' posts in each course's announcements forum, as plain text, with a *New* badge.
 - **New grades**: when a teacher publishes a grade on Moodle (“Analysis 1 · CC1: 13.5/20”), an alert stays in the
   dynamic island until you click it, and goes to your iPhone if ntfy is on. Nothing is stored or computed: your
@@ -601,10 +625,11 @@ Security.
 
 | Permission | What for | When it is requested |
 |---|---|---|
-| **Calendars** (full access) | today's events, “class right now”, upcoming tests (Revisions, countdowns), work calendar and schedule shifts | setup, or first opening of Home / Planning |
+| **Calendars** (full access) | Moodle due dates (“Devoirs Moodle” calendar, if turned on), today's events, “class right now”, upcoming tests (Revisions, countdowns), work calendar and schedule shifts | setup, or first opening of Home / Planning |
 | **Reminders** | “Recharge your Mac” alert that rings on the iPhone, evening reminder (Mac and headphones to charge) | when you turn these alerts on |
 | **Notifications** | class start, low iPhone battery, morning check | on the first notification |
 | **Bluetooth** | Nothing headphones battery and settings, Class mode (disconnecting the headphones) | first headphones read |
+| **Automation → Mail** (Apple Events) | Email page: read your latest email, read / flag / archive / trash | when you turn on email |
 | **Automation → Notes** (Apple Events) | sticky notes, pinned note on Home | setup, or first sticky note |
 | **Automation → Spotify / Music** (Apple Events) | music in the dynamic island | the first time music plays with the island on |
 | **Screen Recording** | “Screenshot → text”, schedule import from a screenshot | first capture |
@@ -680,6 +705,7 @@ Page ranges: `1-3, 5, 8-` (`8-` = to the end, `-3` = from the start).
 | Moodle token | macOS keychain (service `fr.arthur.toolbox.moodle`) |
 | Moodle and ntfy settings, files already fetched, announcements and grades already notified | app preferences (`moodle.*`, `push.*` keys) |
 | Files fetched from Moodle | courses folder → `En attente (Moodle)/` (Pending) |
+| Email settings, your sender rules, email already notified | app preferences (`mail.*` keys); the email itself stays in Mail |
 | Profile backups, other profiles | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
 
 Nothing is written into your courses folder, except what you create yourself (new TD/TP, notes, photos, dropped files)
@@ -709,7 +735,7 @@ Sources/
               PDF editor (PDFEditor.swift), calendar filter (CalendarFilter.swift), profiles and backups
               (Backup.swift), administrative documents (AdminDocs.swift), colours & clipboard (ClipTools.swift),
               course import / export (CourseImportView.swift),
-              dynamic island (NotchIsland.swift, NotchServices.swift, NotchViews.swift), Moodle sync (MoodleSync.swift), assignments, announcements and ntfy push (MoodleFeed.swift)
+              dynamic island (NotchIsland.swift, NotchServices.swift, NotchViews.swift), Moodle sync (MoodleSync.swift), assignments, announcements and ntfy push (MoodleFeed.swift), email through the Mail app (MailInbox.swift)
   pdftool/    terminal command
 Resources/    Info.plist (file types, Services, permissions, languages) + icon + translations (en.lproj)
 build.sh      builds outside the folder (Nextcloud), signs, assembles the .app, registers it with macOS
