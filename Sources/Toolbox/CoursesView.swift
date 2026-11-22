@@ -436,17 +436,39 @@ struct CoursesToolView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Chercher (noms et contenu)", text: $s.query)
-                    .textFieldStyle(.plain)
-                if !s.query.isEmpty {
-                    Button { s.query = "" } label: { Image(systemName: "xmark.circle.fill") }.buttonStyle(.borderless)
+            HStack(spacing: 6) {
+                HStack {
+                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                    TextField("Chercher (noms et contenu)", text: $s.query)
+                        .textFieldStyle(.plain)
+                    if !s.query.isEmpty {
+                        Button { s.query = "" } label: { Image(systemName: "xmark.circle.fill") }.buttonStyle(.borderless)
+                    }
+                }
+                .padding(8)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
+                .tourTarget("courses.search")
+
+                Button {
+                    if moodle.connected && !moodle.busy && !NSEvent.modifierFlags.contains(.option) { moodle.sync() }
+                    else { moodle.showSheet = true }
+                } label: {
+                    HStack(spacing: 4) {
+                        if moodle.busy { ProgressView().controlSize(.small) }
+                        else { Image(systemName: "arrow.triangle.2.circlepath") }
+                        Text("Moodle")
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color.accentColor.opacity(0.15)))
+                }
+                .buttonStyle(.plain)
+                .disabled(moodle.busy)
+                .help(moodle.connected ? L("Synchroniser avec Moodle (e-uapv) · ⌥-clic : choisir les cours")
+                                       : L("Récupérer mes cours depuis Moodle (e-uapv)…"))
+                .contextMenu {
+                    Button("Synchroniser avec Moodle (e-uapv)…") { moodle.showSheet = true }
                 }
             }
-            .padding(8)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
-            .tourTarget("courses.search")
 
             List(selection: Binding(get: { s.selectedID }, set: { if let id = $0 { s.selectedID = id; s.query = "" } })) {
                 ForEach(s.domains, id: \.0) { entry in

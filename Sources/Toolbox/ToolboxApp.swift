@@ -215,7 +215,7 @@ enum ToolSection: String, CaseIterable, Identifiable {
 enum Tool: String, CaseIterable, Identifiable {
     case home
     case planning, headphone, clip
-    case courses, revisions, grades, calc, annales, ocr
+    case courses, revisions, moodle, grades, calc, annales, ocr
     case latex, edit, organize, merge, split, layout, convert, stamp, security, compare, sign
     case compress, cleanup
 
@@ -224,7 +224,7 @@ enum Tool: String, CaseIterable, Identifiable {
     var section: ToolSection {
         switch self {
         case .home: return .home
-        case .courses, .revisions, .grades, .calc, .annales, .ocr: return .study
+        case .courses, .revisions, .moodle, .grades, .calc, .annales, .ocr: return .study
         case .planning, .headphone: return .life
         case .clip: return .tools
         case .latex, .edit, .organize, .merge, .split, .layout, .convert, .stamp, .security, .compare, .sign: return .pages
@@ -237,6 +237,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .home: return L("Accueil")
         case .courses: return L("Mes cours")
         case .revisions: return L("Révisions")
+        case .moodle: return L("Moodle")
         case .grades: return L("Notes & ECTS")
         case .calc: return L("Calculatrice")
         case .planning: return L("Planning")
@@ -265,6 +266,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .home: return L("Raccourcis, projets, agenda du jour")
         case .courses: return L("Cours, TD, TP et annales rangés par matière")
         case .revisions: return L("Tes CC du calendrier, avec une checklist reliée aux cours, TD et annales")
+        case .moodle: return L("Devoirs à rendre, dépôts et annonces de tes cours e-uapv")
         case .grades: return L("Moyennes, crédits ECTS, compensation et note qu'il te faut au prochain CC")
         case .calc: return L("Graphique (courbes, limites, dérivées, LaTeX), scientifique et programmeur (bases, bits)")
         case .headphone: return L("Batterie, réduction de bruit, égaliseur et mode automatique de ton casque Nothing")
@@ -302,6 +304,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .edit: return "editer modifier annoter surligner souligner barrer texte ecrire dessiner image cacher blanc caviarder corriger"
         case .courses: return "cours matieres td tp annales"
         case .revisions: return "cc examen partiel checklist"
+        case .moodle: return "moodle e-uapv eupav devoir rendre deposer depot deadline date limite annonce forum prof"
         default: return ""
         }
     }
@@ -311,6 +314,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .home: return "house.fill"
         case .courses: return "books.vertical.fill"
         case .revisions: return "checklist"
+        case .moodle: return "tray.and.arrow.up.fill"
         case .grades: return "chart.bar.doc.horizontal"
         case .calc: return "x.squareroot"
         case .planning: return "fork.knife"
@@ -339,6 +343,7 @@ enum Tool: String, CaseIterable, Identifiable {
         case .home: return .accentColor
         case .courses: return .orange
         case .revisions: return .mint
+        case .moodle: return .orange
         case .grades: return .green
         case .calc: return .blue
         case .planning: return .yellow
@@ -499,6 +504,7 @@ struct ContentView: View {
         case .compare: CompareToolView(s: compare)
         case .courses: CoursesToolView(s: CoursesStore.shared)
         case .revisions: RevisionsToolView(r: RevisionsStore.shared)
+        case .moodle: MoodleToolView()
         case .grades: GradesToolView(g: GradesStore.shared)
         case .calc: CalcToolView(s: CalcStore.shared)
         case .planning: PlanningToolView(p: PlanningStore.shared)

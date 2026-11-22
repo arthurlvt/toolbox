@@ -144,17 +144,36 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
   si ton emploi du temps ne l'appelle pas pareil.
 - **S'entraîner** compose un sujet avec les annales de la matière (Annalyse).
 
-**Synchronisation Moodle** (bouton ⇅ → *Synchroniser avec Moodle*, ou ⌘K)
+**Synchronisation Moodle** (bouton *Moodle* au-dessus de la liste des matières, ou ⌘K)
 - Marche avec tout Moodle qui autorise l'application mobile (vérifié sur e-uapv, Avignon Université). La connexion se fait
   sur la page habituelle de l'ENT, dans une fenêtre de Toolbox : ton mot de passe n'est jamais vu par Toolbox, seul un
   jeton d'accès est gardé dans le trousseau de macOS. Le changement d'adresse chaque année (e-uapv2026, e-uapv2027…)
   est suivi tout seul.
-- Choisis les cours à suivre et la matière correspondante (devinée d'après le nom). Leurs fichiers (ressources et
-  dossiers) sont téléchargés et triés comme un import (« Travaux dirigés » → TD, « Annales » → CC…) ; seuls les fichiers
-  nouveaux ou modifiés sont récupérés, rien n'est jamais supprimé, et un fichier remplacé par le prof garde son ancienne
-  version à côté. Les vidéos et fichiers de plus de 150 Mo sont ignorés.
+- Choisis les cours à suivre. Leurs fichiers (ressources et
+  dossiers) arrivent toujours dans une seule matière *En attente (Moodle)*, triés par type (« Travaux dirigés » → TD,
+  « Annales » → CC…) avec un dossier par cours : rien n'est jamais rangé tout seul dans tes matières. C'est toi qui
+  ranges, à la main ou avec *Ranger dans…* à côté de chaque cours (déplacement ponctuel ; les fichiers suivants
+  arrivent toujours en attente). Seuls les fichiers nouveaux ou modifiés sont récupérés, rien n'est jamais supprimé.
+  Les vidéos et fichiers de plus de 150 Mo sont ignorés.
 - Synchro à la main ou automatique (toutes les 3 h, 12 h ou une fois par jour) ; l'île dynamique prévient quand de
   nouveaux fichiers arrivent.
+
+**Page Moodle** (devoirs et annonces)
+- **Devoirs** : tout ce qui est à rendre dans tes cours suivis, trié en retard / à rendre / rendus, avec la date limite
+  (ou ta prolongation), les types de fichiers acceptés et ce que tu as déjà déposé.
+- **Déposer, remplacer, retirer** : choisis un fichier ou glisse-le sur le devoir. Type, nombre et taille sont vérifiés
+  avant, et rien ne part sans une confirmation qui dit ce qui va se passer (remplacement du dépôt actuel, retard…).
+  Pour les devoirs avec un bouton *Envoyer le devoir*, tu choisis entre garder un brouillon et envoyer pour de bon,
+  avec un avertissement clair : un devoir envoyé ne se modifie plus.
+- **Annonces** : les messages des profs dans le forum d'annonces de chaque cours, en texte simple, avec un badge
+  *Nouveau*.
+- **Nouvelles notes** : quand un prof publie une note sur Moodle (« Note publiée · Analyse 1 — CC1 : 13,5/20 »), une alerte reste dans
+  l'île dynamique jusqu'à ce que tu cliques dessus, et part sur l'iPhone si ntfy est activé. Rien n'est gardé ni
+  calculé : tes moyennes restent dans Notes & ECTS. Seules les notes mises sur Moodle sont vues (pas celles de
+  l'ENT / Apogée).
+- **Rappels** : 3 jours / 24 h / 3 h avant la date limite de ce qui n'est pas rendu, et une alerte pour chaque nouvelle
+  annonce, dans l'île dynamique et, si tu veux, en notification sur l'iPhone avec l'appli gratuite ntfy (bouton
+  cloche : abonne-toi au sujet secret affiché, envoie un test). Le Mac doit être allumé pour qu'elles partent.
 
 **Partager ses cours avec un ami** (bouton ⇅ en bas de la liste des matières, ou un .zip déposé sur la page)
 - **Importer une classe ou un cours…** : un .zip (export Toolbox, dossier d'un ami, téléchargement Moodle, zip d'un
@@ -648,7 +667,7 @@ swift run pdftool --help
 Sources/
   PDFCore/    moteur partagé : pages, dessin, compression, OCR, comparaison, signature, LaTeX,
               Annalyse (Annales/), bibliothèque et index des cours, GitHub, VS Code,
-              enregistrement de l'éditeur de PDF (PDFEdit.swift), polices et liens (PDFFonts.swift), import de cours (CourseImport.swift), API Moodle (Moodle.swift)
+              enregistrement de l'éditeur de PDF (PDFEdit.swift), polices et liens (PDFFonts.swift), import de cours (CourseImport.swift), API Moodle (Moodle.swift, MoodleWork.swift)
   Toolbox/    appli SwiftUI : une vue par outil, accueil et widgets, Mes cours, éditeur LaTeX,
               notes et ECTS, calculatrices (MathEngine.swift, ClassicCalc.swift), planning, casque, archives
               (ArchiveTool.swift), modèles LaTeX (LatexDocTypes.swift), bibliothèque de symboles
@@ -657,7 +676,7 @@ Sources/
               (PDFEditor.swift), filtre des calendriers (CalendarFilter.swift), profils et sauvegardes (Backup.swift),
               documents administratifs (AdminDocs.swift), couleurs et presse-papiers (ClipTools.swift),
               import / export de cours (CourseImportView.swift),
-              île dynamique (NotchIsland.swift, NotchServices.swift, NotchViews.swift), synchro Moodle (MoodleSync.swift)
+              île dynamique (NotchIsland.swift, NotchServices.swift, NotchViews.swift), synchro Moodle (MoodleSync.swift), devoirs, annonces et notifications ntfy (MoodleFeed.swift)
   pdftool/    commande terminal
 Resources/    Info.plist (types de fichiers, Services, autorisations, langues) + icône + traductions (en.lproj)
 build.sh      compile hors du dossier (Nextcloud), signe, assemble le .app, l'enregistre auprès de macOS

@@ -198,6 +198,10 @@ struct AlertIsland: View {
                 }
             }
             Spacer(minLength: 0)
+            if alert.sticky {
+                Image(systemName: "xmark.circle.fill").font(.system(size: 16)).foregroundStyle(.white.opacity(0.45))
+                    .help(L("Clique pour fermer"))
+            }
             if let p = alert.progress {
                 ZStack {
                     Circle().stroke(.white.opacity(0.15), lineWidth: 3.5)
@@ -212,7 +216,7 @@ struct AlertIsland: View {
         .padding(.top, notchHeight + 6)
         .padding(.bottom, 10)
         .contentShape(Rectangle())
-        .onTapGesture { NotchController.shared.open() }
+        .onTapGesture { alert.sticky ? NotchController.shared.dismissAlert() : NotchController.shared.open() }
     }
 }
 

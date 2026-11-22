@@ -74,6 +74,8 @@ struct NotchAlert: Equatable {
     var title: String
     var subtitle: String = ""
     var progress: Double? = nil        // jauge (batterie…)
+    /// Reste affichée jusqu'au clic (nouvelle note…) au lieu de disparaître toute seule.
+    var sticky = false
     var id = UUID()
 }
 
@@ -353,10 +355,14 @@ final class NotchController: NSObject {
     /// Ouvre l'île quelques secondes avec un message (si les alertes sont activées et qu'elle n'est pas déjà ouverte).
     func alert(_ a: NotchAlert, seconds: Double = 4) {
         guard isRunning, NotchSettings.shared.alerts, model.mode != .expanded else { return }
+        // une alerte qui attend ton clic n'est pas écrasée par une alerte passagère
+        if model.mode == .alert, model.alert?.sticky == true, !a.sticky { return }
         model.alert = a
         model.mode = .alert
         if NotchSettings.shared.haptics { NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now) }
         alertWork?.cancel()
+        alertWork = nil
+        if a.sticky { return }           // reste jusqu'au clic
         let w = DispatchWorkItem { [weak self] in
             guard let self = self, self.model.mode == .alert else { return }
             if self.model.screenRect.contains(NSEvent.mouseLocation) {
@@ -368,6 +374,15 @@ final class NotchController: NSObject {
         }
         alertWork = w
         DispatchQueue.main.asyncAfter(deadline: .now() + seconds, execute: w)
+    }
+
+    /// Ferme l'alerte affichée (clic sur une alerte qui reste).
+    func dismissAlert() {
+        alertWork?.cancel()
+        alertWork = nil
+        guard model.mode == .alert else { return }
+        model.mode = .idle
+        model.alert = nil
     }
 
     private func observe() {

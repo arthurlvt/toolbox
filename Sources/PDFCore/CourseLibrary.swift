@@ -259,7 +259,7 @@ public enum CourseLibrary {
     }
 
     /// Une matière : ses sous-dossiers de type + les fichiers posés à sa racine.
-    static func course(at dir: URL, domain: String) -> Course {
+    public static func course(at dir: URL, domain: String) -> Course {
         var items: [CourseItem] = []
         for c in children(dir) {
             if isDir(c), let kind = CourseKind.from(folder: c.lastPathComponent) {

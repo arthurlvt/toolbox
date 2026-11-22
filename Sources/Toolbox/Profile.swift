@@ -36,7 +36,7 @@ final class AppProfile: ObservableObject {
 
     func shows(_ t: Tool) -> Bool {
         switch t {
-        case .courses, .revisions, .grades: return student
+        case .courses, .revisions, .moodle, .grades: return student
         case .planning: return worker
         case .headphone: return hasHeadphone
         default: return true

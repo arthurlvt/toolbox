@@ -7,9 +7,10 @@ import PDFCore
 // MARK: - Synchronisation avec Moodle (e-uapv)
 //
 // Connexion par la page de l'ENT dans une petite fenêtre (le mot de passe reste entre toi et la fac), jeton gardé
-// dans le trousseau. Ensuite : tes cours → leurs fichiers → triés dans « Mes cours » comme un import (cours / TD /
-// TP / CC), en rejoignant tes matières. Seuls les fichiers nouveaux ou modifiés sont téléchargés ; rien n'est
-// jamais supprimé, et un fichier remplacé par le prof garde son ancienne version à côté.
+// dans le trousseau. Ensuite : tes cours → leurs fichiers → TOUJOURS dans une seule matière « En attente (Moodle) »
+// (cours / TD / TP / CC, un sous-dossier par cours Moodle). Rien n'est jamais rangé tout seul dans tes matières :
+// c'est toi qui ranges, à la main ou avec « Ranger dans… » (déplacement ponctuel). Seuls les fichiers nouveaux ou
+// modifiés sont téléchargés ; rien n'est jamais supprimé.
 
 enum Keychain {
     static let service = "fr.arthur.toolbox.moodle"
@@ -48,8 +49,6 @@ final class MoodleStore: ObservableObject {
     @Published private(set) var root: String { didSet { d.set(root, forKey: "moodle.root") } }      // wwwroot de l'année
     @Published private(set) var userName: String { didSet { d.set(userName, forKey: "moodle.user") } }
     @Published var followed: Set<Int> { didSet { d.set(Array(followed), forKey: "moodle.followed") } }
-    /// cours Moodle → dossier de la matière (vide = nouvelle matière au premier téléchargement)
-    @Published var mapping: [String: String] { didSet { d.set(mapping, forKey: "moodle.mapping") } }
     @Published var autoHours: Int { didSet { d.set(autoHours, forKey: "moodle.autoHours"); scheduleAuto() } }
     @Published private(set) var lastSync: Date? { didSet { d.set(lastSync, forKey: "moodle.lastSync") } }
 
@@ -60,7 +59,7 @@ final class MoodleStore: ObservableObject {
     @Published var status: StatusMessage?
     @Published var showSheet = false
 
-    private var userID: Int { d.integer(forKey: "moodle.userid") }
+    var userID: Int { d.integer(forKey: "moodle.userid") }
     private var autoTimer: Timer?
     private var loginWindow: MoodleLoginWindow?
 
@@ -78,7 +77,6 @@ final class MoodleStore: ObservableObject {
         root = d.string(forKey: "moodle.root") ?? ""
         userName = d.string(forKey: "moodle.user") ?? ""
         followed = Set((d.array(forKey: "moodle.followed") as? [Int]) ?? [])
-        mapping = (d.dictionary(forKey: "moodle.mapping") as? [String: String]) ?? [:]
         autoHours = d.object(forKey: "moodle.autoHours") as? Int ?? 3
         lastSync = d.object(forKey: "moodle.lastSync") as? Date
     }
@@ -86,7 +84,7 @@ final class MoodleStore: ObservableObject {
     var token: String? { Keychain.read(account: "token") }
     var connected: Bool { token != nil && !root.isEmpty }
 
-    private var client: Moodle.Client? {
+    var client: Moodle.Client? {
         guard let t = token, let u = URL(string: root) else { return nil }
         return Moodle.Client(root: u, token: t)
     }
@@ -160,14 +158,6 @@ final class MoodleStore: ObservableObject {
         if firstTime {
             followed = Set(list.filter { ($0.enddate ?? 0) == 0 || ($0.enddate ?? 0) > now }.map { $0.id })
         }
-        let existing = CoursesStore.shared.courses.map { (course: $0, name: CoursesStore.shared.name($0),
-                                                          aliases: CoursesStore.shared.custom[$0.id]?.aliases ?? "") }
-        var m = mapping
-        for c in list where m[String(c.id)] == nil {
-            let g = CourseImport.Group(name: Moodle.subjectName(c.fullname), domain: "", aliases: c.shortname, files: [], target: nil)
-            if let found = CourseImport.match(g, in: existing) { m[String(c.id)] = found.url.path }
-        }
-        mapping = m
     }
 
     func refreshCourses() {
@@ -186,13 +176,60 @@ final class MoodleStore: ObservableObject {
         }
     }
 
-    func target(of course: Moodle.Course) -> URL? {
-        guard let p = mapping[String(course.id)], !p.isEmpty, FileManager.default.fileExists(atPath: p) else { return nil }
-        return URL(fileURLWithPath: p)
+    /// Déplacement ponctuel, à ta demande : les fichiers en attente de ce cours vont dans la matière choisie.
+    /// Les prochaines synchros continuent d'arriver dans « En attente (Moodle) ».
+    func moveToSubject(_ course: Moodle.Course, _ subject: URL) {
+        movePending(Moodle.subjectName(course.fullname), to: subject)
     }
 
-    func setTarget(_ u: URL?, for course: Moodle.Course) {
-        mapping[String(course.id)] = u?.path ?? ""
+    /// Matière unique qui reçoit les cours Moodle sans matière : « En attente (Moodle) ».
+    static let pendingName = "En attente (Moodle)"
+
+    static func pendingDir(root: URL) -> URL { root.appendingPathComponent(pendingName, isDirectory: true) }
+
+    /// Déplace « En attente (Moodle)/<type>/<cours>/… » vers les dossiers de type de la matière, à plat.
+    func movePending(_ title: String, to subject: URL) {
+        guard let root = CoursesStore.shared.root else { return }
+        let fm = FileManager.default
+        let pending = Self.pendingDir(root: root)
+        guard let kinds = try? fm.contentsOfDirectory(at: pending, includingPropertiesForKeys: nil) else { return }
+        let course = CourseLibrary.course(at: subject, domain: "")
+        var moved = 0
+        for kindDir in kinds {
+            guard let kind = CourseKind.from(folder: kindDir.lastPathComponent) else { continue }
+            let src = kindDir.appendingPathComponent(CourseImport.safeName(title), isDirectory: true)
+            guard let en = fm.enumerator(at: src, includingPropertiesForKeys: [.isRegularFileKey]) else { continue }
+            let dest = course.folder(for: kind)
+            for case let f as URL in en where (try? f.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true {
+                try? fm.createDirectory(at: dest, withIntermediateDirectories: true)
+                var to = dest.appendingPathComponent(f.lastPathComponent)
+                if fm.fileExists(atPath: to.path) {
+                    if fm.contentsEqual(atPath: to.path, andPath: f.path) { try? fm.removeItem(at: f); continue }
+                    to = FileUtils.unique(to)
+                }
+                if (try? fm.moveItem(at: f, to: to)) != nil { moved += 1 }
+            }
+            try? fm.removeItem(at: src)
+            // dossier de type vide : on le retire
+            if (try? fm.contentsOfDirectory(atPath: kindDir.path))?.filter({ !$0.hasPrefix(".") }).isEmpty == true {
+                try? fm.removeItem(at: kindDir)
+            }
+        }
+        if (try? fm.contentsOfDirectory(atPath: pending.path))?.filter({ !$0.hasPrefix(".") }).isEmpty == true {
+            try? fm.removeItem(at: pending)
+        }
+        if moved > 0 {
+            status = .ok(String(format: L("%lld fichier(s) en attente rangé(s) dans %@."), moved, CoursesStore.shared.name(course)))
+            CoursesStore.shared.scan()
+        } else {
+            status = .info(L("Rien en attente pour ce cours."))
+        }
+    }
+
+    /// Oublie ce qui a déjà été récupéré : la prochaine synchro reprend tout (les fichiers identiques sont sautés).
+    func resetSynced() {
+        synced = [:]
+        status = .info(L("La prochaine synchro reprendra tous les fichiers (ceux déjà là et identiques sont sautés)."))
     }
 
     // MARK: Synchronisation
@@ -206,7 +243,6 @@ final class MoodleStore: ObservableObject {
             return
         }
         let names = Dictionary(uniqueKeysWithValues: courses.map { ($0.id, $0) })
-        let mapping = self.mapping
         let known = synced
         let root = CoursesStore.shared.root ?? {
             let r = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("Cours", isDirectory: true)
@@ -218,12 +254,12 @@ final class MoodleStore: ObservableObject {
         progress = L("Lecture des cours…")
         if !silent { status = nil }
 
-        runInBackground({ [weak self] () -> (CourseImport.Result, [String: Int], [Int: [URL]], Int, Int) in
+        let pending = Self.pendingDir(root: root)
+        runInBackground({ [weak self] () -> (CourseImport.Result, [String: Int], Int, Int) in
             let stage = FileManager.default.temporaryDirectory.appendingPathComponent("toolbox-moodle-\(UUID().uuidString)", isDirectory: true)
             defer { try? FileManager.default.removeItem(at: stage) }
             var newSynced = known
             var groups: [CourseImport.Group] = []
-            var groupCourse: [Int] = []
             var large = 0, failed = 0
             for (i, id) in follow.enumerated() {
                 let title = names[id].map { Moodle.subjectName($0.fullname) } ?? "Cours \(id)"
@@ -235,48 +271,43 @@ final class MoodleStore: ObservableObject {
                 let todo = files.filter { known[$0.key] != $0.timemodified }
                 guard !todo.isEmpty else { continue }
                 var g = CourseImport.Group(name: title, domain: "", aliases: names[id]?.shortname ?? "", files: [], target: nil)
-                if let p = mapping[String(id)], !p.isEmpty, FileManager.default.fileExists(atPath: p) { g.target = URL(fileURLWithPath: p) }
+                // toujours en attente : jamais rangé tout seul dans une matière
+                try FileManager.default.createDirectory(at: pending, withIntermediateDirectories: true)
+                g.target = pending
                 for (j, f) in todo.enumerated() {
                     DispatchQueue.main.async { self?.progress = "\(i + 1)/\(follow.count) · \(title) · \(j + 1)/\(todo.count)" }
                     var local = stage.appendingPathComponent(String(id), isDirectory: true)
                     for comp in f.components { local.appendPathComponent(comp) }
                     do { try c.download(f.fileurl, to: local) } catch { failed += 1; continue }
+                    // « En attente (Moodle)/<type>/<cours>/fichier »
                     let (kind, rel) = CourseImport.classify(f.components)
-                    g.files.append(CourseImport.File(source: local, kind: kind, relative: rel))
+                    let name = (rel as NSString).lastPathComponent
+                    g.files.append(CourseImport.File(source: local, kind: kind, relative: CourseImport.safeName(title) + "/" + name))
                     newSynced[f.key] = f.timemodified
                 }
-                if !g.files.isEmpty {
-                    groups.append(g)
-                    groupCourse.append(id)
-                }
+                if !g.files.isEmpty { groups.append(g) }
             }
             let plan = CourseImport.Plan(groups: groups, workDir: nil, fromToolbox: false)
             let res = try CourseImport.apply(plan, root: root)
-            // nouvelles matières créées : on retient leur dossier pour la prochaine fois
-            var created: [Int: [URL]] = [:]
-            var k = 0
-            for (gi, g) in groups.enumerated() where g.target == nil && k < res.newSubjects.count {
-                created[groupCourse[gi], default: []].append(res.newSubjects[k])
-                k += 1
-            }
-            return (res, newSynced, created, large, failed)
+            return (res, newSynced, large, failed)
         }) { [weak self] r in
             guard let self = self else { return }
             self.busy = false
             self.progress = ""
             switch r {
-            case .success(let (res, newSynced, created, large, failed)):
+            case .success(let (res, newSynced, large, failed)):
                 self.synced = newSynced
-                for (id, dirs) in created { if let first = dirs.first { self.mapping[String(id)] = first.path } }
                 self.lastSync = Date()
                 var text = res.copied.isEmpty ? L("Tout est à jour.") : String(format: L("%lld nouveau(x) fichier(s)."), res.copied.count)
-                if !res.newSubjects.isEmpty { text += " " + String(format: L("%lld nouvelle(s) matière(s)"), res.newSubjects.count) + "." }
+                if !res.copied.isEmpty { text += " " + L("Ils t'attendent dans « En attente (Moodle) ».") }
                 if large > 0 { text += " " + String(format: L("%lld fichier(s) trop lourd(s) ignoré(s) (vidéos…)."), large) }
                 if failed > 0 { text += " " + String(format: L("%lld échec(s)."), failed) }
                 let msg: StatusMessage = res.copied.isEmpty ? .info(text) : .ok(text, files: Array(res.copied.prefix(20)))
                 self.status = msg
+                if res.copied.isEmpty { MoodleFeed.shared.refresh(silent: true) }
                 if !res.copied.isEmpty {
                     CoursesStore.shared.scan()
+                    MoodleFeed.shared.refresh(silent: true)
                     NotchController.shared.alert(NotchAlert(icon: "arrow.down.doc.fill", color: .blue, title: L("Nouveaux cours sur e-uapv"),
                                                             subtitle: Self.summary(res.copied)), seconds: 6)
                 }
@@ -305,6 +336,7 @@ final class MoodleStore: ObservableObject {
     // MARK: Synchro automatique
 
     func scheduleAuto() {
+        MoodleFeed.shared.start()
         autoTimer?.invalidate()
         autoTimer = nil
         guard autoHours > 0, connected else { return }
@@ -393,7 +425,7 @@ struct MoodleSheet: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Synchroniser avec Moodle").font(.title3.weight(.semibold))
                     Text(m.connected ? L("Connecté") + " : " + m.userName + " · " + m.root.replacingOccurrences(of: "https://", with: "")
-                                     : L("Récupère tout seul les fichiers de tes cours, triés par matière."))
+                                     : L("Récupère tout seul les fichiers de tes cours, dans « En attente (Moodle) »."))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -443,6 +475,8 @@ struct MoodleSheet: View {
                 .controlSize(.small)
                 HStack {
                     Button("Se déconnecter") { m.logout() }.buttonStyle(.borderless).font(.caption)
+                    Button("Tout reprendre") { m.resetSynced() }.buttonStyle(.borderless).font(.caption)
+                        .help("Oublie les fichiers déjà récupérés : la prochaine synchro reprend tout, sans doublons")
                     Spacer()
                     if m.busy {
                         ProgressView().controlSize(.small)
@@ -471,15 +505,14 @@ struct MoodleSheet: View {
                 Text(c.fullname).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
-            Image(systemName: "arrow.right").foregroundStyle(.tertiary)
-            Picker("", selection: Binding(get: { m.target(of: c) }, set: { m.setTarget($0, for: c) })) {
-                Text("Nouvelle matière").tag(URL?.none)
-                Divider()
-                ForEach(courses.courses) { cc in Text(courses.name(cc)).tag(Optional(cc.url)) }
+            Menu("Ranger dans…") {
+                ForEach(courses.courses.filter { $0.folderName != MoodleStore.pendingName }) { cc in
+                    Button(courses.name(cc)) { m.moveToSubject(c, cc.url) }
+                }
             }
-            .labelsHidden()
-            .frame(width: 200)
-            .disabled(!m.followed.contains(c.id))
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help("Déplace maintenant ses fichiers en attente vers une matière (les prochains resteront en attente)")
         }
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.04)))

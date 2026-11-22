@@ -154,15 +154,31 @@ anything.
   if your timetable calls it something else.
 - **Practice** builds an exam from the subject's past papers (Annalyse).
 
-**Moodle sync** (⇅ button → *Sync with Moodle*, or ⌘K)
+**Moodle sync** (*Moodle* button above the subject list, or ⌘K)
 - Works with any Moodle that allows the mobile app (checked on e-uapv, Avignon University). You sign in on the usual
   ENT page in a Toolbox window: your password is never seen by Toolbox, only an access token is kept in the macOS
   keychain. The yearly address change (e-uapv2026, e-uapv2027…) is followed on its own.
-- Pick the courses to follow and the matching subject (guessed from the name). Their files (resources and folders)
-  are downloaded and sorted like an import (“Travaux dirigés” → TD, “Annales” → CC…); only new or changed files are
-  fetched, nothing is ever deleted, and a file replaced by the teacher keeps its old version next to it. Videos and
-  files over 150 MB are skipped.
+- Pick the courses to follow. Their files (resources and folders)
+  always land in a single *Pending (Moodle)* subject, sorted by type (“Travaux dirigés” → TD, “Annales” → CC…) with
+  one folder per course: nothing is ever filed into your own subjects on its own. You sort them yourself, by hand or
+  with *Move to…* next to each course (a one-off move; later files still arrive in Pending). Only new or changed files
+  are fetched, nothing is ever deleted. Videos and files over 150 MB are skipped.
 - Sync by hand or automatically (every 3 h, 12 h or once a day); the dynamic island tells you when new files arrive.
+
+**Moodle page** (assignments and announcements)
+- **Assignments**: everything due in your followed courses, sorted into late / due / handed in, with the due date (or
+  your extension), the accepted file types and what you already uploaded.
+- **Upload, replace, remove**: pick a file or drop it on an assignment. Type, count and size are checked first, and
+  nothing is sent without a confirmation that says what will happen (replacing the current upload, late submission…).
+  For assignments with a *Submit assignment* button you choose between keeping a draft and submitting for good, with
+  a clear warning that a submission can no longer be changed.
+- **Announcements**: the teachers' posts in each course's announcements forum, as plain text, with a *New* badge.
+- **New grades**: when a teacher publishes a grade on Moodle (“Analysis 1 · CC1: 13.5/20”), an alert stays in the
+  dynamic island until you click it, and goes to your iPhone if ntfy is on. Nothing is stored or computed: your
+  averages stay in Grades & ECTS. Only grades teachers put on Moodle are seen (not the ENT / Apogée ones).
+- **Reminders**: 3 days / 24 h / 3 h before the due date of anything not handed in, and an alert for every new
+  announcement, in the dynamic island and, if you want, as a notification on your iPhone through the free ntfy app
+  (bell button: subscribe to the secret topic shown, send a test). The Mac has to be on for them to go out.
 
 **Sharing courses with a friend** (⇅ button at the bottom of the subject list, or drop a .zip on the page)
 - **Import a class or a course…**: a .zip (Toolbox export, a friend's folder, Moodle download, a teacher's zip), a
@@ -654,7 +670,7 @@ swift run pdftool --help
 Sources/
   PDFCore/    shared engine: pages, drawing, compression, OCR, comparison, signature, LaTeX,
               Annalyse (Annales/), course library and index, GitHub, VS Code,
-              PDF editor saving (PDFEdit.swift), fonts and links (PDFFonts.swift), course import (CourseImport.swift), Moodle API (Moodle.swift)
+              PDF editor saving (PDFEdit.swift), fonts and links (PDFFonts.swift), course import (CourseImport.swift), Moodle API (Moodle.swift, MoodleWork.swift)
   Toolbox/    SwiftUI app: one view per tool, Home and widgets, My courses, LaTeX editor,
               grades and ECTS, calculators (MathEngine.swift, ClassicCalc.swift), planning, headphones, archives
               (ArchiveTool.swift), LaTeX templates (LatexDocTypes.swift), symbol library
@@ -664,7 +680,7 @@ Sources/
               PDF editor (PDFEditor.swift), calendar filter (CalendarFilter.swift), profiles and backups
               (Backup.swift), administrative documents (AdminDocs.swift), colours & clipboard (ClipTools.swift),
               course import / export (CourseImportView.swift),
-              dynamic island (NotchIsland.swift, NotchServices.swift, NotchViews.swift), Moodle sync (MoodleSync.swift)
+              dynamic island (NotchIsland.swift, NotchServices.swift, NotchViews.swift), Moodle sync (MoodleSync.swift), assignments, announcements and ntfy push (MoodleFeed.swift)
   pdftool/    terminal command
 Resources/    Info.plist (file types, Services, permissions, languages) + icon + translations (en.lproj)
 build.sh      builds outside the folder (Nextcloud), signs, assembles the .app, registers it with macOS

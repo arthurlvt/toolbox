@@ -62,6 +62,37 @@ enum SelfTest {
         } else {
             check("moodle : contenu de cours lisible", false)
         }
+
+        // devoirs
+        let assignJSON = """
+        {"courses":[{"id":3,"assignments":[{"id":7,"cmid":70,"course":3,"name":"TP noté","duedate":1900000000,"nosubmissions":0,
+          "submissiondrafts":1,"requiresubmissionstatement":0,"configs":[
+          {"plugin":"file","subtype":"assignsubmission","name":"enabled","value":"1"},
+          {"plugin":"file","subtype":"assignsubmission","name":"maxfilesubmissions","value":"2"},
+          {"plugin":"file","subtype":"assignsubmission","name":"filetypeslist","value":".pdf,.zip"}]}]}]}
+        """
+        if let a = (try? JSONDecoder().decode(Moodle.AssignCourses.self, from: Data(assignJSON.utf8)))?.courses.first?.assignments.first {
+            check("moodle : devoir lu (dépôt de fichiers, 2 max)", a.acceptsFiles && a.maxFiles == 2 && a.needsSubmitButton)
+            check("moodle : types acceptés", a.accepts(fileName: "tp.PDF") && !a.accepts(fileName: "tp.docx"))
+            let statusJSON = """
+            {"lastattempt":{"submission":{"id":1,"status":"draft","plugins":[{"type":"file","fileareas":[{"area":"submission_files",
+              "files":[{"filename":"tp.pdf","filesize":10,"fileurl":"https://x/f"}]}]}]},"locked":false,"canedit":true,"cansubmit":1}}
+            """
+            if let st = try? JSONDecoder().decode(Moodle.SubmissionStatus.self, from: Data(statusJSON.utf8)) {
+                check("moodle : brouillon pas encore rendu", !st.isDone(a) && st.files.count == 1 && st.canEdit && st.canSubmit)
+            } else {
+                check("moodle : état du dépôt lisible", false)
+            }
+        } else {
+            check("moodle : devoirs lisibles", false)
+        }
+        let note = Moodle.GradeItem(id: 1, itemname: "CC1", itemtype: "mod", graderaw: 13.5, gradeformatted: "13,50", grademax: 20)
+        check("moodle : note affichée « 13,5/20 »", note.text == "13,5/20" && note.isPublished, note.text)
+        let total = Moodle.GradeItem(id: 2, itemname: nil, itemtype: "course", graderaw: 12, gradeformatted: "12,00", grademax: 20)
+        let vide = Moodle.GradeItem(id: 3, itemname: "CC2", itemtype: "mod", graderaw: nil, gradeformatted: "-", grademax: 20)
+        check("moodle : total du cours et note vide ignorés", !total.isPublished && !vide.isPublished)
+        let html = "<p>Salle&nbsp;<b>S3</b> d&#233;plac&eacute;e</p><p>Merci</p>"
+        check("moodle : annonce HTML → texte", Moodle.plainText(html) == "Salle S3 déplacée\nMerci", Moodle.plainText(html))
     }
 
     // MARK: Île dynamique

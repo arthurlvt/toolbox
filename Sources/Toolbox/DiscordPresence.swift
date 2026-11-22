@@ -249,6 +249,7 @@ final class DiscordPresence: ObservableObject {
             if latex.lastSuccess == true { return (what, "Ça compile du premier coup ✅") }
             return (what, "Tape des \\begin{} à la chaîne")
         case .annales: return ("Fouille la banque d'annales", "Cherche le sujet qui tombera 🔮")
+        case .moodle: return ("Regarde ses devoirs Moodle", "Deadline en approche 😬")
         case .revisions:
             if let p = RevisionsStore.shared.next, let d = p.daysLeft {
                 return ("Révise pour un CC", d <= 1 ? "C'est pour \(d == 0 ? "aujourd'hui" : "demain") 😰" : "J-\(d), \(Int(p.progress * 100)) % de la checklist ✅")

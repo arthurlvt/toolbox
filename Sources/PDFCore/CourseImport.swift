@@ -332,6 +332,8 @@ public enum CourseImport {
         return res
     }
 
+    public static func safeName(_ s: String) -> String { safe(s) }
+
     static func safe(_ s: String) -> String {
         let t = s.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
             .trimmingCharacters(in: .whitespaces)
