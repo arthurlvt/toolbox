@@ -617,7 +617,7 @@ struct ContentView: View {
                                        icon: "text.viewfinder", color: .teal, keywords: "ocr copier screenshot") {
                 ScreenText.capture()
             })
-            list.append(PaletteCommand(title: "Synchroniser Moodle (e-uapv)", subtitle: "Nouveaux fichiers de tes cours, triés par matière",
+            list.append(PaletteCommand(title: "Synchroniser Moodle (e-uapv)", subtitle: "Nouveaux fichiers de tes cours, dans « En attente (Moodle) »",
                                        icon: "arrow.triangle.2.circlepath", color: .orange, keywords: "moodle eupav e-uapv ent cours telecharger synchro") {
                 if MoodleStore.shared.connected { MoodleStore.shared.sync() } else { MoodleStore.shared.showSheet = true }
                 AppRouter.shared.show = .courses

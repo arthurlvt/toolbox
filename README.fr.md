@@ -24,6 +24,8 @@ précis. Le premier lancement demande ce que tu as et masque ce qui ne te sert p
 | Widgets sur le téléphone (prochain shift, Mon Mac, Ma journée), batterie du téléphone | un **iPhone** avec [Scriptable](https://scriptable.app) et iCloud Drive | masqué ; Android : [à faire](#feuille-de-route) |
 | Batterie, réduction de bruit, égaliseur du casque, Mode cours avec le casque | un casque ou des écouteurs **Nothing / CMF** | masqué ; autres marques : [à faire](#feuille-de-route) |
 | Planning importé depuis une photo | un planning sous forme de tableau (testé avec celui d'un McDonald's) | la page Planning peut être masquée |
+| Moodle : fichiers, devoirs, annonces, notes | un **Moodle** qui autorise l'application mobile (e-uapv par défaut) | la page Moodle propose juste de se connecter |
+| Notifications Moodle sur le téléphone | l'appli gratuite **ntfy** (iPhone ou Android) | alertes dans l'île dynamique seulement |
 | Maquette de diplôme dans Notes & ECTS | L1 Informatique du CERI (Avignon) fournie en exemple | crée tes UE à la main, ou ajoute ta maquette |
 
 ---
@@ -144,36 +146,8 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
   si ton emploi du temps ne l'appelle pas pareil.
 - **S'entraîner** compose un sujet avec les annales de la matière (Annalyse).
 
-**Synchronisation Moodle** (bouton *Moodle* au-dessus de la liste des matières, ou ⌘K)
-- Marche avec tout Moodle qui autorise l'application mobile (vérifié sur e-uapv, Avignon Université). La connexion se fait
-  sur la page habituelle de l'ENT, dans une fenêtre de Toolbox : ton mot de passe n'est jamais vu par Toolbox, seul un
-  jeton d'accès est gardé dans le trousseau de macOS. Le changement d'adresse chaque année (e-uapv2026, e-uapv2027…)
-  est suivi tout seul.
-- Choisis les cours à suivre. Leurs fichiers (ressources et
-  dossiers) arrivent toujours dans une seule matière *En attente (Moodle)*, triés par type (« Travaux dirigés » → TD,
-  « Annales » → CC…) avec un dossier par cours : rien n'est jamais rangé tout seul dans tes matières. C'est toi qui
-  ranges, à la main ou avec *Ranger dans…* à côté de chaque cours (déplacement ponctuel ; les fichiers suivants
-  arrivent toujours en attente). Seuls les fichiers nouveaux ou modifiés sont récupérés, rien n'est jamais supprimé.
-  Les vidéos et fichiers de plus de 150 Mo sont ignorés.
-- Synchro à la main ou automatique (toutes les 3 h, 12 h ou une fois par jour) ; l'île dynamique prévient quand de
-  nouveaux fichiers arrivent.
-
-**Page Moodle** (devoirs et annonces)
-- **Devoirs** : tout ce qui est à rendre dans tes cours suivis, trié en retard / à rendre / rendus, avec la date limite
-  (ou ta prolongation), les types de fichiers acceptés et ce que tu as déjà déposé.
-- **Déposer, remplacer, retirer** : choisis un fichier ou glisse-le sur le devoir. Type, nombre et taille sont vérifiés
-  avant, et rien ne part sans une confirmation qui dit ce qui va se passer (remplacement du dépôt actuel, retard…).
-  Pour les devoirs avec un bouton *Envoyer le devoir*, tu choisis entre garder un brouillon et envoyer pour de bon,
-  avec un avertissement clair : un devoir envoyé ne se modifie plus.
-- **Annonces** : les messages des profs dans le forum d'annonces de chaque cours, en texte simple, avec un badge
-  *Nouveau*.
-- **Nouvelles notes** : quand un prof publie une note sur Moodle (« Note publiée · Analyse 1 — CC1 : 13,5/20 »), une alerte reste dans
-  l'île dynamique jusqu'à ce que tu cliques dessus, et part sur l'iPhone si ntfy est activé. Rien n'est gardé ni
-  calculé : tes moyennes restent dans Notes & ECTS. Seules les notes mises sur Moodle sont vues (pas celles de
-  l'ENT / Apogée).
-- **Rappels** : 3 jours / 24 h / 3 h avant la date limite de ce qui n'est pas rendu, et une alerte pour chaque nouvelle
-  annonce, dans l'île dynamique et, si tu veux, en notification sur l'iPhone avec l'appli gratuite ntfy (bouton
-  cloche : abonne-toi au sujet secret affiché, envoie un test). Le Mac doit être allumé pour qu'elles partent.
+**Moodle** : bouton *Moodle* au-dessus de la liste des matières pour récupérer les fichiers de tes cours e-uapv
+(voir [Moodle](#moodle-e-uapv)).
 
 **Partager ses cours avec un ami** (bouton ⇅ en bas de la liste des matières, ou un .zip déposé sur la page)
 - **Importer une classe ou un cours…** : un .zip (export Toolbox, dossier d'un ami, téléchargement Moodle, zip d'un
@@ -225,6 +199,58 @@ Lit ton dossier de cours (ex. `uapv-cours/cours`) et le présente **par matière
 - Cocher une séance la marque *Fait* dans Mes cours. Un CC déplacé ou renommé dans le calendrier suit tout seul.
 - Partout : widget **Prochain CC** sur l'accueil, bandeau sur la page de la matière, entrée dans ⌘K.
 - Un CC absent du calendrier : *Nouvelle révision*.
+
+## Moodle (e-uapv)
+
+Toolbox se connecte à Moodle comme l'application mobile officielle. Ça marche avec tout Moodle qui autorise
+l'application mobile (vérifié sur e-uapv, Avignon Université).
+
+### Synchroniser les fichiers
+
+Bouton *Moodle* au-dessus de la liste des matières dans Mes cours (clic : synchroniser ; ⌥-clic ou clic droit : choisir les cours), ou ⌘K → *Synchroniser Moodle*.
+
+- La connexion se fait sur la page habituelle de l'ENT, dans une fenêtre de Toolbox : ton mot de passe n'est jamais vu par Toolbox, seul un
+  jeton d'accès est gardé dans le trousseau de macOS. Le changement d'adresse chaque année (e-uapv2026, e-uapv2027…)
+  est suivi tout seul.
+- Choisis les cours à suivre. Leurs fichiers (ressources et
+  dossiers) arrivent toujours dans une seule matière *En attente (Moodle)*, triés par type (« Travaux dirigés » → TD,
+  « Annales » → CC…) avec un dossier par cours : rien n'est jamais rangé tout seul dans tes matières. C'est toi qui
+  ranges, à la main ou avec *Ranger dans…* à côté de chaque cours (déplacement ponctuel ; les fichiers suivants
+  arrivent toujours en attente). Seuls les fichiers nouveaux ou modifiés sont récupérés, rien n'est jamais supprimé.
+  Les vidéos et fichiers de plus de 150 Mo sont ignorés.
+- Synchro à la main ou automatique (toutes les 3 h, 12 h ou une fois par jour) ; l'île dynamique prévient quand de
+  nouveaux fichiers arrivent.
+
+### Page Moodle : devoirs, annonces, notes
+
+Dans la barre latérale, rubrique Études. Rafraîchie toute seule toutes les heures (bouton ↻ pour forcer).
+
+- **Devoirs** : tout ce qui est à rendre dans tes cours suivis, trié en retard / à rendre / rendus, avec la date limite
+  (ou ta prolongation), les types de fichiers acceptés et ce que tu as déjà déposé.
+- **Déposer, remplacer, retirer** : choisis un fichier ou glisse-le sur le devoir. Type, nombre et taille sont vérifiés
+  avant, et rien ne part sans une confirmation qui dit ce qui va se passer (remplacement du dépôt actuel, retard…).
+  Pour les devoirs avec un bouton *Envoyer le devoir*, tu choisis entre garder un brouillon et envoyer pour de bon,
+  avec un avertissement clair : un devoir envoyé ne se modifie plus.
+- **Annonces** : les messages des profs dans le forum d'annonces de chaque cours, en texte simple, avec un badge
+  *Nouveau*.
+- **Nouvelles notes** : quand un prof publie une note sur Moodle (« Note publiée · Analyse 1 — CC1 : 13,5/20 »), une alerte reste dans
+  l'île dynamique jusqu'à ce que tu cliques dessus, et part sur l'iPhone si ntfy est activé. Rien n'est gardé ni
+  calculé : tes moyennes restent dans Notes & ECTS. Seules les notes mises sur Moodle sont vues (pas celles de
+  l'ENT / Apogée).
+- **Rappels** : 3 jours / 24 h / 3 h avant la date limite de ce qui n'est pas rendu (réglable sous la cloche), et une
+  alerte pour chaque nouvelle annonce, dans l'île dynamique.
+
+### Notifications sur l'iPhone (ntfy, gratuit)
+
+Rappels, annonces et notes peuvent aussi arriver sur l'iPhone, sans compte ni abonnement :
+1. Sur le Mac : page Moodle → cloche → coche *Aussi sur mon iPhone (ntfy)* et copie le **sujet** (`toolbox-…`).
+2. Sur l'iPhone : installe l'appli gratuite **ntfy**, autorise les notifications, **+** → colle le sujet (serveur
+   ntfy.sh par défaut).
+3. Sur le Mac : *Envoyer un test*.
+
+Le sujet sert de mot de passe : ne le partage pas (le bouton ↻ en crée un nouveau). Les notifications passent par le
+serveur public ntfy.sh et ne partent que si le Mac est allumé. L'appli Moodle officielle peut aussi envoyer ses propres
+notifications d'annonces, si la fac l'a activé.
 
 ## Notes & ECTS
 
@@ -584,10 +610,11 @@ sécurité.
 | **Dossiers Bureau, Documents, Téléchargements** | cours et documents LaTeX, *Nettoyer le Mac* (vieux téléchargements, gros fichiers) | à la première lecture de ces dossiers |
 | **Mot de passe administrateur** (une fois) | réveil programmé du Mac pour le check du matin (`pmset`) | quand tu actives le réveil |
 | **Mot de passe dans le Terminal** | installation des outils (Homebrew, paquets LaTeX) : tapé dans le Terminal, jamais vu par Toolbox | quand tu cliques « Installer » |
+| **Connexion à l'ENT** (Moodle) | fichiers, devoirs, annonces et notes : la page de l'ENT s'ouvre dans une fenêtre de Toolbox, seul un jeton d'accès est gardé (trousseau) | quand tu cliques « Se connecter à l'ENT » |
 | **Connexion GitHub** (code à usage unique) | dépôts privés : la page github.com/login/device s'ouvre, tu colles le code | quand tu cliques « Se connecter » |
 
 Pas d'autorisation système pour : iCloud Drive (dossier `Toolbox/` partagé avec l'iPhone), Ollama (sur la machine,
-`127.0.0.1`), la météo (Open-Meteo, sans compte), les Services du Finder et ⌥Espace.
+`127.0.0.1`), la météo (Open-Meteo, sans compte), les notifications iPhone (ntfy.sh, sans compte), les Services du Finder et ⌥Espace.
 
 ---
 
@@ -649,9 +676,13 @@ Plages de pages : `1-3, 5, 8-` (`8-` = jusqu'à la fin, `-3` = depuis le début)
 | Calculatrice (fonctions, historique), couleurs (récentes, favoris), étagère de l'île dynamique | préférences de l'app |
 | Données partagées avec l'iPhone | iCloud Drive → `Toolbox/` (ToolboxMac.json, ToolboxDay.json, scripts Scriptable) |
 | Banque d'annales | le dossier choisi dans Annalyse → Réglages |
+| Jeton Moodle | trousseau de macOS (service `fr.arthur.toolbox.moodle`) |
+| Réglages Moodle et ntfy, fichiers déjà récupérés, annonces et notes déjà signalées | préférences de l'app (clés `moodle.*`, `push.*`) |
+| Fichiers récupérés sur Moodle | dossier de cours → `En attente (Moodle)/` |
 | Sauvegardes du profil, autres profils | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
 
-Rien n'est écrit dans ton dossier de cours, sauf ce que tu crées toi-même (nouveau TD/TP, notes, photos, fichiers déposés).
+Rien n'est écrit dans ton dossier de cours, sauf ce que tu crées toi-même (nouveau TD/TP, notes, photos, fichiers déposés)
+et la matière `En attente (Moodle)` remplie par la synchro Moodle.
 
 ---
 

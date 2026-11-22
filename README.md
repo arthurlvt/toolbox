@@ -28,6 +28,8 @@ launch asks what you have and hides what you don't need:
 | Phone widgets (next shift, My Mac, My day), phone battery | an **iPhone** with [Scriptable](https://scriptable.app) and iCloud Drive | hidden; Android: [to do](#roadmap) |
 | Headphone battery, noise cancellation, equalizer, Class mode with headphones | **Nothing / CMF** headphones or earbuds | hidden; other brands: [to do](#roadmap) |
 | Work schedule imported from a photo | a schedule laid out as a table (tested with a McDonald's one) | the Planning page can be hidden |
+| Moodle: files, assignments, announcements, grades | a **Moodle** that allows the mobile app (e-uapv by default) | the Moodle page only offers to sign in |
+| Moodle notifications on the phone | the free **ntfy** app (iPhone or Android) | dynamic island alerts only |
 | Degree curriculum in Grades & ECTS | L1 Computer Science at CERI (Avignon, France) provided as an example | create your teaching units by hand, or add your curriculum |
 
 ---
@@ -154,31 +156,7 @@ anything.
   if your timetable calls it something else.
 - **Practice** builds an exam from the subject's past papers (Annalyse).
 
-**Moodle sync** (*Moodle* button above the subject list, or ⌘K)
-- Works with any Moodle that allows the mobile app (checked on e-uapv, Avignon University). You sign in on the usual
-  ENT page in a Toolbox window: your password is never seen by Toolbox, only an access token is kept in the macOS
-  keychain. The yearly address change (e-uapv2026, e-uapv2027…) is followed on its own.
-- Pick the courses to follow. Their files (resources and folders)
-  always land in a single *Pending (Moodle)* subject, sorted by type (“Travaux dirigés” → TD, “Annales” → CC…) with
-  one folder per course: nothing is ever filed into your own subjects on its own. You sort them yourself, by hand or
-  with *Move to…* next to each course (a one-off move; later files still arrive in Pending). Only new or changed files
-  are fetched, nothing is ever deleted. Videos and files over 150 MB are skipped.
-- Sync by hand or automatically (every 3 h, 12 h or once a day); the dynamic island tells you when new files arrive.
-
-**Moodle page** (assignments and announcements)
-- **Assignments**: everything due in your followed courses, sorted into late / due / handed in, with the due date (or
-  your extension), the accepted file types and what you already uploaded.
-- **Upload, replace, remove**: pick a file or drop it on an assignment. Type, count and size are checked first, and
-  nothing is sent without a confirmation that says what will happen (replacing the current upload, late submission…).
-  For assignments with a *Submit assignment* button you choose between keeping a draft and submitting for good, with
-  a clear warning that a submission can no longer be changed.
-- **Announcements**: the teachers' posts in each course's announcements forum, as plain text, with a *New* badge.
-- **New grades**: when a teacher publishes a grade on Moodle (“Analysis 1 · CC1: 13.5/20”), an alert stays in the
-  dynamic island until you click it, and goes to your iPhone if ntfy is on. Nothing is stored or computed: your
-  averages stay in Grades & ECTS. Only grades teachers put on Moodle are seen (not the ENT / Apogée ones).
-- **Reminders**: 3 days / 24 h / 3 h before the due date of anything not handed in, and an alert for every new
-  announcement, in the dynamic island and, if you want, as a notification on your iPhone through the free ntfy app
-  (bell button: subscribe to the secret topic shown, send a test). The Mac has to be on for them to go out.
+**Moodle**: *Moodle* button above the subject list to fetch your e-uapv course files (see [Moodle](#moodle-e-uapv)).
 
 **Sharing courses with a friend** (⇅ button at the bottom of the subject list, or drop a .zip on the page)
 - **Import a class or a course…**: a .zip (Toolbox export, a friend's folder, Moodle download, a teacher's zip), a
@@ -230,6 +208,52 @@ anything.
 - Ticking a session marks it *Done* in My courses. A test moved or renamed in the calendar follows on its own.
 - Everywhere: **Next test** widget on Home, banner on the subject page, entry in ⌘K.
 - A test missing from the calendar: *New revision*.
+
+## Moodle (e-uapv)
+
+Toolbox connects to Moodle the way the official mobile app does. It works with any Moodle that allows the mobile app
+(checked on e-uapv, Avignon University).
+
+### Syncing files
+
+*Moodle* button above the subject list in My courses (click: sync; ⌥-click or right-click: choose the courses), or ⌘K → *Sync Moodle*.
+
+- You sign in on the usual ENT page in a Toolbox window: your password is never seen by Toolbox, only an access token is kept in the macOS
+  keychain. The yearly address change (e-uapv2026, e-uapv2027…) is followed on its own.
+- Pick the courses to follow. Their files (resources and folders)
+  always land in a single *Pending (Moodle)* subject, sorted by type (“Travaux dirigés” → TD, “Annales” → CC…) with
+  one folder per course: nothing is ever filed into your own subjects on its own. You sort them yourself, by hand or
+  with *Move to…* next to each course (a one-off move; later files still arrive in Pending). Only new or changed files
+  are fetched, nothing is ever deleted. Videos and files over 150 MB are skipped.
+- Sync by hand or automatically (every 3 h, 12 h or once a day); the dynamic island tells you when new files arrive.
+
+### Moodle page: assignments, announcements, grades
+
+In the sidebar, under Study. Refreshed on its own every hour (↻ button to force it).
+
+- **Assignments**: everything due in your followed courses, sorted into late / due / handed in, with the due date (or
+  your extension), the accepted file types and what you already uploaded.
+- **Upload, replace, remove**: pick a file or drop it on an assignment. Type, count and size are checked first, and
+  nothing is sent without a confirmation that says what will happen (replacing the current upload, late submission…).
+  For assignments with a *Submit assignment* button you choose between keeping a draft and submitting for good, with
+  a clear warning that a submission can no longer be changed.
+- **Announcements**: the teachers' posts in each course's announcements forum, as plain text, with a *New* badge.
+- **New grades**: when a teacher publishes a grade on Moodle (“Analysis 1 · CC1: 13.5/20”), an alert stays in the
+  dynamic island until you click it, and goes to your iPhone if ntfy is on. Nothing is stored or computed: your
+  averages stay in Grades & ECTS. Only grades teachers put on Moodle are seen (not the ENT / Apogée ones).
+- **Reminders**: 3 days / 24 h / 3 h before the due date of anything not handed in (set under the bell), and an alert
+  for every new announcement, in the dynamic island.
+
+### Notifications on the iPhone (ntfy, free)
+
+Reminders, announcements and grades can also reach your iPhone, with no account or subscription:
+1. On the Mac: Moodle page → bell → tick *Also on my iPhone (ntfy)* and copy the **topic** (`toolbox-…`).
+2. On the iPhone: install the free **ntfy** app, allow notifications, **+** → paste the topic (default ntfy.sh server).
+3. On the Mac: *Send a test*.
+
+The topic works as a password: don't share it (the ↻ button makes a new one). Notifications go through the public
+ntfy.sh server and only go out while the Mac is on. The official Moodle app can also send its own announcement
+notifications, if your university turned them on.
 
 ## Grades & ECTS
 
@@ -587,10 +611,11 @@ Security.
 | **Desktop, Documents, Downloads folders** | courses and LaTeX documents, *Clean up the Mac* (old downloads, large files) | when these folders are first read |
 | **Administrator password** (once) | scheduled Mac wake for the morning check (`pmset`) | when you turn on wake |
 | **Password in Terminal** | installing tools (Homebrew, LaTeX packages): typed in Terminal, never seen by Toolbox | when you click “Install” |
+| **ENT sign-in** (Moodle) | files, assignments, announcements and grades: the ENT page opens in a Toolbox window, only an access token is kept (keychain) | when you click “Sign in to the ENT” |
 | **GitHub sign-in** (one-time code) | private repositories: github.com/login/device opens, you paste the code | when you click “Sign in” |
 
 No system permission for: iCloud Drive (`Toolbox/` folder shared with the iPhone), Ollama (on the machine,
-`127.0.0.1`), weather (Open-Meteo, no account), Finder Services and ⌥Space.
+`127.0.0.1`), weather (Open-Meteo, no account), iPhone notifications (ntfy.sh, no account), Finder Services and ⌥Space.
 
 ---
 
@@ -652,9 +677,13 @@ Page ranges: `1-3, 5, 8-` (`8-` = to the end, `-3` = from the start).
 | Calculator (functions, history), colours (recent, favourites), dynamic island shelf | app preferences |
 | Data shared with the iPhone | iCloud Drive → `Toolbox/` (ToolboxMac.json, ToolboxDay.json, Scriptable scripts) |
 | Past-exam bank | the folder chosen in Annalyse → Settings |
+| Moodle token | macOS keychain (service `fr.arthur.toolbox.moodle`) |
+| Moodle and ntfy settings, files already fetched, announcements and grades already notified | app preferences (`moodle.*`, `push.*` keys) |
+| Files fetched from Moodle | courses folder → `En attente (Moodle)/` (Pending) |
 | Profile backups, other profiles | `~/Library/Application Support/Toolbox/Sauvegardes/`, `…/Toolbox/Profils/` |
 
-Nothing is written into your courses folder, except what you create yourself (new TD/TP, notes, photos, dropped files).
+Nothing is written into your courses folder, except what you create yourself (new TD/TP, notes, photos, dropped files)
+and the `En attente (Moodle)` (Pending) subject filled by the Moodle sync.
 
 ---
 
