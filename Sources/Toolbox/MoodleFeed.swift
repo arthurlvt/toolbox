@@ -661,6 +661,7 @@ struct MoodleToolView: View {
             }
         }
         .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .sheet(isPresented: $m.showSheet) { MoodleSheet() }
         .alert(f.confirm.map { f.confirmTitle($0) } ?? "",
                isPresented: Binding(get: { f.confirm != nil }, set: { if !$0 { f.confirm = nil } }),

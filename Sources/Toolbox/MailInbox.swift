@@ -415,7 +415,7 @@ struct MailToolView: View {
             if !s.enabled {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Toolbox lit tes mails dans l'app Mail : ajoute-y d'abord tes comptes (Mail → Réglages → Comptes), puis active.")
-                        .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        .foregroundStyle(.secondary)
                     Text("Aucun mot de passe n'est donné à Toolbox. macOS te demandera d'autoriser Toolbox à piloter Mail.")
                         .font(.caption).foregroundStyle(.secondary)
                     Button("Activer les mails") { s.enabled = true; s.refresh() }.buttonStyle(.borderedProminent)
@@ -462,6 +462,7 @@ struct MailToolView: View {
             }
         }
         .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear { if s.enabled && s.lastRefresh == nil { s.refresh(silent: true) } }
     }
 }
